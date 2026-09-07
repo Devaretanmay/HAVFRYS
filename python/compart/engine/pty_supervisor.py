@@ -26,7 +26,7 @@ class CaptureResult:
         return self.returncode == 0 and self.error is None
 
 
-class ExecutionSupervisor:
+class PtySupervisor:
     def __init__(
         self,
         workdir: str = ".",
@@ -106,6 +106,3 @@ class ExecutionSupervisor:
         env = os.environ.copy()
         env.update(self.extra_env)
         return env
-
-
-PtySupervisor = ExecutionSupervisor

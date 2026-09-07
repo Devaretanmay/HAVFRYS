@@ -33,7 +33,7 @@ from compart import autopatch
 from compart.audit import changed_since_index, run_audit
 from compart.drift import detect_drift
 from compart.graph import build_dependency_graph
-from compart.github.installations import store_dir as installations_store_dir
+from compart.github.installations import list_ready_repos, store_dir as installations_store_dir
 from compart.github.webhook_server import WebhookServer
 from compart.intelligence import resolve_migration
 from compart.knowledge import ensure_test_recipe
@@ -344,16 +344,9 @@ def cmd_doctor(args):
     try:
         idir = installations_store_dir()
         for fn in os.listdir(idir):
-            if not fn.endswith(".json"):
-                continue
-            try:
-                with open(os.path.join(idir, fn), encoding="utf-8") as f:
-                    rec = json.load(f)
-                if any((s.get("state") == "READY") for s in rec.get("repos", {}).values()):
-                    monitoring = "ACTIVE"
-                    break
-            except Exception:
-                continue
+            if fn.endswith(".json") and list_ready_repos(fn[:-5]):
+                monitoring = "ACTIVE"
+                break
     except Exception:
         pass
     print("================================================================================")

@@ -24,15 +24,9 @@ from compart.providers.registry import RewriteRule
 try:
     import blake3
 
-    def _blake3(data: bytes) -> str:
-        return blake3.blake3(data).hexdigest()
-
     def _pattern_hash(pattern: str) -> str:
         return blake3.blake3(pattern.encode("utf-8")).hexdigest()[:16]
 except ImportError:
-    def _blake3(data: bytes) -> str:
-        return hashlib.blake2b(data, digest_size=16).hexdigest()
-
     def _pattern_hash(pattern: str) -> str:
         return hashlib.blake2b(pattern.encode("utf-8"), digest_size=8).hexdigest()
 
@@ -172,13 +166,6 @@ def to_rewrite_rules(entry: Optional[KBEntry]) -> List[Any]:
 
 def direct_rewrites_for(repo_dir: str, provider: str, from_version: str, to_version: str) -> List[Any]:
     return to_rewrite_rules(lookup(repo_dir, provider, from_version, to_version))
-
-
-def direct_patterns_for(repo_dir: str, provider: str, from_version: str, to_version: str) -> List[KBPattern]:
-    e = lookup(repo_dir, provider, from_version, to_version)
-    if not e:
-        return []
-    return [p for p in e.patterns if _is_executable(p)]
 
 
 def ensure_test_recipe(repo_dir: str, provider: str, from_version: str, to_version: str, test_command: str) -> Optional[KBEntry]:

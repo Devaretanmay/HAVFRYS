@@ -439,7 +439,7 @@ def analyze_trigger_context(ctx: TriggerContext) -> AnalysisResult:
     else:
         findings.extend(_analyze_all_touched_providers(ctx))
 
-    providers_detected = _detect_providers_in_context(ctx)
+    providers_detected = detect_drift(ctx.workdir, None)
     callsites_total = sum(len(f.callsites_in_context) for f in findings)
 
     return AnalysisResult(
@@ -449,11 +449,6 @@ def analyze_trigger_context(ctx: TriggerContext) -> AnalysisResult:
         callsites_total=callsites_total,
         auto_fixable_count=sum(1 for f in findings if f.is_auto_repairable),
     )
-
-
-def _detect_providers_in_context(ctx: TriggerContext) -> List[Dict[str, Any]]:
-    """Detect which external providers are relevant in the current context."""
-    return detect_drift(ctx.workdir, None)
 
 
 def _analyze_all_touched_providers(ctx: TriggerContext) -> List[DriftFinding]:

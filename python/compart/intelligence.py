@@ -14,7 +14,7 @@ from typing import List, Optional
 
 from compart.change_source import ChangeSource
 from compart.credentials import has_valid_credentials
-from compart.knowledge import _norm_version as _norm, direct_rewrites_for
+from compart.knowledge import direct_rewrites_for
 from compart.providers.registry import find_migration_for, get_default_registry
 
 
@@ -34,22 +34,11 @@ class Decision:
 
 def resolve_migration(provider: str, from_version: Optional[str] = None, to_version: Optional[str] = None):
     """Pick the registry migration matching the requested versions, else first. Returns (from, to, migration|None)."""
-    registry = get_default_registry()
-    p_spec = registry.get(provider) if provider else None
-    if not p_spec or not p_spec.migrations:
+    migration = find_migration_for(ChangeSource.sdk(
+        provider or "", version_from=from_version or "unknown", version_to=to_version or "unknown"))
+    if migration is None:
         return (from_version or "unknown", to_version or "unknown", None)
-    migs = list(p_spec.migrations.values())
-    nf, nt = _norm(from_version or ""), _norm(to_version or "")
-    for m in migs:
-        if nf and nt and _norm(m.from_version) == nf and _norm(m.to_version) == nt:
-            return (m.from_version, m.to_version, m)
-    for m in migs:
-        if nf and _norm(m.from_version) == nf:
-            return (m.from_version, m.to_version, m)
-        if nt and _norm(m.to_version) == nt:
-            return (m.from_version, m.to_version, m)
-    m = migs[0]
-    return (from_version or m.from_version, to_version or m.to_version, m)
+    return (from_version or migration.from_version, to_version or migration.to_version, migration)
 
 
 class CompartIntelligence:
