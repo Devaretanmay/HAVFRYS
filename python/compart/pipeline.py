@@ -45,9 +45,9 @@ from compart.autopatch import (
     diff_schemas,
 )
 from compart.providers.registry import get_default_registry, ProviderSpec
-from compart.maintenance import (
-    detect_drift,
-    run_style_formatter,
+from compart.drift import detect_drift
+from compart.formatters import run_style_formatter
+from compart.test_runner import (
     _detect_test_command,
     _run_tests,
     _compute_lockfile_hash,

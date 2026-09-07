@@ -392,7 +392,7 @@ class TestParallelSessions(unittest.TestCase):
         self.assertEqual(b._box.state, "destroyed")
 
     def test_three_boxes_branch_like_structure(self):
-        """Simulate branching: Main, then sessions A, B, C."""
+        """Branching structure: Main, then sessions A, B, C."""
         main = Compart(workdir=self.tmpdir)
         branches = [Compart(workdir=self.tmpdir) for _ in range(3)]
 

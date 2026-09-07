@@ -2,7 +2,6 @@
 """Continuous Autonomous API Maintenance Loop Engine."""
 
 from dataclasses import dataclass, field
-import hashlib
 import json
 import os
 import shutil
@@ -12,21 +11,22 @@ import time
 from typing import Any, Dict, List, Optional
 
 from compart.ai_planner import AIPatchPlanner
-from compart.github.client import GitHubAppClient
+from compart.drift import detect_drift
+from compart.formatters import run_style_formatter
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
+from compart.git_ops import git_commit_and_push, gh_create_pr
 from compart.maintenance_agents import ImpactAnalyst
 from compart.patch_writer import apply_rewrites, PatchResult
 from compart.providers.registry import get_default_registry
 from compart.sandbox.snapshot import SnapshotManager, _file_hash
 
-try:
-    import blake3
-
-    def _blake3_digest(data: bytes) -> str:
-        return blake3.blake3(data).hexdigest()
-except ImportError:
-    def _blake3_digest(data: bytes) -> str:
-        return hashlib.blake2b(data, digest_size=16).hexdigest()
+from compart.test_runner import (
+    _blake3_digest,
+    _detect_test_command,
+    _compute_lockfile_hash,
+    _run_install,
+    _run_tests,
+)
 
 try:
     from compart._core import route_and_compress
@@ -56,116 +56,6 @@ class MaintenanceRunReport:
     error: Optional[str] = None
 
 
-def detect_drift(repo_dir: str, provider_name: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Inspect repository manifests to detect installed providers."""
-    registry = get_default_registry()
-    detected = []
-
-    pkg_json_path = os.path.join(repo_dir, "package.json")
-    if os.path.exists(pkg_json_path):
-        try:
-            with open(pkg_json_path, "r") as f:
-                data = json.load(f)
-            deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
-            for dep_name, version in deps.items():
-                p_spec = registry.get(dep_name)
-                if p_spec and (provider_name is None or p_spec.name.lower() == provider_name.lower()):
-                    detected.append({
-                        "provider": p_spec.name,
-                        "display_name": p_spec.display_name,
-                        "package_name": dep_name,
-                        "declared_version": version,
-                        "manifest_path": "package.json",
-                    })
-        except Exception:
-            pass
-
-    return detected
-
-
-def _detect_test_command(repo_dir: str) -> str:
-    """Detect the most appropriate test command for this repository."""
-    if os.path.exists(os.path.join(repo_dir, "test", "run.js")):
-        return "node test/run.js"
-    pkg_json_path = os.path.join(repo_dir, "package.json")
-    if os.path.exists(pkg_json_path):
-        try:
-            with open(pkg_json_path) as f:
-                data = json.load(f)
-            scripts = data.get("scripts", {})
-            for candidate in ("test", "test:unit", "test:ci", "type-check", "build"):
-                if candidate in scripts:
-                    return f"npm run {candidate}" if candidate != "test" else "npm test"
-        except Exception:
-            pass
-    if os.path.exists(os.path.join(repo_dir, "pytest.ini")) or os.path.exists(os.path.join(repo_dir, "tests")):
-        return "pytest -q"
-    if os.path.exists(os.path.join(repo_dir, "Cargo.toml")):
-        return "cargo test"
-    return ""
-
-
-def _compute_lockfile_hash(repo_dir: str) -> str:
-    candidates = (
-        "pnpm-lock.yaml",
-        "package-lock.json",
-        "yarn.lock",
-        "bun.lockb",
-        "Cargo.lock",
-        "poetry.lock",
-        "Pipfile.lock",
-        "package.json",
-        "Cargo.toml",
-    )
-    for c in candidates:
-        fp = os.path.join(repo_dir, c)
-        if os.path.isfile(fp):
-            try:
-                with open(fp, "rb") as f:
-                    return _blake3_digest(f.read())
-            except Exception:
-                pass
-    return _blake3_digest(repo_dir.encode("utf-8"))
-
-
-def _run_install(repo_dir: str, timeout: int = 120) -> subprocess.CompletedProcess:
-    """Run package manager install to pull the new SDK version."""
-    if shutil.which("pnpm") and os.path.exists(os.path.join(repo_dir, "pnpm-lock.yaml")):
-        cmd = ["pnpm", "install", "--frozen-lockfile=false"]
-    elif shutil.which("yarn") and os.path.exists(os.path.join(repo_dir, "yarn.lock")):
-        cmd = ["yarn", "install"]
-    else:
-        cmd = ["npm", "install"]
-    return subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True, timeout=timeout)
-
-
-def _run_tests(repo_dir: str, test_cmd: str, timeout: int = 120) -> subprocess.CompletedProcess:
-    """Run the test suite inside the repo directory."""
-    return subprocess.run(
-        test_cmd,
-        shell=True,
-        cwd=repo_dir,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
-
-
-def run_style_formatter(repo_dir: str, modified_files: List[str]) -> None:
-    """Run local repository code formatters (Prettier, Biome, Ruff) to match team style."""
-    if not modified_files:
-        return
-    if os.path.exists(os.path.join(repo_dir, ".prettierrc")) or os.path.exists(os.path.join(repo_dir, "package.json")):
-        if shutil.which("npx"):
-            for f in modified_files:
-                rel_f = os.path.relpath(f, repo_dir) if os.path.isabs(f) else f
-                subprocess.run(["npx", "prettier", "--write", rel_f], cwd=repo_dir, capture_output=True)
-    if os.path.exists(os.path.join(repo_dir, "pyproject.toml")) or os.path.exists(os.path.join(repo_dir, "ruff.toml")):
-        if shutil.which("ruff"):
-            for f in modified_files:
-                if f.endswith(".py"):
-                    rel_f = os.path.relpath(f, repo_dir) if os.path.isabs(f) else f
-                    subprocess.run(["ruff", "format", rel_f], cwd=repo_dir, capture_output=True)
 
 
 def record_migration_history(repo_dir: str, record: Dict[str, Any]) -> None:
@@ -199,64 +89,6 @@ def get_migration_history(repo_dir: str) -> List[Dict[str, Any]]:
     return []
 
 
-def _git_commit_and_push(
-    repo_dir: str,
-    modified_files: List[str],
-    branch_name: str,
-    commit_message: str,
-) -> bool:
-    """Create a git branch, commit modified files, push to origin."""
-    subprocess.run(["git", "config", "user.name", "Compart Bot"], cwd=repo_dir, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "bot@compart.dev"], cwd=repo_dir, capture_output=True)
-
-    try:
-        subprocess.run(["git", "checkout", "-b", branch_name], cwd=repo_dir, capture_output=True, check=True)
-    except subprocess.CalledProcessError:
-        subprocess.run(["git", "checkout", branch_name], cwd=repo_dir, capture_output=True)
-
-    rel_files = [os.path.relpath(f, repo_dir) if os.path.isabs(f) else f for f in modified_files]
-    for rel_f in rel_files:
-        subprocess.run(["git", "add", rel_f], cwd=repo_dir, capture_output=True)
-
-    result = subprocess.run(
-        ["git", "commit", "-m", commit_message],
-        cwd=repo_dir, capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        pass
-
-    push = subprocess.run(
-        ["git", "push", "-u", "origin", branch_name, "--force"],
-        cwd=repo_dir, capture_output=True, text=True,
-    )
-    return push.returncode == 0
-
-
-def _gh_create_pr(
-    repo: str,
-    branch_name: str,
-    title: str,
-    body: str,
-) -> Optional[str]:
-    """Open a GitHub PR using the gh CLI. Returns PR URL or None."""
-    if not shutil.which("gh"):
-        return None
-    result = subprocess.run(
-        ["gh", "pr", "create", "--repo", repo, "--base", "main",
-         "--head", branch_name, "--title", title, "--body", body],
-        capture_output=True, text=True,
-    )
-    if result.returncode == 0 and result.stdout.strip():
-        return result.stdout.strip()
-    view = subprocess.run(
-        ["gh", "pr", "view", branch_name, "--repo", repo, "--json", "url", "-q", ".url"],
-        capture_output=True, text=True,
-    )
-    if view.returncode == 0 and view.stdout.strip():
-        return view.stdout.strip()
-    return None
-
-
 def run_maintenance_cycle(
     repo_dir: str,
     provider_name: str,
@@ -264,7 +96,7 @@ def run_maintenance_cycle(
     to_version: Optional[str] = None,
     create_pr: bool = False,
     github_repo: Optional[str] = None,
-    github_client: Optional[GitHubAppClient] = None,
+    github_client: Any = None,
     use_ai: bool = False,
     llm_api_key: Optional[str] = None,
     llm_model: Optional[str] = None,
@@ -453,11 +285,11 @@ def run_maintenance_cycle(
             f"Detected and patched by Compart autonomous maintenance engine.\n"
             f"Rules applied:\n" + "\n".join(f"- {d}" for d in all_rules)
         )
-        pushed = _git_commit_and_push(repo_dir, modified_paths, branch_name, commit_msg)
+        pushed = git_commit_and_push(repo_dir, modified_paths, branch_name, commit_msg)
 
         if pushed:
             pr_title = f"compart: migrate {p_spec.display_name} {actual_from} -> {actual_to}"
-            pr_url = _gh_create_pr(github_repo, branch_name, pr_title, pr_body)
+            pr_url = gh_create_pr(github_repo, branch_name, pr_title, pr_body)
 
         if not pr_url and github_client:
             pr_resp = github_client.create_pull_request(

@@ -466,7 +466,9 @@ fn bucket_by(
 mod tests {
     use super::super::ir::OpaqueKind;
     use super::*;
+    use crate::runtime::ccr::InMemoryCcrStore;
     use serde_json::json;
+    use std::sync::Arc;
 
     fn cfg() -> CompactConfig {
         CompactConfig::default()
@@ -688,9 +690,6 @@ mod tests {
 
     #[test]
     fn opaque_payload_is_stored_under_marker_hash() {
-        use crate::runtime::ccr::InMemoryCcrStore;
-        use std::sync::Arc;
-
         let big = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".repeat(8);
         let items = vec![
             json!({"id": 1, "blob": big.clone()}),
@@ -721,9 +720,6 @@ mod tests {
 
     #[test]
     fn store_presence_does_not_change_the_ir() {
-        use crate::runtime::ccr::InMemoryCcrStore;
-        use std::sync::Arc;
-
         let big = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".repeat(8);
         let items = vec![
             json!({"id": 1, "blob": big.clone()}),

@@ -32,7 +32,7 @@ from compart.github.pr_render import (
     render_maintenance_issue_comment,
 )
 from compart.graph import build_dependency_graph
-from compart.maintenance import detect_drift
+from compart.drift import detect_drift
 
 _logger = logging.getLogger("compart.pr_bot")
 

@@ -1,4 +1,5 @@
 import os
+import shutil
 import pytest
 from compart.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
 
@@ -13,7 +14,6 @@ def test_detect_drift_in_fixture():
 
 
 def test_run_maintenance_cycle_taxonomy(tmp_path):
-    import shutil
     fixture_dir = "trials/fixtures/taxonomy_stripe"
     target_dir = str(tmp_path / "taxonomy_stripe")
     shutil.copytree(fixture_dir, target_dir)

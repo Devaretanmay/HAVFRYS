@@ -80,7 +80,7 @@ TOOLS: List[Dict[str, Any]] = [
                 },
                 "dry_run": {
                     "type": "boolean",
-                    "description": "If true, simulate repair without writing files.",
+                    "description": "If true, preview repair without writing files.",
                     "default": False,
                 },
             },

@@ -464,25 +464,26 @@ if __name__ == '__main__':
 
     #[test]
     fn rust_code_detected() {
-        let content = "\
-use std::sync::Arc;
-
-#[derive(Debug)]
-pub struct Foo {
-    bar: u32,
-}
-
-pub fn baz() -> u32 {
-    42
-}
-
-impl Foo {
-    pub fn new() -> Self {
-        Self { bar: 0 }
-    }
-}
-";
-        let r = detect_content_type(content);
+        let content = [
+            "use std::sync::Arc;",
+            "",
+            "#[derive(Debug)]",
+            "pub struct Foo {",
+            "    bar: u32,",
+            "}",
+            "",
+            "pub fn baz() -> u32 {",
+            "    42",
+            "}",
+            "",
+            "impl Foo {",
+            "    pub fn new() -> Self {",
+            "        Self { bar: 0 }",
+            "    }",
+            "}",
+        ]
+        .join("\n");
+        let r = detect_content_type(&content);
         assert_eq!(r.content_type, ContentType::SourceCode);
     }
 

@@ -7,6 +7,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+from compart.credentials import load_credentials
+
 
 @dataclass
 class LLMConfig:
@@ -40,7 +42,6 @@ def resolve_llm_config(
     # If no explicit args or env vars, check ~/.compart/credentials.json
     if not key and not anthropic_key and not openai_key and not url:
         try:
-            from compart.credentials import load_credentials
             stored = load_credentials()
             if stored:
                 stored_prov = stored.get("provider", "openai").lower()

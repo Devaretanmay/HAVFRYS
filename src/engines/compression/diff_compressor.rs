@@ -813,6 +813,7 @@ fn format_output(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runtime::ccr::InMemoryCcrStore;
 
     #[test]
     fn short_input_passes_through() {
@@ -1011,7 +1012,6 @@ mod tests {
 
     #[test]
     fn compress_with_store_persists_original_under_cache_key() {
-        use crate::runtime::ccr::InMemoryCcrStore;
         let store = InMemoryCcrStore::new();
         let input = build_synthetic_diff(8);
         let (r, stats) = DiffCompressor::default().compress_with_store(&input, "", Some(&store));
@@ -1032,7 +1032,6 @@ mod tests {
 
     #[test]
     fn compress_with_store_no_op_when_ccr_skipped() {
-        use crate::runtime::ccr::InMemoryCcrStore;
         let cfg = DiffCompressorConfig {
             min_compression_ratio_for_ccr: 0.1,
             ..Default::default()

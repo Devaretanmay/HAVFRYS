@@ -664,7 +664,10 @@ fn opaque_kind_label(kind: &OpaqueKind) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engines::compression::bm25::BM25Scorer;
+    use crate::runtime::ccr::InMemoryCcrStore;
     use serde_json::json;
+    use std::sync::Arc;
 
     fn crusher() -> SmartCrusher {
         SmartCrusher::new(SmartCrusherConfig::default())
@@ -950,7 +953,6 @@ mod tests {
 
     #[test]
     fn crusher_with_custom_scorer() {
-        use crate::engines::compression::bm25::BM25Scorer;
         let c = SmartCrusher::with_scorer(
             SmartCrusherConfig::default(),
             BM25Scorer::default(),
@@ -1137,9 +1139,6 @@ mod tests {
 
     #[test]
     fn enable_ccr_marker_false_suppresses_marker_and_store() {
-        use crate::runtime::ccr::InMemoryCcrStore;
-        use std::sync::Arc;
-
         let store: Arc<InMemoryCcrStore> = Arc::new(InMemoryCcrStore::new());
         let cfg = SmartCrusherConfig {
             lossless_min_savings_ratio: 0.99,
@@ -1171,9 +1170,6 @@ mod tests {
 
     #[test]
     fn enable_ccr_marker_true_is_default_behavior() {
-        use crate::runtime::ccr::InMemoryCcrStore;
-        use std::sync::Arc;
-
         let store: Arc<InMemoryCcrStore> = Arc::new(InMemoryCcrStore::new());
         let cfg = SmartCrusherConfig {
             lossless_min_savings_ratio: 0.99,
@@ -1293,9 +1289,6 @@ mod tests {
 
     #[test]
     fn lossless_only_never_writes_to_ccr_store() {
-        use crate::runtime::ccr::InMemoryCcrStore;
-        use std::sync::Arc;
-
         let store: Arc<InMemoryCcrStore> = Arc::new(InMemoryCcrStore::new());
         let cfg = SmartCrusherConfig {
             lossless_min_savings_ratio: 0.99,

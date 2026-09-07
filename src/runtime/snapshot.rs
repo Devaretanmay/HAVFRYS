@@ -178,6 +178,7 @@ impl SnapshotManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn tmpdir(name: &str) -> String {
         let dir = std::env::temp_dir().join(format!("bw_snap_{name}_{}", uuid()));
@@ -185,7 +186,6 @@ mod tests {
     }
 
     fn uuid() -> String {
-        use std::time::{SystemTime, UNIX_EPOCH};
         let n = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()

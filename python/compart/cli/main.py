@@ -1,5 +1,6 @@
 import argparse
 import dataclasses
+import graphlib
 import json
 import logging
 import os
@@ -37,7 +38,17 @@ from compart.graph import build_dependency_graph
 from compart.github.webhook_server import WebhookServer
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 from compart.maintenance import run_maintenance_cycle, detect_drift
-from compart.providers.registry import get_default_registry
+import getpass
+from compart.credentials import (
+    save_credentials,
+    load_credentials,
+    get_active_provider_summary,
+    verify_credentials,
+    clear_credentials,
+    has_valid_credentials,
+)
+from compart.github.pr_bot import make_pr_bot_handler, run_on_pr_locally
+from compart.mcp_server import serve_stdio
 
 _logger = logging.getLogger("compart.cli")
 
@@ -831,29 +842,12 @@ _NODE_KIND_BY_TYPE = {
 
 
 def _topo_sort(nodes: List[WorkflowNodeConfig]) -> List[WorkflowNodeConfig]:
-    """Return nodes in dependency order; raise ValueError on cycles."""
     by_name = {n.name: n for n in nodes}
-    visited: dict[str, int] = {}  # 0=unvisited, 1=in-progress, 2=done
-    order: List[WorkflowNodeConfig] = []
-
-    def visit(n: WorkflowNodeConfig) -> None:
-        state = visited.get(n.name, 0)
-        if state == 1:
-            raise ValueError(f"Workflow cycle detected at node '{n.name}'")
-        if state == 2:
-            return
-        visited[n.name] = 1
-        for dep in n.depends_on:
-            if dep in by_name:
-                visit(by_name[dep])
-            else:
-                print(f"Warning: node '{n.name}' depends on unknown node '{dep}' - ignored.")
-        visited[n.name] = 2
-        order.append(n)
-
-    for n in nodes:
-        visit(n)
-    return order
+    graph = {n.name: tuple(dep for dep in n.depends_on if dep in by_name) for n in nodes}
+    try:
+        return [by_name[name] for name in graphlib.TopologicalSorter(graph).static_order()]
+    except graphlib.CycleError as exc:
+        raise ValueError(f"Workflow cycle detected: {exc}")
 
 
 def _run_declared_workflow(ws_root: str, wf: WorkflowConfig, cfg: WorkspaceConfig) -> None:
@@ -1797,7 +1791,7 @@ def _print_auth_warning():
     print("================================================================================")
     print("                COMPART: AI PROVIDER AUTHENTICATION REQUIRED                   ")
     print("================================================================================\n")
-    print("❌ Error: No AI provider configured.\n")
+    print("[ERROR] No AI provider configured.\n")
     print("Compart requires an AI provider to analyze dependencies and maintain your code.")
     print("To connect your provider, run:\n")
     print("  compart auth\n")
@@ -1805,28 +1799,21 @@ def _print_auth_warning():
     print("  export ANTHROPIC_API_KEY=\"sk-ant-...\"    (for Claude 3.5 Sonnet)")
     print("  export OPENAI_API_KEY=\"sk-...\"           (for GPT-4o)\n")
     print("Supported providers:")
-    print("  • Anthropic (Claude 3.5 Sonnet) [Recommended]")
-    print("  • OpenAI (GPT-4o)")
-    print("  • Ollama / Local (OpenAI-compatible)")
+    print("  * Anthropic (Claude 3.5 Sonnet) [Recommended]")
+    print("  * OpenAI (GPT-4o)")
+    print("  * Ollama / Local (OpenAI-compatible)")
     print("================================================================================")
 
 
 def cmd_auth(args):
     """Authenticate and configure BYOK AI provider with automatic repository indexing."""
-    from compart.credentials import (
-        save_credentials,
-        get_active_provider_summary,
-        verify_credentials,
-        clear_credentials,
-    )
-
     if getattr(args, "status", False):
         summary = get_active_provider_summary()
         print("================================================================================")
         print("                 COMPART: AI PROVIDER CREDENTIAL STATUS                         ")
         print("================================================================================\n")
         if summary["configured"]:
-            print(f"Status:       CONFIGURED ✅")
+            print(f"Status:       CONFIGURED [OK]")
             print(f"Provider:     {summary.get('provider')}")
             if summary.get("model"):
                 print(f"Model:        {summary.get('model')}")
@@ -1834,14 +1821,14 @@ def cmd_auth(args):
                 print(f"API Key:      {summary.get('masked_key')}")
             print(f"Source:       {summary.get('source')}")
         else:
-            print("Status:       NOT CONFIGURED ❌")
+            print("Status:       NOT CONFIGURED [REQUIRED]")
             print("Action:       Run 'compart auth' to connect an AI provider.")
         print("\n================================================================================")
         return
 
     if getattr(args, "clear", False):
         clear_credentials()
-        print("✓ Stored Compart credentials removed.")
+        print("[OK] Stored Compart credentials removed.")
         return
 
     provider = getattr(args, "provider", None)
@@ -1879,37 +1866,34 @@ def cmd_auth(args):
             provider = "anthropic"
 
         if not api_key:
-            import getpass
             api_key = getpass.getpass(f"Enter API Key for {provider}: ").strip()
 
     valid, msg = verify_credentials(provider, api_key, model=model, base_url=base_url)
     if not valid:
-        print(f"\n❌ Error: {msg}")
+        print(f"\n[ERROR] {msg}")
         sys.exit(1)
 
     creds_path = save_credentials(provider=provider, api_key=api_key, model=model, base_url=base_url)
-    print(f"\n✓ Credentials verified successfully for {provider}!")
-    print(f"✓ Saved encrypted configuration to {creds_path}")
+    print(f"\n[OK] Credentials verified successfully for {provider}!")
+    print(f"[OK] Saved encrypted configuration to {creds_path}")
 
     # Automatic Day-0 Knowledge Graph Indexing
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
-    print(f"\n⚡ Initializing Compart Knowledge Graph for: {root_path}...")
+    print(f"\n[INDEXING] Initializing Compart Knowledge Graph for: {root_path}...")
     try:
         run_audit(repo_root=root_path, output_format="cli", write_graph=True)
-        print("✓ Codebase indexed successfully. Dependency call graph ready.")
+        print("[OK] Codebase indexed successfully. Dependency call graph ready.")
         print("\nNext steps:")
         print("  1. Run `compart check` to inspect external dependencies and drift.")
         print("  2. Run `compart fix` to autonomously resolve migrations.")
     except Exception as exc:
-        print(f"⚠️  Note: Initial indexing notice: {exc}")
+        print(f"[NOTICE] Initial indexing notice: {exc}")
 
     print("================================================================================")
 
 
 def cmd_check(args):
     """Day-0 External-Change Dependency Audit and Risk Register."""
-    from compart.credentials import has_valid_credentials
-
     # Mandatory AI Provider Check
     if not getattr(args, "skip_auth", False) and not has_valid_credentials():
         _print_auth_warning()
@@ -1936,9 +1920,6 @@ def cmd_app(args):
     action = getattr(args, "app_action", "serve")
 
     if action == "serve":
-        from compart.github.pr_bot import make_pr_bot_handler
-        from compart.config import load_config
-
         cfg = load_config()
         policy = cfg.pipeline_policy()
         handler = make_pr_bot_handler(policy=policy)
@@ -1963,14 +1944,11 @@ def cmd_app(args):
 
 def cmd_mcp(args):
     """Run Compart Model Context Protocol (MCP) server over stdio."""
-    from compart.mcp_server import serve_stdio
     serve_stdio()
 
 
 def cmd_maintain(args):
     """Run autonomous continuous maintenance loop on a target repository."""
-    from compart.credentials import has_valid_credentials
-
     # Mandatory AI Provider Check
     if not getattr(args, "skip_auth", False) and not has_valid_credentials():
         _print_auth_warning()
@@ -2117,9 +2095,6 @@ def cmd_providers(args):
 
 def cmd_pr(args):
     """Review a pull request using the Compart PR Bot."""
-    from compart.github.pr_bot import run_on_pr_locally
-    from compart.config import load_config
-
     workdir = os.path.abspath(getattr(args, "path", "."))
     cfg = load_config()
     policy = cfg.pipeline_policy()

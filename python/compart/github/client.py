@@ -5,9 +5,16 @@ import hashlib
 import hmac
 import json
 import os
+import subprocess
+import time
 from typing import Any, Dict, List, Optional
 import urllib.error
 import urllib.request
+
+try:
+    import jwt
+except ImportError:
+    jwt = None
 
 
 def verify_webhook_signature(payload: bytes, signature_header: Optional[str], secret: str) -> bool:
@@ -26,7 +33,6 @@ def verify_webhook_signature(payload: bytes, signature_header: Optional[str], se
 def _get_gh_cli_token() -> Optional[str]:
     """Retrieve GitHub token from gh CLI if available."""
     try:
-        import subprocess
         proc = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=5)
         if proc.returncode == 0 and proc.stdout.strip():
             return proc.stdout.strip()
@@ -52,12 +58,9 @@ class GitHubAppClient:
 
     def generate_jwt(self, expiration_seconds: int = 600) -> Optional[str]:
         """Generate a GitHub App JWT from app_id and private_key."""
-        if not self.app_id or not self.private_key:
+        if not self.app_id or not self.private_key or jwt is None:
             return None
         try:
-            import jwt
-            import time
-
             now = int(time.time())
             payload = {
                 "iat": now - 60,

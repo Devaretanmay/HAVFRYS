@@ -1,6 +1,3 @@
-# Copyright 2026 Compart Authors
-# SPDX-License-Identifier: Apache-2.0
-
 import os
 import sys
 import subprocess
@@ -14,27 +11,22 @@ def test_credentials_module_lifecycle(tmp_path):
     os.environ["COMPART_CREDENTIALS_FILE"] = creds_file
 
     try:
-        # Initially empty
         assert not has_valid_credentials()
         assert load_credentials() is None
 
-        # Save credentials
         saved_path = save_credentials("anthropic", "sk-ant-testkey1234567890", model="claude-3-5-sonnet-20241022")
         assert saved_path == creds_file
         assert has_valid_credentials()
 
-        # Load back
         data = load_credentials()
         assert data is not None
         assert data["provider"] == "anthropic"
         assert data["api_key"] == "sk-ant-testkey1234567890"
         assert data["model"] == "claude-3-5-sonnet-20241022"
 
-        # Check permissions (0600)
         mode = os.stat(creds_file).st_mode & 0o777
         assert mode == 0o600
 
-        # Clear
         assert clear_credentials()
         assert not os.path.exists(creds_file)
         assert not has_valid_credentials()
@@ -85,7 +77,6 @@ def test_cli_auth_and_auto_index(tmp_path):
     for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "COMPART_LLM_KEY"):
         env.pop(k, None)
 
-    # 1. Connect provider
     res_auth = subprocess.run(
         [
             sys.executable, "-m", "compart.cli.main", "auth",
@@ -101,7 +92,6 @@ def test_cli_auth_and_auto_index(tmp_path):
     assert "Credentials verified successfully for anthropic" in res_auth.stdout
     assert "Initializing Compart Knowledge Graph" in res_auth.stdout
 
-    # 2. Check auth status
     res_status = subprocess.run(
         [sys.executable, "-m", "compart.cli.main", "auth", "--status"],
         capture_output=True,
@@ -109,10 +99,9 @@ def test_cli_auth_and_auto_index(tmp_path):
         env=env,
     )
     assert res_status.returncode == 0
-    assert "CONFIGURED ✅" in res_status.stdout
+    assert "CONFIGURED [OK]" in res_status.stdout
     assert "anthropic" in res_status.stdout
 
-    # 3. Now check succeeds automatically
     res_check = subprocess.run(
         [sys.executable, "-m", "compart.cli.main", "check", "trials/fixtures/taxonomy_stripe/"],
         capture_output=True,
@@ -122,7 +111,6 @@ def test_cli_auth_and_auto_index(tmp_path):
     assert res_check.returncode == 0
     assert "COMPART: EXTERNAL-CHANGE DEPENDENCY AUDIT" in res_check.stdout
 
-    # 4. Now index command also works as dedicated manual refresher
     res_index = subprocess.run(
         [sys.executable, "-m", "compart.cli.main", "index", "trials/fixtures/taxonomy_stripe/"],
         capture_output=True,

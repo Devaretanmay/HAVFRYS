@@ -1,5 +1,6 @@
 use crate::engines::ast::CallsiteKind;
 use crate::engines::schema::ParsedSpec;
+use super::types::UncertaintyReason;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -324,8 +325,6 @@ fn strip_sdk_prefix(s: &str) -> &str {
     s
 }
 
-use super::types::UncertaintyReason;
-
 /// Determine the confidence level of a callsite match.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MatchConfidence {
@@ -597,9 +596,6 @@ mod tests {
 
     #[test]
     fn correctly_rejects_sixteen_false_positives() {
-        // This mirrors the key demo scenario:
-        // A file that imports Stripe and uses checkout + billing portal
-        // should be rejected when POST /v1/charges changes.
         let callsite_patterns = vec![
             (CallsiteKind::Import, "stripe"),
             (CallsiteKind::TypeReference, "Stripe"),
