@@ -816,6 +816,11 @@ def surface_result(
         comment = render_verification_comment(analysis, ctx)
         status_desc = "Compart: no external contract impact detected"
 
+    # Honest checkout disclosure: analysis ran on the tracked branch, not the
+    # exact PR head (fetch unavailable). Confirm findings on the PR itself.
+    if ctx.metadata.get("exact_head") is False:
+        status_desc += " [checkout: tracked branch, PR head unfetchable]"
+
     if ctx.pr_number is not None:
         try:
             client.post_pr_comment(ctx.repository, ctx.pr_number, comment)

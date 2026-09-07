@@ -1,0 +1,10 @@
+target/
+.venv/
+__pycache__/
+.pytest_cache/
+logs/
+.compart/
+.git/
+trials/
+docs/
+sdk/typescript/node_modules/

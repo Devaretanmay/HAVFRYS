@@ -76,3 +76,57 @@ def workdir_for_event(payload: Dict[str, Any], token: Optional[str] = None) -> O
     if not repo:
         return None
     return ensure_repo_checkout(repo, token=token)
+
+
+def _auth_args(token: Optional[str]) -> list:
+    # Token via -c flag: never persisted to .git/config, never logged.
+    if token:
+        return ["-c", f"http.extraHeader=Authorization: Bearer {token}"]
+    return []
+
+
+def ensure_pr_checkout(repo_full_name: str, pr_number: int, head_sha: str,
+                       token: Optional[str] = None) -> tuple:
+    """Check out the exact PR head SHA. Returns (path, exact).
+
+    Fetches `pull/N/head` (exposed by GitHub for same-repo and fork PRs
+    alike) and verifies the SHA before checking out detached. Any failure
+    falls back to the tracked-branch checkout with exact=False — the caller
+    must disclose the approximation, never silently claim head analysis.
+    """
+    base = ensure_repo_checkout(repo_full_name, token=token)
+    if not base:
+        return (None, False)
+    auth = _auth_args(token)
+    if not _run_git(auth + ["fetch", "origin", f"pull/{pr_number}/head:pr-{pr_number}"], base):
+        return (base, False)
+    try:
+        proc = subprocess.run(["git", "cat-file", "-e", head_sha], cwd=base,
+                              capture_output=True, timeout=30)
+        if proc.returncode != 0:
+            return (base, False)
+        if not _run_git(["checkout", "--detach", head_sha], base):
+            return (base, False)
+        return (base, True)
+    except Exception as e:
+        _logger.warning("PR checkout failed for %s#%s: %s", repo_full_name, pr_number, e)
+        return (base, False)
+
+
+def resolve_pr_workdir(payload: Dict[str, Any], token: Optional[str] = None,
+                       fallback_fn: Any = None) -> tuple:
+    """(workdir, exact_head) for a pull_request webhook payload."""
+    repo = (payload.get("repository") or {}).get("full_name", "")
+    ppr = payload.get("pull_request") or {}
+    number = ppr.get("number")
+    sha = (ppr.get("head") or {}).get("sha", "")
+    if repo and number and sha:
+        path, exact = ensure_pr_checkout(repo, number, sha, token=token)
+        if path:
+            return (path, exact)
+    if fallback_fn:
+        try:
+            return (fallback_fn(payload), True)
+        except Exception:
+            pass
+    return (None, True)

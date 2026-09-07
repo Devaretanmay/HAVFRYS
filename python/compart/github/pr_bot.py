@@ -29,6 +29,7 @@ from compart.audit import run_audit
 from compart.github.installations import (
     REPO_INDEXED, REPO_PENDING, REPO_READY, record_installation_event, set_repo_state,
 )
+from compart.github.provisioning import resolve_pr_workdir
 from compart.graph import build_dependency_graph
 from compart.drift import detect_drift
 
@@ -43,6 +44,7 @@ def handle_pull_request_event(
     client: GitHubAppClient,
     policy: Optional[PipelinePolicy] = None,
     workdir: Optional[str] = None,
+    exact_head: bool = True,
 ) -> Dict[str, Any]:
     """
     Handle a pull_request.* webhook event.
@@ -75,6 +77,7 @@ def handle_pull_request_event(
 
     changed_files = _extract_changed_files(payload)
     ctx = TriggerContext.from_pull_request_event(payload, workdir=workdir, changed_files=changed_files)
+    ctx.metadata["exact_head"] = exact_head
 
     pipeline = MaintenancePipeline(client=client, policy=policy)
     result = pipeline.run(ctx)
@@ -90,6 +93,7 @@ def handle_pull_request_event(
         "check_description": result.status_description,
         "comment_posted": bool(result.comment_body),
         "comment_preview": _safe_preview(result.comment_body),
+        "exact_head": exact_head,
     }
 
 
@@ -339,12 +343,17 @@ def make_pr_bot_handler(
             workdir = workdir_fn(payload)
 
         if event_type.startswith("pull_request."):
+            workdir, exact = resolve_pr_workdir(
+                payload, token=getattr(client, "token", None),
+                fallback_fn=(lambda p: workdir) if workdir else None,
+            )
             return handle_pull_request_event(
                 payload,
                 event_type,
                 client,
                 policy,
                 workdir=workdir,
+                exact_head=exact,
             )
 
         if event_type.startswith("external.change"):
