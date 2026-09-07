@@ -27,7 +27,7 @@ from compart.pipeline import (
 )
 from compart.audit import run_audit
 from compart.github.installations import (
-    REPO_INDEXED, REPO_PENDING, record_installation_event,
+    REPO_INDEXED, REPO_PENDING, REPO_READY, record_installation_event, set_repo_state,
 )
 from compart.graph import build_dependency_graph
 from compart.drift import detect_drift
@@ -304,16 +304,24 @@ def handle_installation_event(
                 labels=["compart", "maintenance"],
             )
             onboarded.append(repo_name)
+            # Indexed + surfaced to the user = READY for monitoring.
+            if state == REPO_INDEXED:
+                repo_states[repo_name]["state"] = REPO_READY
         except Exception as e:
             _logger.warning("failed to post Day-0 onboarding issue for %s: %s", repo_name, e)
 
     record = record_installation_event(payload, repo_states) if store else {}
+    inst_id = record.get("installation_id") if record else None
+    if store and inst_id and inst_id != "unknown":
+        for repo_name, rs in repo_states.items():
+            if rs["state"] == REPO_READY:
+                set_repo_state(inst_id, repo_name, REPO_READY, workdir=rs["workdir"])
     return {
         "success": True,
         "event_type": event_type,
         "repositories_onboarded": onboarded,
         "repo_states": {r: s["state"] for r, s in repo_states.items()},
-        "installation_id": record.get("installation_id") if record else None,
+        "installation_id": inst_id,
     }
 
 

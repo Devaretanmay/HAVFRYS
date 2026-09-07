@@ -10,6 +10,7 @@ import stat
 import subprocess
 import sys
 import textwrap
+import threading
 import time
 from typing import List, Optional
 import yaml
@@ -47,7 +48,10 @@ from compart.credentials import (
     verify_credentials,
     clear_credentials,
 )
+from compart.github.client import GitHubAppClient
 from compart.github.pr_bot import make_pr_bot_handler, run_on_pr_locally
+from compart.github.provisioning import workdir_for_event
+from compart.github.watch import watch_once
 from compart.mcp_server import serve_stdio
 
 _logger = logging.getLogger("compart.cli")
@@ -1906,9 +1910,13 @@ def cmd_auth(args):
         print(f"\n[ERROR] {msg}")
         sys.exit(1)
 
-    creds_path = save_credentials(provider=provider, api_key=api_key, model=model, base_url=base_url)
+    installation = getattr(args, "installation", None)
+    repo = getattr(args, "repo", None)
+    creds_path = save_credentials(provider=provider, api_key=api_key, model=model, base_url=base_url,
+                                  installation_id=installation, repo=repo)
     print(f"\n[OK] Credentials verified successfully for {provider}!")
-    print(f"[OK] Saved encrypted configuration to {creds_path}")
+    scope = f" (installation {installation}" + (f", repo {repo}" if repo else "") + ")" if installation else ""
+    print(f"[OK] Saved configuration to {creds_path}{scope}")
 
     # Automatic Day-0 Knowledge Graph Indexing
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
@@ -1962,7 +1970,12 @@ def cmd_app(args):
     if action == "serve":
         cfg = load_config()
         policy = cfg.pipeline_policy()
-        handler = make_pr_bot_handler(policy=policy)
+        client = GitHubAppClient()
+        # Managed checkouts: PR/install events resolve to a real clone, never the daemon cwd.
+        handler = make_pr_bot_handler(
+            client=client, policy=policy,
+            workdir_fn=lambda payload: workdir_for_event(payload, token=client.token),
+        )
         secret = args.secret or os.environ.get("COMPART_WEBHOOK_SECRET")
         if not secret and not getattr(args, "no_secret", False):
             print("Error: refusing to serve webhooks without a secret (forged events would be accepted).")
@@ -1970,15 +1983,29 @@ def cmd_app(args):
             sys.exit(2)
         server = WebhookServer(port=args.port, secret=secret, handler=handler)
         sec_msg = "YES (HMAC-SHA256)" if secret else "NO — local debugging only (--no-secret)"
+        watch_every = getattr(args, "watch", 0) or 0
         print("================================================================================")
         print("               COMPART GITHUB APP: CONTINUOUS WEBHOOK LISTENER                  ")
         print("================================================================================\n")
         print(f"Listening on port:       {args.port}")
         print(f"Webhook Endpoint:        http://localhost:{args.port}/webhook")
         print(f"Healthcheck:             http://localhost:{args.port}/health")
-        print(f"Secret Enforced:         {sec_msg}\n")
+        print(f"Secret Enforced:         {sec_msg}")
+        print("Repo checkouts:          managed cache (clone on install, pull on sight)")
+        print(f"Background watch:        {'every ' + str(watch_every) + 's' if watch_every else 'OFF (pass --watch SECONDS)'}\n")
         print("Press Ctrl+C to stop daemon.\n")
         print("================================================================================")
+        if watch_every:
+            def _loop():
+                while True:
+                    try:
+                        time.sleep(watch_every)
+                        watch_once(client=client, policy=policy)
+                    except Exception:
+                        continue
+
+            thread = threading.Thread(target=_loop, daemon=True)
+            thread.start()
         try:
             server.start(blocking=True)
         except KeyboardInterrupt:
@@ -2474,6 +2501,7 @@ def main():
     app_p.add_argument("--port", type=int, default=8080, help="Webhook server port (default: 8080)")
     app_p.add_argument("--secret", default=None, help="GitHub Webhook secret for HMAC validation")
     app_p.add_argument("--no-secret", action="store_true", help="Allow serving without a secret (local debugging only)")
+    app_p.add_argument("--watch", type=int, default=0, help="Poll READY repos for drift every N seconds (0 = off)")
 
     providers_p = subparsers.add_parser("providers", help="List supported providers and migration contract catalog")
     providers_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
@@ -2500,6 +2528,8 @@ def main():
     auth_p.add_argument("--path", default=".", help="Repository root path to auto-index (default: .)")
     auth_p.add_argument("--status", action="store_true", help="Display current AI provider credential status")
     auth_p.add_argument("--clear", action="store_true", help="Clear saved credentials")
+    auth_p.add_argument("--installation", default=None, help="Associate credentials with a GitHub App installation id")
+    auth_p.add_argument("--repo", default=None, help="Associate credentials with a repository (owner/repo, with --installation)")
 
     index_p = subparsers.add_parser("index", help="Index repository dependencies, callsites, and construct graph")
     index_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")

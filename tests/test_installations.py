@@ -7,7 +7,7 @@ import shutil
 from unittest.mock import MagicMock
 
 from compart.github.installations import (
-    REPO_INDEXED, REPO_PENDING, list_ready_repos, load_installation,
+    REPO_INDEXED, REPO_PENDING, REPO_READY, list_ready_repos, load_installation,
     record_installation_event, set_repo_state,
 )
 from compart.github.pr_bot import handle_installation_event
@@ -37,9 +37,10 @@ def test_install_event_indexes_local_checkout(tmp_path, monkeypatch):
     res = handle_installation_event(payload, "installation.created", client,
                                     workdir_fn=lambda r: workdir)
     assert res["success"] is True
-    assert res["repo_states"] == {"acme/backend": REPO_INDEXED}
+    assert res["repo_states"] == {"acme/backend": REPO_READY}
     assert os.path.isfile(os.path.join(workdir, ".compart", "graph.json"))
     assert client.create_issue.call_count == 1
+    assert list_ready_repos("7") == ["acme/backend"]
 
 
 def test_install_event_without_checkout_stays_pending(tmp_path, monkeypatch):
