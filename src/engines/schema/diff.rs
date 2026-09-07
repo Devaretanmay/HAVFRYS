@@ -89,7 +89,7 @@ fn diff_endpoint(old: &ParsedEndpoint, new: &ParsedEndpoint) -> Vec<FieldChange>
     // --- Parameter diffs ---
 
     // Removed params.
-    for (name, _old_p) in &old.parameters {
+    for name in old.parameters.keys() {
         if !new.parameters.contains_key(name) {
             changes.push(FieldChange {
                 field_path: format!("parameters.{name}"),
@@ -160,7 +160,7 @@ fn diff_endpoint(old: &ParsedEndpoint, new: &ParsedEndpoint) -> Vec<FieldChange>
 
     // --- Response field diffs ---
 
-    for (name, _old_f) in &old.response_fields {
+    for name in old.response_fields.keys() {
         if !new.response_fields.contains_key(name) {
             changes.push(FieldChange {
                 field_path: format!("response.{name}"),
@@ -171,7 +171,7 @@ fn diff_endpoint(old: &ParsedEndpoint, new: &ParsedEndpoint) -> Vec<FieldChange>
         }
     }
 
-    for (name, _new_f) in &new.response_fields {
+    for name in new.response_fields.keys() {
         if !old.response_fields.contains_key(name) {
             changes.push(FieldChange {
                 field_path: format!("response.{name}"),

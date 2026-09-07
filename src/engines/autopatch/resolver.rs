@@ -23,7 +23,7 @@ impl SpecRouteIndex {
 
     pub fn from_parsed_spec(spec: &ParsedSpec) -> Self {
         let mut index = Self::new();
-        for (_key, endpoint) in &spec.endpoints {
+        for endpoint in spec.endpoints.values() {
             index.index_endpoint(&endpoint.path, &endpoint.method);
         }
         index

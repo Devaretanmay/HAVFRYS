@@ -121,8 +121,7 @@ impl ContractTestSuite {
                 capitalize(&test.method),
                 test.endpoint
                     .replace('/', "_")
-                    .replace('{', "")
-                    .replace('}', "")
+                    .replace(['{', '}'], "")
             ));
             out.push_str(&format!("class {}:\n", class_name));
             out.push_str(&format!(
@@ -224,7 +223,6 @@ pub fn synthesize_contract_tests(
             spec.endpoint
                 .replace('/', "_")
                 .trim_start_matches('_')
-                .to_string()
         );
 
         tests.push(ContractTest {

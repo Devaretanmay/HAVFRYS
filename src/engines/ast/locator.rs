@@ -195,8 +195,7 @@ fn match_require_binding(line: &str, package: &str) -> Option<String> {
     let inner = rest
         .strip_prefix("require('")
         .or_else(|| rest.strip_prefix("require(\""))?;
-    if inner.starts_with(package) {
-        let after_pkg = &inner[package.len()..];
+    if let Some(after_pkg) = inner.strip_prefix(package) {
         if after_pkg.starts_with('\'') || after_pkg.starts_with('"') {
             return Some(alias.trim().to_string());
         }

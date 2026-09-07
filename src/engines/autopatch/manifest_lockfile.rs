@@ -132,7 +132,7 @@ pub fn parse_pnpm_lock(content: &str, dep_name: &str) -> Result<String, String> 
             let val = trimmed[prefix_spec.len()..]
                 .trim()
                 .trim_matches(|c| c == '\'' || c == '"');
-            if !val.is_empty() && val.chars().next().map_or(false, |c| c.is_ascii_digit()) {
+            if !val.is_empty() && val.chars().next().is_some_and(|c| c.is_ascii_digit()) {
                 return Ok(val.to_string());
             }
         }

@@ -30,8 +30,15 @@ pub fn apply_patch_to_source(
         let start_idx = line_num - 1;
         let end_idx = (start_idx + 10).min(lines.len());
 
-        for line_idx in start_idx..end_idx {
-            let original_line = lines[line_idx].clone();
+        // Owned window snapshot; equivalent to direct indexing (see patcher tests).
+        let window: Vec<(usize, String)> = lines
+            .iter()
+            .enumerate()
+            .take(end_idx)
+            .skip(start_idx)
+            .map(|(i, l)| (i, l.clone()))
+            .collect();
+        for (line_idx, original_line) in window {
             let mut modified_line = original_line.clone();
 
             for change in changes {
@@ -49,22 +56,22 @@ pub fn apply_patch_to_source(
                     ChangeKind::ParameterRemoved => {
                         modified_line = patch_remove_parameter(&modified_line, clean_field);
                     }
-                    ChangeKind::EndpointRemoved => {
-                        if !modified_line.contains("// [DEPRECATED UPSTREAM]") {
-                            modified_line = format!("// [DEPRECATED UPSTREAM] {modified_line}");
-                        }
+                    ChangeKind::EndpointRemoved
+                        if !modified_line.contains("// [DEPRECATED UPSTREAM]") =>
+                    {
+                        modified_line = format!("// [DEPRECATED UPSTREAM] {modified_line}");
                     }
                     _ => {}
                 }
             }
 
             if modified_line != original_line {
-                lines[line_idx] = modified_line;
+                lines[line_idx] = modified_line.clone();
                 transforms_applied += 1;
             }
 
-            if lines[line_idx].contains(");")
-                || (lines[line_idx].trim() == ");" || lines[line_idx].trim() == ")")
+            if modified_line.contains(");")
+                || (modified_line.trim() == ");" || modified_line.trim() == ")")
             {
                 break;
             }
@@ -123,7 +130,6 @@ fn patch_integer_to_string(line: &str, field_name: &str) -> String {
         let trimmed_after = after.trim_start();
         let leading_spaces = " ".repeat(after.len() - trimmed_after.len());
 
-        // Extract value up to comma, closing brace, or end of line
         let end_idx = trimmed_after
             .find([',', '}', ')'])
             .unwrap_or(trimmed_after.len());
@@ -156,7 +162,7 @@ fn patch_integer_to_string(line: &str, field_name: &str) -> String {
         let leading_spaces = " ".repeat(after.len() - trimmed_after.len());
 
         let end_idx = trimmed_after
-            .find(|c| c == ',' || c == ')')
+            .find([',', ')'])
             .unwrap_or(trimmed_after.len());
         let val = &trimmed_after[..end_idx].trim();
         let suffix = &trimmed_after[end_idx..];
