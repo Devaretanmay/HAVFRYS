@@ -2,11 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Change-source abstraction: the system/contract a repository depends upon.
 
-Thin value types only. The product wedge is vendor SDK migrations, but the
-same pipeline reasons over any machine-readable interface that can change:
-OpenAPI, GraphQL, protobuf, webhooks, MCP tools, internal services.
-
-No connectors live here — just the seam future connectors plug into.
+Thin value types covering vendor SDKs today and versioned contracts
+(OpenAPI, GraphQL, protobuf, webhooks, MCP, internal services) as
+fail-closed kinds. No connectors live here — just the seam.
 """
 
 from __future__ import annotations
@@ -15,8 +13,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 
-# Kinds Compart can name today. `external_api`/`sdk` are fully wired;
-# the rest are representable (detection/quarantine) but have no connectors yet.
 KINDS = (
     "external_api",
     "sdk",
@@ -28,7 +24,6 @@ KINDS = (
     "internal_service",
 )
 
-# Detection outcomes. Fail closed: anything unsure quarantines.
 NO_IMPACT = "NO_IMPACT"
 IMPACT_DIRECT = "IMPACT_DIRECT"
 IMPACT_AI = "IMPACT_AI"

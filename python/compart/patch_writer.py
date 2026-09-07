@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+from compart.autopatch import ScanConfig, scan_callsites
 from compart.providers.registry import RewriteRule
 
 
@@ -34,8 +35,6 @@ def discover_aliases(repo_dir: str, provider: str) -> Dict[str, str]:
     Read from the static scan (zero-token). Only exact bindings the locator
     proved — never guessed. Used to scope rewrites precisely, never loosely.
     """
-    from compart.autopatch import ScanConfig, scan_callsites
-
     try:
         result = scan_callsites(repo_dir, ScanConfig(sdk_names=[provider]))
     except Exception:

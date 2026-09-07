@@ -19,6 +19,8 @@ import time
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional
 
+from compart.providers.registry import RewriteRule
+
 try:
     import blake3
 
@@ -154,8 +156,6 @@ def to_rewrite_rules(entry: Optional[KBEntry]) -> List[Any]:
     """Convert executable KB patterns into RewriteRule objects. Skips description-only notes."""
     if not entry:
         return []
-    from compart.providers.registry import RewriteRule
-
     rules = []
     for p in entry.patterns:
         if not _is_executable(p):

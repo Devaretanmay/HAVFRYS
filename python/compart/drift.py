@@ -5,9 +5,11 @@ import json
 import os
 import re
 from typing import Any, Dict, List, Optional
+from compart.autopatch import ScanConfig, scan_callsites
 from compart.change_source import (
     Detection, ChangeSource, NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE,
 )
+from compart.intelligence import CompartIntelligence, resolve_migration
 from compart.providers.registry import get_default_registry
 
 
@@ -132,9 +134,6 @@ def detect_changes(repo_dir: str, provider_name: Optional[str] = None) -> List[D
     Returns one Detection per detected dependency. Repair strategy is decided
     downstream by CompartIntelligence; this function only classifies.
     """
-    from compart.autopatch import ScanConfig, scan_callsites
-    from compart.intelligence import CompartIntelligence, resolve_migration
-
     intel = CompartIntelligence()
     out: List[Detection] = []
     for d in detect_drift(repo_dir, provider_name):

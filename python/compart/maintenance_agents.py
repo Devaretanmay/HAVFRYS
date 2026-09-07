@@ -5,7 +5,9 @@ import time
 from typing import Any, Dict, List, Optional
 
 from compart.ai_planner import AIPatchPlanner
+from compart.change_source import ChangeSource
 from compart.graph import build_dependency_graph
+from compart.sandbox.snapshot import SnapshotManager, _file_hash
 from compart.intelligence import CompartIntelligence, resolve_migration
 from compart.knowledge import direct_rewrites_for
 from compart.patch_writer import apply_rewrites, discover_aliases, instantiate_alias_rules
@@ -96,7 +98,6 @@ class ChangeAnalyzer:
 class ImpactAnalyst:
     def analyze_impact(self, repo_dir: str, provider_name: str) -> ImpactAnalysisResult:
         """Provider path preserved: vendors match by SDK name (one branch of the general matcher)."""
-        from compart.change_source import ChangeSource
         return self.analyze_impact_for(repo_dir, ChangeSource.sdk(provider_name))
 
     def analyze_impact_for(self, repo_dir: str, source: Any) -> ImpactAnalysisResult:
@@ -242,8 +243,6 @@ class AutonomousMaintenancePipeline:
         self.ai_planner = ai_planner
 
     def run(self, repo_dir: str, provider_name: str, from_version: Optional[str] = None, to_version: Optional[str] = None) -> Dict[str, Any]:
-        from compart.sandbox.snapshot import SnapshotManager, _file_hash
-
         change_info = self.change_analyzer.analyze(provider_name, from_version, to_version)
         impact_info = self.impact_analyst.analyze_impact(repo_dir, provider_name)
         patch_plan = self.patch_planner.plan(repo_dir, change_info)

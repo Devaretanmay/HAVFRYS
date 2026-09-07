@@ -49,6 +49,8 @@ from compart.test_runner import (
 )
 from compart.intelligence import CompartIntelligence, resolve_migration
 from compart.knowledge import direct_rewrites_for, upsert_learned as kb_upsert
+from compart.ai_planner import AIPatchPlanner
+from compart.maintenance_agents import ImpactAnalyst
 from compart.patch_writer import apply_rewrites, discover_aliases, instantiate_alias_rules
 from compart.sandbox.snapshot import SnapshotManager
 
@@ -588,9 +590,6 @@ def apply_fixes(
     policy: PipelinePolicy,
 ) -> AnalysisResult:
     """Apply fixes via Compart Intelligence: DIRECT (registry+KB) or AI fallback. Single router."""
-    from compart.ai_planner import AIPatchPlanner
-    from compart.maintenance_agents import ImpactAnalyst
-
     modified_files: List[str] = []
     unified_diffs: List[str] = []
 

@@ -25,6 +25,10 @@ from compart.pipeline import (
     PipelinePolicy,
     TriggerContext,
 )
+from compart.audit import run_audit
+from compart.github.installations import (
+    REPO_INDEXED, REPO_PENDING, record_installation_event,
+)
 from compart.graph import build_dependency_graph
 from compart.drift import detect_drift
 
@@ -177,7 +181,7 @@ def run_on_pr_locally(
         "action": "synchronize",
         "pull_request": {
             "number": pr_number,
-            "title": "Local PR simulation",
+            "title": "Local PR run",
             "body": "Compart local run",
             "head": {"ref": "pr-branch", "sha": "local-sha"},
             "base": {"ref": base_branch},
@@ -272,10 +276,6 @@ def handle_installation_event(
     checkout is available, and posts the onboarding issue. Install → record
     → index → READY, not just a comment.
     """
-    from compart.github.installations import (
-        REPO_INDEXED, REPO_PENDING, record_installation_event,
-    )
-
     repos_data = payload.get("repositories") or payload.get("repositories_added") or []
     onboarded: List[str] = []
     repo_states: Dict[str, Dict[str, Any]] = {}
@@ -289,7 +289,6 @@ def handle_installation_event(
         state = REPO_PENDING
         if workdir and os.path.isdir(workdir):
             try:
-                from compart.audit import run_audit
                 run_audit(repo_root=workdir, output_format="cli", write_graph=True)
                 state = REPO_INDEXED
             except Exception as e:

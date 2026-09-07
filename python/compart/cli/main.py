@@ -30,9 +30,13 @@ from compart.config import (
     find_workspace_root,
 )
 from compart import autopatch
-from compart.audit import run_audit
+from compart.audit import changed_since_index, run_audit
+from compart.drift import detect_drift
 from compart.graph import build_dependency_graph
+from compart.github.installations import store_dir as installations_store_dir
 from compart.github.webhook_server import WebhookServer
+from compart.intelligence import resolve_migration
+from compart.knowledge import ensure_test_recipe
 from compart.maintenance import run_maintenance_cycle, detect_drift
 from compart.providers.registry import get_default_registry
 from compart.test_runner import _detect_test_command
@@ -334,14 +338,12 @@ def cmd_doctor(args):
     kb_state = "MISSING"
     if indexed:
         try:
-            from compart.audit import changed_since_index
             kb_state = "READY" if changed_since_index(ws_root).get("fresh") else "STALE"
         except Exception:
             kb_state = "READY"
     monitoring = "NOT ACTIVE"
     try:
-        from compart.github.installations import store_dir
-        idir = store_dir()
+        idir = installations_store_dir()
         for fn in os.listdir(idir):
             if not fn.endswith(".json"):
                 continue
@@ -600,7 +602,7 @@ def cmd_run(args):
         if comps:
             print(f"Topology '{topology.get('name', 'unnamed')}' declares {len(comps)} compartment(s) but no workflow.")
             print("Use `compart workflow show` or `compart check` for maintenance. `compart run <workflow>` to execute.")
-            print("No dummy execution performed.")
+            print("No fallback execution performed.")
             return
 
     print("No workflow specified. Usage: compart run <workflow_name>")
@@ -1940,13 +1942,9 @@ def cmd_check(args):
         write_graph=write_graph,
     )
     print(output)
-    # G8: index warms KB test_recipe so future DIRECT has verification context without extra tokens
+    # Index warms KB test_recipe so future DIRECT has verification context without extra tokens.
     if write_graph:
         try:
-            from compart.drift import detect_drift
-            from compart.intelligence import resolve_migration
-            from compart.knowledge import ensure_test_recipe
-            from compart.test_runner import _detect_test_command
             tcmd = _detect_test_command(root_path)
             if tcmd:
                 for d in detect_drift(root_path):

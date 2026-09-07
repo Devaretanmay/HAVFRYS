@@ -34,9 +34,7 @@ pub fn locate_callsites_in_source(
 ) -> Vec<Callsite> {
     let mut hits = Vec::new();
 
-    // Pass 0: resolve local aliases bound to SDK clients
-    // (`const s = new Stripe()`, `s = require('stripe')`, `import stripe as s`).
-    // Conservative: only exact constructor/package matches, never guesses.
+    // Pass 0: resolve proven client aliases (exact bindings only, never guesses).
     let aliases = discover_aliases(source, config);
 
     for (line_idx, line) in source.lines().enumerate() {
@@ -59,7 +57,6 @@ pub fn locate_callsites_in_source(
 
         for pattern in &config.method_patterns {
             if let Some(col) = line.find(pattern.as_str()) {
-                // Skip if inside a comment.
                 if is_comment(trimmed) {
                     continue;
                 }
@@ -109,9 +106,7 @@ pub fn locate_callsites_in_source(
             }
         }
 
-        // Alias pass: `alias.` chains on a proven client binding. Only fires when
-        // the alias differs from the SDK name and no MethodCall was already
-        // recorded for the line, so canonical behavior is bit-identical.
+        // Alias pass: proven `alias.` chains only; skips lines with a MethodCall hit.
         if !is_comment(trimmed) && !aliases.is_empty() {
             let has_method_call = hits.iter().any(|c| {
                 c.line_number == line_number && c.kind == CallsiteKind::MethodCall
@@ -142,8 +137,7 @@ pub fn locate_callsites_in_source(
     hits
 }
 
-/// Client aliases bound in this source unit: (alias, sdk_name).
-/// Only exact, unambiguous bindings — anything exotic is ignored (fail closed).
+/// Proven client bindings (alias, sdk). Exact matches only; exotic forms ignored.
 fn discover_aliases(source: &str, config: &ScanConfig) -> Vec<(String, String)> {
     let mut aliases = Vec::new();
     for line in source.lines() {
@@ -153,15 +147,12 @@ fn discover_aliases(source: &str, config: &ScanConfig) -> Vec<(String, String)> 
         }
         for sdk in &config.sdk_names {
             let type_prefix = capitalize_first(sdk);
-            // `const s = new Stripe(` / `let s = new Stripe(`
             if let Some(alias) = match_new_binding(trimmed, &type_prefix) {
                 push_alias(&mut aliases, alias, sdk);
             }
-            // `const s = require('stripe')`
             if let Some(alias) = match_require_binding(trimmed, sdk) {
                 push_alias(&mut aliases, alias, sdk);
             }
-            // `import stripe as s` (Python; sdk must be a plain identifier)
             if let Some(alias) = match_import_as_binding(trimmed, sdk) {
                 push_alias(&mut aliases, alias, sdk);
             }
@@ -193,7 +184,7 @@ fn match_new_binding(line: &str, type_prefix: &str) -> Option<String> {
     None
 }
 
-/// Match `const|let|var <alias> = require('<package>')`.
+/// Match `require('<package>')` bindings; exact package only, never `pkg-foo`.
 fn match_require_binding(line: &str, package: &str) -> Option<String> {
     let line = line
         .strip_prefix("const ")
@@ -201,7 +192,6 @@ fn match_require_binding(line: &str, package: &str) -> Option<String> {
         .or_else(|| line.strip_prefix("var "))?;
     let (alias, rest) = line.split_once('=')?;
     let rest = rest.trim_start();
-    // Exact package match only: `require('stripe')`, never `require('stripe-foo')`.
     let inner = rest
         .strip_prefix("require('")
         .or_else(|| rest.strip_prefix("require(\""))?;
@@ -534,7 +524,6 @@ const sub = await s.subscriptions.del('sub_123');
 
     #[test]
     fn ast_detects_require_alias() {
-        // `subscriptions.del` is not in method_patterns: only the alias pass can catch it.
         let source = "const s = require('stripe');\nconst x = s.subscriptions.del('sub_1');\n";
         let hits = locate_callsites_in_source("app.js", source, &stripe_config());
         let aliased: Vec<_> = hits.iter().filter(|c| c.alias.as_deref() == Some("s")).collect();
@@ -559,7 +548,6 @@ const sub = await s.subscriptions.del('sub_123');
             .iter()
             .filter(|c| c.kind == CallsiteKind::MethodCall)
             .collect();
-        // One hit from the method_patterns pass; the alias pass must not re-emit.
         assert_eq!(method_calls.len(), 1);
         assert!(method_calls[0].alias.is_none());
     }
