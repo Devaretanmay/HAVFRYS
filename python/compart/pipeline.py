@@ -49,7 +49,7 @@ from compart.test_runner import (
 )
 from compart.intelligence import CompartIntelligence, resolve_migration
 from compart.knowledge import direct_rewrites_for, upsert_learned as kb_upsert
-from compart.patch_writer import apply_rewrites
+from compart.patch_writer import apply_rewrites, discover_aliases, instantiate_alias_rules
 from compart.sandbox.snapshot import SnapshotManager
 
 _logger = logging.getLogger("compart.pipeline")
@@ -614,6 +614,10 @@ def apply_fixes(
             kb_rules = direct_rewrites_for(ctx.workdir, finding.provider_name, _from, _to)
             seen = {r.pattern for r in rewrites}
             combined = list(rewrites) + [r for r in kb_rules if r.pattern not in seen]
+            for ar in instantiate_alias_rules(combined, discover_aliases(ctx.workdir, finding.provider_name)):
+                if ar.pattern not in seen:
+                    seen.add(ar.pattern)
+                    combined.append(ar)
             if not combined:
                 continue
             results = apply_rewrites(ctx.workdir, combined, dry_run=False)

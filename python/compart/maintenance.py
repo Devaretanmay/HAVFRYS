@@ -14,7 +14,9 @@ from compart.formatters import run_style_formatter
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 from compart.git_ops import git_commit_and_push, gh_create_pr
 from compart.maintenance_agents import ImpactAnalyst
-from compart.patch_writer import apply_rewrites, PatchResult
+from compart.patch_writer import (
+    apply_rewrites, discover_aliases, instantiate_alias_rules, PatchResult,
+)
 from compart.providers.registry import get_default_registry
 from compart.sandbox.snapshot import SnapshotManager, _file_hash
 
@@ -123,15 +125,22 @@ def run_maintenance_cycle(
     patch_results: List[PatchResult] = []
     ai_planner = None
     quarantine_error: Optional[str] = None
+    applied_rewrites = list(rewrites)
 
     if decision.strategy == "DIRECT":
-        # G1: executable flywheel — registry rewrites + KB-cached rewrites, deduped by pattern
+        # Executable flywheel — registry + KB-cached rewrites, deduped by pattern,
+        # plus exact-identifier variants for proven client aliases (never loosened).
         kb_rules = direct_rewrites_for(repo_dir, provider_name, actual_from, actual_to)
-        seen_patterns = {r.pattern for r in rewrites}
+        seen_patterns = {r.pattern for r in applied_rewrites}
         extra = [r for r in kb_rules if r.pattern not in seen_patterns]
-        combined = list(rewrites) + extra
-        if combined:
-            patch_results = apply_rewrites(repo_dir, combined, dry_run=False)
+        base_rules = list(applied_rewrites) + extra
+        for ar in instantiate_alias_rules(base_rules, discover_aliases(repo_dir, provider_name)):
+            if ar.pattern not in seen_patterns:
+                seen_patterns.add(ar.pattern)
+                base_rules.append(ar)
+        applied_rewrites = base_rules
+        if base_rules:
+            patch_results = apply_rewrites(repo_dir, base_rules, dry_run=False)
     elif decision.strategy == "AI":
         ai_planner = AIPatchPlanner.from_env(api_key=llm_api_key, model=llm_model, base_url=llm_base_url)
         if ai_planner is None:
@@ -296,7 +305,7 @@ def run_maintenance_cycle(
             patch_results=patch_results,
             test_command=test_cmd,
             evidence={"patch_hash": patch_hash, "lockfile_hash": lockfile_hash},
-            rewrites=rewrites,
+            rewrites=applied_rewrites,
         )
     elif quarantine_error and not patch_results:
         # G5: loud quarantine — never silent

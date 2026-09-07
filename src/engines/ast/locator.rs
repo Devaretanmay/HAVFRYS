@@ -34,6 +34,11 @@ pub fn locate_callsites_in_source(
 ) -> Vec<Callsite> {
     let mut hits = Vec::new();
 
+    // Pass 0: resolve local aliases bound to SDK clients
+    // (`const s = new Stripe()`, `s = require('stripe')`, `import stripe as s`).
+    // Conservative: only exact constructor/package matches, never guesses.
+    let aliases = discover_aliases(source, config);
+
     for (line_idx, line) in source.lines().enumerate() {
         let line_number = line_idx + 1;
         let trimmed = line.trim();
@@ -47,6 +52,7 @@ pub fn locate_callsites_in_source(
                     line_content: line.to_string(),
                     kind: CallsiteKind::Import,
                     matched_pattern: sdk.clone(),
+                    alias: None,
                 });
             }
         }
@@ -64,6 +70,7 @@ pub fn locate_callsites_in_source(
                     line_content: line.to_string(),
                     kind: CallsiteKind::MethodCall,
                     matched_pattern: pattern.clone(),
+                    alias: None,
                 });
             }
         }
@@ -77,6 +84,7 @@ pub fn locate_callsites_in_source(
                     line_content: line.to_string(),
                     kind: CallsiteKind::UrlReference,
                     matched_pattern: url.clone(),
+                    alias: None,
                 });
             }
         }
@@ -95,13 +103,156 @@ pub fn locate_callsites_in_source(
                         line_content: line.to_string(),
                         kind: CallsiteKind::TypeReference,
                         matched_pattern: type_prefix.clone(),
+                        alias: None,
                     });
+                }
+            }
+        }
+
+        // Alias pass: `alias.` chains on a proven client binding. Only fires when
+        // the alias differs from the SDK name and no MethodCall was already
+        // recorded for the line, so canonical behavior is bit-identical.
+        if !is_comment(trimmed) && !aliases.is_empty() {
+            let has_method_call = hits.iter().any(|c| {
+                c.line_number == line_number && c.kind == CallsiteKind::MethodCall
+            });
+            if !has_method_call && !is_any_import_line(trimmed, config) {
+                for (alias, sdk) in &aliases {
+                    if alias == sdk {
+                        continue;
+                    }
+                    let needle = format!("{alias}.");
+                    if let Some(col) = find_identifier_call(line, &needle) {
+                        hits.push(Callsite {
+                            file_path: file_path.to_string(),
+                            line_number,
+                            column: col + 1,
+                            line_content: line.to_string(),
+                            kind: CallsiteKind::MethodCall,
+                            matched_pattern: sdk.clone(),
+                            alias: Some(alias.clone()),
+                        });
+                        break;
+                    }
                 }
             }
         }
     }
 
     hits
+}
+
+/// Client aliases bound in this source unit: (alias, sdk_name).
+/// Only exact, unambiguous bindings — anything exotic is ignored (fail closed).
+fn discover_aliases(source: &str, config: &ScanConfig) -> Vec<(String, String)> {
+    let mut aliases = Vec::new();
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if is_comment(trimmed) {
+            continue;
+        }
+        for sdk in &config.sdk_names {
+            let type_prefix = capitalize_first(sdk);
+            // `const s = new Stripe(` / `let s = new Stripe(`
+            if let Some(alias) = match_new_binding(trimmed, &type_prefix) {
+                push_alias(&mut aliases, alias, sdk);
+            }
+            // `const s = require('stripe')`
+            if let Some(alias) = match_require_binding(trimmed, sdk) {
+                push_alias(&mut aliases, alias, sdk);
+            }
+            // `import stripe as s` (Python; sdk must be a plain identifier)
+            if let Some(alias) = match_import_as_binding(trimmed, sdk) {
+                push_alias(&mut aliases, alias, sdk);
+            }
+        }
+    }
+    aliases
+}
+
+fn push_alias(aliases: &mut Vec<(String, String)>, alias: String, sdk: &str) {
+    if is_identifier(&alias) && !aliases.iter().any(|(a, s)| a == &alias && s == sdk) {
+        aliases.push((alias, sdk.to_string()));
+    }
+}
+
+/// Match `const|let|var <alias> = new <Type>(`.
+fn match_new_binding(line: &str, type_prefix: &str) -> Option<String> {
+    let line = line
+        .strip_prefix("const ")
+        .or_else(|| line.strip_prefix("let "))
+        .or_else(|| line.strip_prefix("var "))?;
+    let (alias, rest) = line.split_once('=')?;
+    let alias = alias.trim();
+    let rest = rest.trim_start();
+    let after_new = rest.strip_prefix("new ")?;
+    let constructor: String = after_new.chars().take_while(|c| c.is_alphanumeric() || *c == '_' || *c == '$').collect();
+    if constructor == type_prefix {
+        return Some(alias.to_string());
+    }
+    None
+}
+
+/// Match `const|let|var <alias> = require('<package>')`.
+fn match_require_binding(line: &str, package: &str) -> Option<String> {
+    let line = line
+        .strip_prefix("const ")
+        .or_else(|| line.strip_prefix("let "))
+        .or_else(|| line.strip_prefix("var "))?;
+    let (alias, rest) = line.split_once('=')?;
+    let rest = rest.trim_start();
+    // Exact package match only: `require('stripe')`, never `require('stripe-foo')`.
+    let inner = rest
+        .strip_prefix("require('")
+        .or_else(|| rest.strip_prefix("require(\""))?;
+    if inner.starts_with(package) {
+        let after_pkg = &inner[package.len()..];
+        if after_pkg.starts_with('\'') || after_pkg.starts_with('"') {
+            return Some(alias.trim().to_string());
+        }
+    }
+    None
+}
+
+/// Match `import <sdk> as <alias>` (Python).
+fn match_import_as_binding(line: &str, sdk: &str) -> Option<String> {
+    if !is_identifier(sdk) {
+        return None;
+    }
+    let rest = line.strip_prefix("import ")?;
+    let (module, alias) = rest.split_once(" as ")?;
+    if module.trim() == sdk {
+        return Some(alias.trim().to_string());
+    }
+    None
+}
+
+fn is_identifier(s: &str) -> bool {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) if c.is_alphabetic() || c == '_' || c == '$' => (),
+        _ => return false,
+    }
+    chars.all(|c| c.is_alphanumeric() || c == '_' || c == '$')
+}
+
+/// Find `needle` (always ends with `.`) at an identifier boundary.
+fn find_identifier_call(line: &str, needle: &str) -> Option<usize> {
+    let mut start = 0;
+    while let Some(rel) = line[start..].find(needle) {
+        let col = start + rel;
+        let boundary = col == 0
+            || !matches!(line.as_bytes()[col - 1] as char, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '$');
+        if boundary {
+            return Some(col);
+        }
+        start = col + 1;
+    }
+    None
+}
+
+fn is_any_import_line(trimmed: &str, config: &ScanConfig) -> bool {
+    config.sdk_names.iter().any(|sdk| is_import_line(trimmed, sdk))
 }
 
 /// Check if a line is an import/require statement referencing the given package.
@@ -308,6 +459,7 @@ function processCharge(charge: Stripe.Charge): void {
             line_content: "x".into(),
             kind: CallsiteKind::Import,
             matched_pattern: "stripe".into(),
+                    alias: None,
         });
         result.callsites.push(Callsite {
             file_path: "b.ts".into(),
@@ -316,6 +468,7 @@ function processCharge(charge: Stripe.Charge): void {
             line_content: "y".into(),
             kind: CallsiteKind::MethodCall,
             matched_pattern: "charges.create".into(),
+                    alias: None,
         });
         result.callsites.push(Callsite {
             file_path: "a.ts".into(),
@@ -324,6 +477,7 @@ function processCharge(charge: Stripe.Charge): void {
             line_content: "z".into(),
             kind: CallsiteKind::MethodCall,
             matched_pattern: "charges.retrieve".into(),
+                    alias: None,
         });
         let files = result.affected_files();
         assert_eq!(files, vec!["a.ts", "b.ts"]);
@@ -359,6 +513,70 @@ const charge = await stripe.charges.create({ amount: 500 });
         );
 
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ast_detects_aliased_client_call() {
+        let source = r#"
+import Stripe from 'stripe';
+const s = new Stripe(process.env.STRIPE_KEY);
+const sub = await s.subscriptions.del('sub_123');
+"#;
+        let hits = locate_callsites_in_source("app.ts", source, &stripe_config());
+        let aliased: Vec<_> = hits
+            .iter()
+            .filter(|c| c.kind == CallsiteKind::MethodCall && c.alias.as_deref() == Some("s"))
+            .collect();
+        assert_eq!(aliased.len(), 1, "aliased client chain should be a callsite");
+        assert_eq!(aliased[0].matched_pattern, "stripe");
+        assert_eq!(aliased[0].line_number, 4);
+    }
+
+    #[test]
+    fn ast_detects_require_alias() {
+        // `subscriptions.del` is not in method_patterns: only the alias pass can catch it.
+        let source = "const s = require('stripe');\nconst x = s.subscriptions.del('sub_1');\n";
+        let hits = locate_callsites_in_source("app.js", source, &stripe_config());
+        let aliased: Vec<_> = hits.iter().filter(|c| c.alias.as_deref() == Some("s")).collect();
+        assert_eq!(aliased.len(), 1);
+        assert_eq!(aliased[0].matched_pattern, "stripe");
+    }
+
+    #[test]
+    fn ast_detects_python_import_alias() {
+        let source = "import stripe as s\ns.Charge.create(amount=1)\n";
+        let mut cfg = stripe_config();
+        cfg.extensions = vec!["py".into()];
+        let hits = locate_callsites_in_source("pay.py", source, &cfg);
+        assert!(hits.iter().any(|c| c.alias.as_deref() == Some("s")));
+    }
+
+    #[test]
+    fn ast_alias_does_not_double_emit_canonical_line() {
+        let source = "const stripe = new Stripe(key);\nconst c = await stripe.charges.create({});\n";
+        let hits = locate_callsites_in_source("b.ts", source, &stripe_config());
+        let method_calls: Vec<_> = hits
+            .iter()
+            .filter(|c| c.kind == CallsiteKind::MethodCall)
+            .collect();
+        // One hit from the method_patterns pass; the alias pass must not re-emit.
+        assert_eq!(method_calls.len(), 1);
+        assert!(method_calls[0].alias.is_none());
+    }
+
+    #[test]
+    fn ast_alias_ignores_comments_and_partial_identifiers() {
+        let source = "// s.subscriptions.del is old\nconst s = new Stripe(k);\nconst vals = infos.map(x => x);\n";
+        let hits = locate_callsites_in_source("c.ts", source, &stripe_config());
+        assert!(!hits.iter().any(|c| c.line_number == 1 && c.alias.is_some()));
+        assert!(!hits.iter().any(|c| c.alias.is_some() && c.line_content.contains("infos")));
+    }
+
+    #[test]
+    fn ast_rejects_wrong_package_require() {
+        let source = "const s = require('stripe-foo');\nconst x = s.charges.create({});\n";
+        let hits = locate_callsites_in_source("d.js", source, &stripe_config());
+        assert!(!hits.iter().any(|c| c.alias.is_some()));
     }
 
     fn default_extensions() -> Vec<String> {

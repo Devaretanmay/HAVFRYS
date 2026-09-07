@@ -8,7 +8,7 @@ from compart.ai_planner import AIPatchPlanner
 from compart.graph import build_dependency_graph
 from compart.intelligence import CompartIntelligence, resolve_migration
 from compart.knowledge import direct_rewrites_for
-from compart.patch_writer import apply_rewrites
+from compart.patch_writer import apply_rewrites, discover_aliases, instantiate_alias_rules
 from compart.providers.registry import get_default_registry
 from compart.test_runner import _detect_test_command as _detect, _run_tests
 
@@ -146,6 +146,10 @@ class PatchPlanner:
             kb_rules = direct_rewrites_for(repo_dir, change_analysis.provider, _from, _to)
             seen = {r.pattern for r in rewrites}
             combined = list(rewrites) + [r for r in kb_rules if r.pattern not in seen]
+            for ar in instantiate_alias_rules(combined, discover_aliases(repo_dir, change_analysis.provider)):
+                if ar.pattern not in seen:
+                    seen.add(ar.pattern)
+                    combined.append(ar)
             patch_results = apply_rewrites(repo_dir, combined, dry_run=True)
         elif dec.strategy == "AI":
             planner = self.ai_planner or AIPatchPlanner.from_env()
@@ -257,6 +261,10 @@ class AutonomousMaintenancePipeline:
             kb_rules = direct_rewrites_for(repo_dir, provider_name, _from, _to)
             seen = {r.pattern for r in rewrites}
             combined = list(rewrites) + [r for r in kb_rules if r.pattern not in seen]
+            for ar in instantiate_alias_rules(combined, discover_aliases(repo_dir, provider_name)):
+                if ar.pattern not in seen:
+                    seen.add(ar.pattern)
+                    combined.append(ar)
             real_results = apply_rewrites(repo_dir, combined, dry_run=False)
         elif dec.strategy == "AI":
             planner = self.ai_planner or AIPatchPlanner.from_env()

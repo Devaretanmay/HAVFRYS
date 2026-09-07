@@ -16,6 +16,10 @@ pub struct Callsite {
     pub line_content: String,
     pub kind: CallsiteKind,
     pub matched_pattern: String,
+    /// Local identifier bound to the SDK client (e.g. `s` in `const s = new Stripe()`).
+    /// `None` for canonical (non-aliased) references. Drives precise alias-scoped rewrites.
+    #[serde(default)]
+    pub alias: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

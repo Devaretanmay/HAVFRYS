@@ -383,6 +383,7 @@ mod tests {
                     line_content: "import Stripe from 'stripe';".into(),
                     kind: CallsiteKind::Import,
                     matched_pattern: "stripe".into(),
+                    alias: None,
                 },
                 Callsite {
                     file_path: "src/billing.ts".into(),
@@ -392,6 +393,7 @@ mod tests {
                         .into(),
                     kind: CallsiteKind::MethodCall,
                     matched_pattern: "charges.create".into(),
+                    alias: None,
                 },
                 Callsite {
                     file_path: "src/api_client.py".into(),
@@ -401,6 +403,7 @@ mod tests {
                         .into(),
                     kind: CallsiteKind::UrlReference,
                     matched_pattern: "api.stripe.com".into(),
+                    alias: None,
                 },
             ],
         }

@@ -4,7 +4,7 @@ import difflib
 import os
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from compart.providers.registry import RewriteRule
 
@@ -23,6 +23,65 @@ _SKIP_DIRS = frozenset({
     ".git", "node_modules", ".next", "__pycache__", ".venv",
     "venv", "env", "dist", "build", "target", ".compart",
 })
+
+
+_IDENT = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*\Z")
+
+
+def discover_aliases(repo_dir: str, provider: str) -> Dict[str, str]:
+    """Map local client identifiers to their SDK: {"s": "stripe"}.
+
+    Read from the static scan (zero-token). Only exact bindings the locator
+    proved — never guessed. Used to scope rewrites precisely, never loosely.
+    """
+    from compart.autopatch import ScanConfig, scan_callsites
+
+    try:
+        result = scan_callsites(repo_dir, ScanConfig(sdk_names=[provider]))
+    except Exception:
+        return {}
+    aliases: Dict[str, str] = {}
+    for c in result.get("callsites", []):
+        alias = c.get("alias")
+        if alias and _IDENT.match(alias):
+            aliases[alias] = provider.lower()
+    return aliases
+
+
+def instantiate_alias_rules(
+    rules: List[RewriteRule],
+    aliases: Dict[str, str],
+) -> List[RewriteRule]:
+    """Build exact-identifier variants of registry rules for aliased clients.
+
+    Only rewrites rules whose regex pattern begins with the escaped SDK prefix
+    `<sdk>\\.` — e.g. `stripe\\.subscriptions\\.del\\(` becomes
+    `s\\.subscriptions\\.del\\(` for alias `s`. Same replacement, same files,
+    same precision. Non-conforming rules and non-identifier aliases are skipped.
+    """
+    out: List[RewriteRule] = []
+    for alias, sdk in aliases.items():
+        if alias == sdk or not _IDENT.match(alias):
+            continue
+        prefix = re.escape(sdk) + r"\."
+        for rule in rules:
+            if not rule.is_regex or not rule.pattern.startswith(prefix):
+                continue
+            # Preserve the receiver: a replacement rooted at `stripe.` must be
+            # re-rooted at the alias, otherwise the rewrite would reference an
+            # undefined identifier and break the code it claims to repair.
+            replacement = rule.replacement
+            recv = sdk + "."
+            if replacement.startswith(recv):
+                replacement = alias + replacement[len(sdk):]
+            out.append(RewriteRule(
+                pattern=re.escape(alias) + "\\." + rule.pattern[len(prefix):],
+                replacement=replacement,
+                file_extensions=list(rule.file_extensions),
+                description=f"{rule.description} (alias {alias})",
+                is_regex=True,
+            ))
+    return out
 
 
 def apply_rewrites(

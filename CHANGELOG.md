@@ -5,6 +5,9 @@ All notable changes to Compart are documented here.
 ## [Unreleased]
 
 ### Added
+- **Alias-aware callsite analysis and repair.** The AST locator resolves proven client bindings (`const s = new Stripe()`, `require('stripe')`, `import stripe as s`) and reports `alias`-tagged callsites. DIRECT rewrites instantiate exact-identifier variants with the receiver preserved — regexes are never loosened, exotic bindings fail closed.
+
+### Added
 - **External-Change Dependency Graph (`compart graph`).** Native Rust graph engine mapping external providers, versions, OpenAPI contracts, manifest dependencies, wrapper clients, and AST callsites.
 - **Day-0 Risk Register (`compart audit`).** Instant audit command scanning codebases for at-risk, deprecated, and auto-repairable external API callsites with ANSI and GitHub Issue markdown exports.
 - **Autonomous Continuous Maintenance (`compart maintain`).** Closed-loop maintenance engine detecting upstream breaking changes, synthesizing surgical AST patches, running local formatters (`prettier`, `ruff`), and opening verified Developer Trust PRs.
