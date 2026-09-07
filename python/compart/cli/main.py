@@ -1841,6 +1841,12 @@ def cmd_app(args):
         print("[Compart App] Status: Ready (Daemon not running locally).")
 
 
+def cmd_mcp(args):
+    """Run Compart Model Context Protocol (MCP) server over stdio."""
+    from compart.mcp_server import serve_stdio
+    serve_stdio()
+
+
 def cmd_maintain(args):
     """Run autonomous continuous maintenance loop on a target repository."""
     root_dir = os.path.abspath(args.root_dir)
@@ -2309,6 +2315,8 @@ def main():
     graph_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
     graph_p.add_argument("--json", action="store_true", help="Output full graph JSON")
 
+    mcp_p = subparsers.add_parser("mcp", help="Run Compart Model Context Protocol (MCP) server for AI assistants")
+
     shim_parser = subparsers.add_parser("_exec_shim", help=argparse.SUPPRESS)
     shim_parser.add_argument("shim_args", nargs=argparse.REMAINDER)
 
@@ -2355,6 +2363,7 @@ def main():
         "providers": cmd_providers,
         "pr": cmd_pr,
         "graph": cmd_graph,
+        "mcp": cmd_mcp,
     }
 
     if args.command in dispatch:
