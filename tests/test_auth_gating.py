@@ -1,0 +1,133 @@
+# Copyright 2026 Compart Authors
+# SPDX-License-Identifier: Apache-2.0
+
+import os
+import sys
+import subprocess
+import json
+import pytest
+from compart.credentials import save_credentials, load_credentials, clear_credentials, has_valid_credentials, verify_credentials
+
+
+def test_credentials_module_lifecycle(tmp_path):
+    creds_file = str(tmp_path / "creds.json")
+    os.environ["COMPART_CREDENTIALS_FILE"] = creds_file
+
+    try:
+        # Initially empty
+        assert not has_valid_credentials()
+        assert load_credentials() is None
+
+        # Save credentials
+        saved_path = save_credentials("anthropic", "sk-ant-testkey1234567890", model="claude-3-5-sonnet-20241022")
+        assert saved_path == creds_file
+        assert has_valid_credentials()
+
+        # Load back
+        data = load_credentials()
+        assert data is not None
+        assert data["provider"] == "anthropic"
+        assert data["api_key"] == "sk-ant-testkey1234567890"
+        assert data["model"] == "claude-3-5-sonnet-20241022"
+
+        # Check permissions (0600)
+        mode = os.stat(creds_file).st_mode & 0o777
+        assert mode == 0o600
+
+        # Clear
+        assert clear_credentials()
+        assert not os.path.exists(creds_file)
+        assert not has_valid_credentials()
+    finally:
+        os.environ.pop("COMPART_CREDENTIALS_FILE", None)
+
+
+def test_verify_credentials_formats():
+    ok, _ = verify_credentials("anthropic", "sk-ant-12345678901234567890")
+    assert ok
+
+    bad, msg = verify_credentials("anthropic", "bad-key")
+    assert not bad
+    assert "Invalid Anthropic" in msg
+
+    ok, _ = verify_credentials("openai", "sk-1234567890123456789012345")
+    assert ok
+
+    bad, msg = verify_credentials("openai", "not-sk")
+    assert not bad
+    assert "Invalid OpenAI" in msg
+
+
+def test_cli_check_gated_without_auth(tmp_path):
+    creds_file = str(tmp_path / "creds_none.json")
+    env = dict(os.environ)
+    env["PYTHONPATH"] = "python"
+    env["COMPART_CREDENTIALS_FILE"] = creds_file
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "COMPART_LLM_KEY"):
+        env.pop(k, None)
+
+    res = subprocess.run(
+        [sys.executable, "-m", "compart.cli.main", "check", "trials/fixtures/taxonomy_stripe/"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert res.returncode == 1
+    assert "AI PROVIDER AUTHENTICATION REQUIRED" in res.stdout
+    assert "compart auth" in res.stdout
+
+
+def test_cli_auth_and_auto_index(tmp_path):
+    creds_file = str(tmp_path / "creds_auth.json")
+    env = dict(os.environ)
+    env["PYTHONPATH"] = "python"
+    env["COMPART_CREDENTIALS_FILE"] = creds_file
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "COMPART_LLM_KEY"):
+        env.pop(k, None)
+
+    # 1. Connect provider
+    res_auth = subprocess.run(
+        [
+            sys.executable, "-m", "compart.cli.main", "auth",
+            "--provider", "anthropic",
+            "--api-key", "sk-ant-validkey123456789012345",
+            "--path", "trials/fixtures/taxonomy_stripe/",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert res_auth.returncode == 0
+    assert "Credentials verified successfully for anthropic" in res_auth.stdout
+    assert "Initializing Compart Knowledge Graph" in res_auth.stdout
+
+    # 2. Check auth status
+    res_status = subprocess.run(
+        [sys.executable, "-m", "compart.cli.main", "auth", "--status"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert res_status.returncode == 0
+    assert "CONFIGURED ✅" in res_status.stdout
+    assert "anthropic" in res_status.stdout
+
+    # 3. Now check succeeds automatically
+    res_check = subprocess.run(
+        [sys.executable, "-m", "compart.cli.main", "check", "trials/fixtures/taxonomy_stripe/"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert res_check.returncode == 0
+    assert "COMPART: EXTERNAL-CHANGE DEPENDENCY AUDIT" in res_check.stdout
+
+    # 4. Now index command also works as dedicated manual refresher
+    res_index = subprocess.run(
+        [sys.executable, "-m", "compart.cli.main", "index", "trials/fixtures/taxonomy_stripe/"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert res_index.returncode == 0
+    assert "COMPART: EXTERNAL-CHANGE DEPENDENCY AUDIT" in res_index.stdout

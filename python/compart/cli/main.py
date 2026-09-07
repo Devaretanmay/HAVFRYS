@@ -1793,8 +1793,128 @@ def cmd_explain(args):
     print(f"Action:         {act}\n\n================================================================================")
 
 
+def _print_auth_warning():
+    print("================================================================================")
+    print("                COMPART: AI PROVIDER AUTHENTICATION REQUIRED                   ")
+    print("================================================================================\n")
+    print("❌ Error: No AI provider configured.\n")
+    print("Compart requires an AI provider to analyze dependencies and maintain your code.")
+    print("To connect your provider, run:\n")
+    print("  compart auth\n")
+    print("Or provide credentials via environment variables:")
+    print("  export ANTHROPIC_API_KEY=\"sk-ant-...\"    (for Claude 3.5 Sonnet)")
+    print("  export OPENAI_API_KEY=\"sk-...\"           (for GPT-4o)\n")
+    print("Supported providers:")
+    print("  • Anthropic (Claude 3.5 Sonnet) [Recommended]")
+    print("  • OpenAI (GPT-4o)")
+    print("  • Ollama / Local (OpenAI-compatible)")
+    print("================================================================================")
+
+
+def cmd_auth(args):
+    """Authenticate and configure BYOK AI provider with automatic repository indexing."""
+    from compart.credentials import (
+        save_credentials,
+        get_active_provider_summary,
+        verify_credentials,
+        clear_credentials,
+    )
+
+    if getattr(args, "status", False):
+        summary = get_active_provider_summary()
+        print("================================================================================")
+        print("                 COMPART: AI PROVIDER CREDENTIAL STATUS                         ")
+        print("================================================================================\n")
+        if summary["configured"]:
+            print(f"Status:       CONFIGURED ✅")
+            print(f"Provider:     {summary.get('provider')}")
+            if summary.get("model"):
+                print(f"Model:        {summary.get('model')}")
+            if summary.get("masked_key"):
+                print(f"API Key:      {summary.get('masked_key')}")
+            print(f"Source:       {summary.get('source')}")
+        else:
+            print("Status:       NOT CONFIGURED ❌")
+            print("Action:       Run 'compart auth' to connect an AI provider.")
+        print("\n================================================================================")
+        return
+
+    if getattr(args, "clear", False):
+        clear_credentials()
+        print("✓ Stored Compart credentials removed.")
+        return
+
+    provider = getattr(args, "provider", None)
+    api_key = getattr(args, "api_key", None)
+    model = getattr(args, "model", None)
+    base_url = getattr(args, "base_url", None)
+
+    # If not provided via CLI flags, prompt interactively if tty is available
+    if not provider or not api_key:
+        print("================================================================================")
+        print("                   COMPART: CONNECT YOUR AI PROVIDER                            ")
+        print("================================================================================\n")
+        print("Select your AI Provider:")
+        print("  1) Anthropic (Claude 3.5 Sonnet) [Recommended]")
+        print("  2) OpenAI (GPT-4o)")
+        print("  3) OpenAI-Compatible / Local (Ollama, vLLM)\n")
+
+        if not sys.stdin.isatty() and (not provider or not api_key):
+            print("Error: Running in non-interactive environment. Please supply flags:")
+            print("  compart auth --provider <anthropic|openai> --api-key <sk-...>")
+            sys.exit(1)
+
+        choice = input("Enter choice [1-3] (default: 1): ").strip() or "1"
+        if choice == "1":
+            provider = "anthropic"
+            model = model or "claude-3-5-sonnet-20241022"
+        elif choice == "2":
+            provider = "openai"
+            model = model or "gpt-4o"
+        elif choice == "3":
+            provider = "openai_compatible"
+            base_url = base_url or input("Base URL [http://localhost:11434/v1]: ").strip() or "http://localhost:11434/v1"
+            model = model or input("Model name [deepseek-coder]: ").strip() or "deepseek-coder"
+        else:
+            provider = "anthropic"
+
+        if not api_key:
+            import getpass
+            api_key = getpass.getpass(f"Enter API Key for {provider}: ").strip()
+
+    valid, msg = verify_credentials(provider, api_key, model=model, base_url=base_url)
+    if not valid:
+        print(f"\n❌ Error: {msg}")
+        sys.exit(1)
+
+    creds_path = save_credentials(provider=provider, api_key=api_key, model=model, base_url=base_url)
+    print(f"\n✓ Credentials verified successfully for {provider}!")
+    print(f"✓ Saved encrypted configuration to {creds_path}")
+
+    # Automatic Day-0 Knowledge Graph Indexing
+    root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    print(f"\n⚡ Initializing Compart Knowledge Graph for: {root_path}...")
+    try:
+        run_audit(repo_root=root_path, output_format="cli", write_graph=True)
+        print("✓ Codebase indexed successfully. Dependency call graph ready.")
+        print("\nNext steps:")
+        print("  1. Run `compart check` to inspect external dependencies and drift.")
+        print("  2. Run `compart fix` to autonomously resolve migrations.")
+    except Exception as exc:
+        print(f"⚠️  Note: Initial indexing notice: {exc}")
+
+    print("================================================================================")
+
+
 def cmd_check(args):
     """Day-0 External-Change Dependency Audit and Risk Register."""
+    from compart.credentials import has_valid_credentials
+
+    # Mandatory AI Provider Check
+    if not getattr(args, "skip_auth", False) and not has_valid_credentials():
+        _print_auth_warning()
+        sys.exit(1)
+
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
     output = run_audit(
         repo_root=root_path,
@@ -1849,15 +1969,31 @@ def cmd_mcp(args):
 
 def cmd_maintain(args):
     """Run autonomous continuous maintenance loop on a target repository."""
+    from compart.credentials import has_valid_credentials
+
+    # Mandatory AI Provider Check
+    if not getattr(args, "skip_auth", False) and not has_valid_credentials():
+        _print_auth_warning()
+        sys.exit(1)
+
     root_dir = os.path.abspath(args.root_dir)
     print("================================================================================")
     print("               COMPART AUTONOMOUS MAINTENANCE LOOP: EXECUTION                   ")
     print("================================================================================\n")
     print(f"Repository:              {root_dir}")
-    print(f"Target Provider:         {args.provider}")
+    
+    target_provider = args.provider
+    if not target_provider or target_provider == "auto":
+        detected_all = detect_drift(root_dir)
+        if detected_all:
+            target_provider = detected_all[0]["provider"]
+        else:
+            target_provider = "stripe"
+
+    print(f"Target Provider:         {target_provider}")
     
     if args.detect:
-        detected = detect_drift(root_dir, args.provider)
+        detected = detect_drift(root_dir, target_provider)
         print(f"\nDetected Manifest Dependencies ({len(detected)}):")
         for d in detected:
             print(f"  - {d['display_name']} ({d['package_name']}): {d['declared_version']}")
@@ -1866,7 +2002,7 @@ def cmd_maintain(args):
 
     report = run_maintenance_cycle(
         repo_dir=root_dir,
-        provider_name=args.provider,
+        provider_name=target_provider,
         from_version=args.from_version,
         to_version=args.to_version,
         create_pr=args.create_pr,
@@ -2050,8 +2186,10 @@ def main():
         Compart: Autonomous External-Change Intelligence & Controlled Execution
 
         Core Commands:
+          compart auth                     Connect BYOK AI provider (OpenAI, Anthropic, etc.)
           compart check [path]             Scan external dependencies & breaking drift (alias: scan, audit)
           compart fix [path] [--provider]  Autonomous migration: AST patch, format & sandbox tests (alias: maintain)
+          compart index [path]             Index repository API touchpoints & build dependency graph
           compart undo                     Instant 2ms snapshot rollback
           compart graph [path]             Inspect external dependency & call graph
           compart diff                     Review change sets before commit
@@ -2317,6 +2455,25 @@ def main():
 
     mcp_p = subparsers.add_parser("mcp", help="Run Compart Model Context Protocol (MCP) server for AI assistants")
 
+    auth_p = subparsers.add_parser("auth", help="Connect and configure BYOK AI provider (OpenAI, Anthropic, etc.)")
+    auth_p.add_argument("--provider", choices=["anthropic", "openai", "openai_compatible", "ollama", "local"], default=None, help="AI provider name")
+    auth_p.add_argument("--api-key", default=None, help="AI provider API key")
+    auth_p.add_argument("--model", default=None, help="Model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
+    auth_p.add_argument("--base-url", default=None, help="Base URL for custom/local endpoints")
+    auth_p.add_argument("--path", default=".", help="Repository root path to auto-index (default: .)")
+    auth_p.add_argument("--status", action="store_true", help="Display current AI provider credential status")
+    auth_p.add_argument("--clear", action="store_true", help="Clear saved credentials")
+
+    index_p = subparsers.add_parser("index", help="Index repository dependencies, callsites, and construct graph")
+    index_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    index_p.add_argument("--write-graph", action="store_true", default=True, help="Persist .compart/graph.json")
+
+    check_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check (e.g. for offline CI)")
+    scan_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
+    audit_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
+    fix_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
+    maintain_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
+
     shim_parser = subparsers.add_parser("_exec_shim", help=argparse.SUPPRESS)
     shim_parser.add_argument("shim_args", nargs=argparse.REMAINDER)
 
@@ -2332,6 +2489,7 @@ def main():
 
     dispatch = {
         "init": cmd_init,
+        "auth": cmd_auth,
         "status": cmd_status,
         "inspect": cmd_inspect,
         "run": cmd_run,
@@ -2357,6 +2515,7 @@ def main():
         "check": cmd_check,
         "scan": cmd_check,
         "audit": cmd_check,
+        "index": cmd_check,
         "fix": cmd_fix,
         "maintain": cmd_fix,
         "update": cmd_fix,

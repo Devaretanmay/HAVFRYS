@@ -30,12 +30,47 @@ def resolve_llm_config(
     model: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> Optional[LLMConfig]:
-    """Resolve LLM configuration from parameters or environment variables."""
+    """Resolve LLM configuration from parameters, environment variables, or stored credentials."""
     key = api_key or os.environ.get("COMPART_LLM_KEY")
     url = base_url or os.environ.get("OPENAI_BASE_URL")
 
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
+
+    # If no explicit args or env vars, check ~/.compart/credentials.json
+    if not key and not anthropic_key and not openai_key and not url:
+        try:
+            from compart.credentials import load_credentials
+            stored = load_credentials()
+            if stored:
+                stored_prov = stored.get("provider", "openai").lower()
+                stored_key = stored.get("api_key")
+                stored_model = model or stored.get("model")
+                stored_url = url or stored.get("base_url")
+
+                if stored_prov == "anthropic" or (stored_key and stored_key.startswith("sk-ant-")):
+                    return LLMConfig(
+                        provider="anthropic",
+                        api_key=stored_key,
+                        model=stored_model or "claude-3-5-sonnet-20241022",
+                        base_url=stored_url,
+                    )
+                elif stored_prov in ("ollama", "local", "openai_compatible"):
+                    return LLMConfig(
+                        provider="openai_compatible",
+                        api_key=stored_key or "ollama_or_local",
+                        model=stored_model or "deepseek-coder",
+                        base_url=stored_url or "http://localhost:11434/v1",
+                    )
+                else:
+                    return LLMConfig(
+                        provider="openai",
+                        api_key=stored_key,
+                        model=stored_model or "gpt-4o",
+                        base_url=stored_url,
+                    )
+        except Exception:
+            pass
 
     if key:
         if key.startswith("sk-ant-") or (model and "claude" in model.lower()):

@@ -11,6 +11,7 @@ import pytest
 def _run_compart_cli(args):
     env = dict(os.environ)
     env["PYTHONPATH"] = "python"
+    env.setdefault("COMPART_LLM_KEY", "sk-ant-test-credential-key")
     return subprocess.run(
         [sys.executable, "-m", "compart.cli.main"] + args,
         capture_output=True,
