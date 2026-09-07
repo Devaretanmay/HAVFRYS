@@ -6,7 +6,7 @@
 
 **Greptile understands changes humans make to software. Compart understands changes the outside world makes to software.**
 
-[PyPI Package](https://pypi.org/project/compart/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Benchmark Evidence](docs/benchmarks/HISTORICAL_REPLAY.md)
+[PyPI Package](https://pypi.org/project/compart/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md)
 
 <br/>
 
@@ -31,15 +31,35 @@ Dependabot bumps version strings in lockfiles and leaves CI broken. Human engine
 
 ---
 
+## The Core Loop
+
+```text
+Install GitHub App → Select repo → Connect AI → Automatic index → READY
+        ↓
+Check / background detection (free, zero-token, no AI key needed)
+        ↓
+Compart internally decides: DIRECT (verified pattern, 0 tokens) or AI (your provider)
+        ↓
+Sandbox + real tests → Evidence → GitHub PR → Knowledge capture (next run is cheaper)
+```
+
+```bash
+compart auth              # BYOK provider — needed only for AI repair
+compart doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
+compart index .           # Zero-token static index
+compart check .           # Read-only drift & impact audit
+compart fix .             # Repair, verify, report (refuses loudly when unsafe)
+```
+
 ## The Core Pipeline
 
 ```text
 ┌─────────────────────────┬─────────────────────────┬─────────────────────────┐
-│ 1. Change Detection     │ 2. Dependency Graph     │ 3. Multi-Agent Analysis │
-│    Upstream API Drift   │    Provider → Callsite  │    Impact & Plan Agents │
+│ 1. Change Detection     │ 2. Dependency Graph     │ 3. Impact Analysis      │
+│    Contract drift       │    Source → Callsite    │    ChangeSource-aware   │
 ├─────────────────────────┼─────────────────────────┼─────────────────────────┤
-│ 4. Surgical AST Patch   │ 5. Controlled Execution │ 6. Developer Trust PR   │
-│    Formatter-matched fix│    Sandboxed + Evidence │    Verified merge-ready │
+│ 4. Surgical Repair      │ 5. Controlled Execution │ 6. Developer Trust PR   │
+│    DIRECT or AI-routed  │    Sandboxed + Evidence │    Verified merge-ready │
 └─────────────────────────┴─────────────────────────┴─────────────────────────┘
 ```
 
@@ -177,7 +197,12 @@ print(report.unified_diff)
 
 ## Documentation
 
-[Quickstart Guide](docs/QUICKSTART.md) · [CLI Reference](docs/CLI.md) · [Historical Replay Benchmarks](docs/benchmarks/HISTORICAL_REPLAY.md) · [API Reference](docs/API_REFERENCE.md) · [Agent Governance & Trailers](SPEC.md)
+[Quickstart Guide](docs/QUICKSTART.md) · [CLI Reference](docs/CLI.md) · [Architecture](docs/ARCHITECTURE.md) · [API Reference](docs/API_REFERENCE.md) · [Validation Guide](docs/VALIDATION_GUIDE.md) · [Agent Governance & Trailers](SPEC.md)
+
+The core abstraction is `ChangeSource` (external API, SDK, OpenAPI, GraphQL, protobuf, webhook,
+MCP server, internal service): Compart keeps software working when the systems around it change.
+Vendor SDK migrations are the working wedge; other contract kinds are representable types with no
+connectors yet — they fail closed to quarantine instead of guessing.
 
 ## License
 

@@ -8,20 +8,10 @@ from __future__ import annotations
 import json
 import os
 import stat
-from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 CREDENTIALS_DIR = os.path.expanduser("~/.compart")
 CREDENTIALS_FILE = os.path.join(CREDENTIALS_DIR, "credentials.json")
-
-
-@dataclass
-class ProviderCredential:
-    provider: str
-    api_key: str
-    model: Optional[str] = None
-    base_url: Optional[str] = None
-    created_at: Optional[str] = None
 
 
 def get_credentials_path() -> str:
@@ -29,9 +19,32 @@ def get_credentials_path() -> str:
     return os.environ.get("COMPART_CREDENTIALS_FILE", CREDENTIALS_FILE)
 
 
-def load_credentials() -> Optional[Dict[str, Any]]:
-    """Load stored credentials from disk."""
-    creds_file = get_credentials_path()
+def scoped_credentials_path(installation_id: Optional[str] = None, repo: Optional[str] = None) -> str:
+    """Per-installation/repo credential file. Scoped first, global fallback second."""
+    base = os.path.dirname(get_credentials_path())
+    if installation_id:
+        safe_repo = (repo or "").replace("/", "__") or "default"
+        return os.path.join(base, "installations", str(installation_id), f"{safe_repo}.json")
+    return get_credentials_path()
+
+
+def load_credentials(installation_id: Optional[str] = None, repo: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Load stored credentials: scoped file first, then global file."""
+    candidates = []
+    if installation_id:
+        candidates.append(scoped_credentials_path(installation_id, repo))
+    candidates.append(get_credentials_path())
+    for creds_file in candidates:
+        if not os.path.exists(creds_file):
+            continue
+        try:
+            with open(creds_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict) and data.get("api_key"):
+                return data
+        except Exception:
+            continue
+    return None
     if not os.path.exists(creds_file):
         return None
     try:
@@ -49,9 +62,11 @@ def save_credentials(
     api_key: str,
     model: Optional[str] = None,
     base_url: Optional[str] = None,
+    installation_id: Optional[str] = None,
+    repo: Optional[str] = None,
 ) -> str:
-    """Persist credentials to ~/.compart/credentials.json with restrictive permissions (0600)."""
-    creds_file = get_credentials_path()
+    """Persist credentials with restrictive permissions (0600). Scoped when installation_id given."""
+    creds_file = scoped_credentials_path(installation_id, repo) if installation_id else get_credentials_path()
     creds_dir = os.path.dirname(creds_file)
     os.makedirs(creds_dir, exist_ok=True)
 
@@ -83,11 +98,11 @@ def clear_credentials() -> bool:
     return False
 
 
-def has_valid_credentials() -> bool:
-    """Return True if an AI provider key is set via env vars or credentials.json."""
+def has_valid_credentials(installation_id: Optional[str] = None, repo: Optional[str] = None) -> bool:
+    """Return True if a key is set via env vars, scoped file, or global credentials.json."""
     if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY") or os.environ.get("COMPART_LLM_KEY"):
         return True
-    creds = load_credentials()
+    creds = load_credentials(installation_id, repo)
     if creds and creds.get("api_key"):
         return True
     return False

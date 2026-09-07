@@ -78,8 +78,35 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ### `from compart.maintenance_agents import AutonomousMaintenancePipeline, ChangeAnalyzer, ImpactAnalyst, PatchPlanner, PatchVerifier`
 - `ChangeAnalyzer`: Analyzes vendor OpenAPI/SDK breaking contracts.
-- `ImpactAnalyst`: Traces dependencies through wrappers to affected callsites.
+- `ImpactAnalyst`: Traces dependencies through wrappers to affected callsites. `analyze_impact_for(repo, source)` matches any `ChangeSource` identity against wrapper metadata, callsite patterns, and file paths; `analyze_impact(repo, provider)` is the preserved SDK branch.
 - `PatchPlanner`: Synthesizes AST transformation plans.
 - `PatchVerifier`: Runs sandboxed tests, compresses execution evidence logs, checks zero blast radius, and certifies merge readiness.
 - `AutonomousMaintenancePipeline`: Coordinates the 4 specialized maintenance agents end-to-end.
+
+---
+
+## 4. Change Sources, Decisions, Knowledge & Installations
+
+### `from compart.change_source import ChangeSource, Detection`
+- `ChangeSource(kind, identity, version_from, version_to, contract_hash, origin)`: kinds `external_api, sdk, openapi, graphql, protobuf, webhook, mcp_server, internal_service`. Helpers: `ChangeSource.sdk(provider, …)`, `.provider`, `.key()`.
+- `Detection(source, outcome, reason, affected_files, callsite_count, ai_dependent, confidence)`: outcomes `NO_IMPACT / IMPACT_DIRECT / IMPACT_AI / IMPACT_QUARANTINE` (fail-closed).
+
+### `from compart.drift import detect_drift, detect_changes`
+- `detect_changes(repo_dir, provider_name=None) -> List[Detection]`: read-only classification — never patches.
+
+### `from compart.intelligence import CompartIntelligence, Decision, resolve_migration`
+- `Decision(strategy, reason, confidence, estimated_tokens, expected_blast_radius, verification_required)`: strategies `DIRECT / AI / HYBRID / REFUSE…QUARANTINE` are internal only (no CLI flag).
+- `decide_for_source(repo_dir, source)`: routes any `ChangeSource`; kinds without registry connectors go AI-if-credentials else quarantine.
+
+### `from compart.providers.registry import find_migration_for`
+- `find_migration_for(source) -> Optional[ProviderMigration]`: resolves `sdk`/`external_api` sources; all other kinds return `None` by design (no connectors yet).
+
+### `from compart.knowledge import lookup, upsert_learned, record_failure, ensure_test_recipe`
+- Entries live at `.compart/knowledge/{kind}/{identity}/{contract}.json` with legacy provider-path fallback reads. Only verified fixes upsert executable patterns; `record_failure()` quarantines guesses separately.
+
+### `from compart.github.installations import record_installation_event, set_repo_state, list_ready_repos`
+- Flat-JSON install records (0600): repos tracked PENDING → INDEXED → READY.
+
+### `from compart.credentials import save_credentials, load_credentials, has_valid_credentials`
+- All accept optional `(installation_id, repo)` scope: env → scoped file → global file. Secrets never enter repo state, logs, or knowledge.
 

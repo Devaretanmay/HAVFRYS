@@ -1,16 +1,26 @@
 # Compart CLI Reference & User Guide
 
-Compart is the runtime and control layer for AI coding agents and custom agentic workflows. It layers transparently onto your existing tools with zero configuration.
+Compart is autonomous software maintenance for systems that change. It detects contract drift, repairs the code, verifies against your real test suite, and delivers the evidence as a PR.
 
-> **“Git manages your code. Compart manages your agents.”**
+> **“Greptile understands changes humans make to software. Compart understands changes the outside world makes to software.”**
 
 ---
 
 ## The Public CLI Contract
 
 ```text
-Workspace
-  compart init                     Initialize a Compart workspace
+Maintenance product (normal flow: auth → doctor → index → check → fix)
+  compart auth                     Connect BYOK AI provider (needed only for AI repair)
+  compart doctor                   Product readiness: GitHub, AI, index, knowledge, tests
+  compart index [path]             Index repository contracts & callsites (free, zero-token)
+  compart check [path]             Detect contract changes & impact (read-only; needs no AI key)
+  compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
+  compart providers                List monitored contract sources & migrations
+  compart app serve                Run GitHub App webhook listener (secret required)
+  compart pr                       Review a pull request with the contract guard
+
+Legacy / advanced (workflows, sessions, lanes)
+  compart init                     Initialize a Compart workspace (legacy path; onboarding no longer needs this)
   compart status                   Show workspace health & active executions
   compart inspect                  Dump declared compartments & policies
 
@@ -34,7 +44,24 @@ Changes
 
 ---
 
-## 1. Workspace Commands
+## 0. Product Onboarding
+
+```bash
+compart auth              # Connect AI provider (OpenAI / Anthropic / local). Needed only for AI repair.
+compart doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Test command, Monitoring
+compart index .           # Zero-token static index → .compart/graph.json + knowledge test recipes
+compart check .           # Read-only drift & impact audit (works with no AI key configured)
+compart fix .             # Auto-detect provider, repair, sandbox-verify, report evidence
+```
+
+`check` never modifies code. `fix` with no safe path and no AI credentials refuses loudly
+(`NOT RUN … REFUSED / INCOMPLETE`, zero files touched) instead of faking success.
+
+---
+
+## 1. Workspace Commands (legacy path)
+
+> `init` is the legacy workspace path. Normal onboarding (`auth → index → check → fix`) does not need it.
 
 ### `compart init`
 Initializes a `.compart/` control plane in the current directory:
@@ -218,6 +245,20 @@ compart restore sess_1787082470931    # Restores specific session checkpoint
 
 ## 5. External-Change Intelligence & Autonomous Maintenance
 
+### `compart auth [--provider … --api-key …] [--status] [--clear]`
+Connects a BYOK AI provider, saved to `~/.compart/credentials.json` (0600), with per-installation
+scoping available. Credentials are required only when AI reasoning/generation is actually needed —
+`index` and `check` work without them. `--status` shows the masked active provider.
+
+### `compart doctor`
+Prints product readiness: GitHub CONNECTED / NOT CONFIGURED, AI provider, repository Indexed state,
+Knowledge Base READY / STALE / MISSING, detected test command, and monitoring ACTIVE / NOT ACTIVE,
+with remediation hints.
+
+### `compart index [path]`
+Zero-token static index: AST callsites, manifests, dependency graph → `.compart/graph.json`, plus
+`index_state.json` (commit SHA + mtimes) for incremental re-indexing and knowledge test recipes.
+
 ### `compart check [path]` (alias: `scan`, `audit`)
 Day-0 external-change dependency audit and risk register. Scans manifests, lockfiles, and AST callsites to report at-risk, deprecated, or breaking external integrations:
 
@@ -241,15 +282,22 @@ compart graph . --json
 ---
 
 ### `compart fix [root_dir]` (alias: `maintain`, `update`)
-Executes an autonomous continuous maintenance cycle: detects upstream breaking changes, synthesizes surgical AST patches, formats with local tools (`prettier`/`ruff`), runs repository tests, verifies zero blast radius, and opens a Developer Trust PR:
+Executes an autonomous continuous maintenance cycle: detects the change source, Compart internally
+decides DIRECT (verified pattern, zero tokens) vs AI (provider generation) vs quarantine, applies the
+repair, formats with local tools (`prettier`/`ruff`), runs repository tests, verifies zero blast radius,
+and reports evidence. There is no `--ai` / `--direct` flag — routing is internal:
 
 ```bash
+compart fix .                       # Auto-detect provider from manifests
 compart fix . --provider stripe
 compart fix . --provider openai --from v3.28.0 --to v4.0.0
 compart fix . --detect              # Detect installed API providers
 compart fix . --show-pr             # Preview Developer Trust PR body
 compart fix . --create-pr --repo owner/repo
 ```
+
+On refusal (no safe path, no AI credentials): `Repository Tests: NOT RUN`, zero files modified,
+`REFUSED / INCOMPLETE`. Tests are never reported PASSED unless they actually ran and exited 0.
 
 ---
 
@@ -264,9 +312,16 @@ compart providers --json
 ---
 
 ### `compart app [serve|status]`
-Runs the GitHub App continuous webhook listener daemon for automated PR drift detection and verification:
+Runs the GitHub App continuous webhook listener daemon for automated PR drift detection and verification.
+A webhook secret is required (fail-closed); `--no-secret` is local-debugging only:
 
 ```bash
 compart app serve --port 8080 --secret $COMPART_WEBHOOK_SECRET
 ```
+
+On installation events Compart persists the installation record, runs Day-0 indexing where a
+checkout is available, and tracks per-repository state (PENDING → INDEXED → READY).
+
+### `compart pr [number]`
+Runs the contract guard against a local checkout of a PR (mergeable only on real green tests).
 

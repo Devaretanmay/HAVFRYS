@@ -38,7 +38,7 @@ npm test
 ```ts
 import * as compart from '@compart/sdk'
 
-compart.version()                    // "1.0.4"
+compart.version()                    // "1.1.0"
 compart.sandboxSupported()           // true
 const out = compart.compress(text)
 

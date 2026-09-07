@@ -4,14 +4,12 @@
 from dataclasses import dataclass, field
 import json
 import os
-import shutil
 import subprocess
-import tempfile
 import time
 from typing import Any, Dict, List, Optional
 
 from compart.ai_planner import AIPatchPlanner
-from compart.drift import detect_drift
+from compart.drift import detect_drift  # noqa: F401 — re-exported for CLI/SDK callers
 from compart.formatters import run_style_formatter
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 from compart.git_ops import git_commit_and_push, gh_create_pr
@@ -20,6 +18,8 @@ from compart.patch_writer import apply_rewrites, PatchResult
 from compart.providers.registry import get_default_registry
 from compart.sandbox.snapshot import SnapshotManager, _file_hash
 
+from compart.intelligence import CompartIntelligence, resolve_migration
+from compart.knowledge import direct_rewrites_for, upsert_learned as kb_upsert
 from compart.test_runner import (
     _blake3_digest,
     _detect_test_command,
@@ -27,13 +27,6 @@ from compart.test_runner import (
     _run_install,
     _run_tests,
 )
-
-try:
-    from compart._core import route_and_compress
-except ImportError:
-    def route_and_compress(content: str) -> str:
-        return content
-
 
 @dataclass
 class MaintenanceRunReport:
@@ -97,12 +90,12 @@ def run_maintenance_cycle(
     create_pr: bool = False,
     github_repo: Optional[str] = None,
     github_client: Any = None,
-    use_ai: bool = False,
     llm_api_key: Optional[str] = None,
     llm_model: Optional[str] = None,
     llm_base_url: Optional[str] = None,
+    **_ignored: Any,
 ) -> MaintenanceRunReport:
-    """Execute full autonomous maintenance loop on a repository."""
+    """Execute full autonomous maintenance loop on a repository. Intelligence picks DIRECT vs AI."""
     repo_dir = os.path.abspath(repo_dir)
     registry = get_default_registry()
     p_spec = registry.get(provider_name)
@@ -116,12 +109,7 @@ def run_maintenance_cycle(
             trust_pr_body="", error=f"Provider {provider_name} not found in registry",
         )
 
-    migration = None
-    if p_spec.migrations:
-        migration = next(iter(p_spec.migrations.values()))
-
-    actual_from = from_version or (migration.from_version if migration else "1.0.0")
-    actual_to = to_version or (migration.to_version if migration else "2.0.0")
+    actual_from, actual_to, migration = resolve_migration(provider_name, from_version, to_version)
     changelog_url = migration.changelog_url if migration else p_spec.docs_url
     rewrites = migration.rewrites if migration else []
 
@@ -129,14 +117,29 @@ def run_maintenance_cycle(
     snapshotter = SnapshotManager(workdir=repo_dir, snapshot_dir=snapshot_dir)
     files_scanned = snapshotter.snapshot()
 
-    patch_results: List[PatchResult] = []
-    if not use_ai and rewrites:
-        patch_results = apply_rewrites(repo_dir, rewrites, dry_run=False)
+    intel = CompartIntelligence()
+    decision = intel.decide(repo_dir, provider_name, actual_from, actual_to, has_rewrites=bool(rewrites))
 
+    patch_results: List[PatchResult] = []
     ai_planner = None
-    if use_ai or not patch_results:
+    quarantine_error: Optional[str] = None
+
+    if decision.strategy == "DIRECT":
+        # G1: executable flywheel — registry rewrites + KB-cached rewrites, deduped by pattern
+        kb_rules = direct_rewrites_for(repo_dir, provider_name, actual_from, actual_to)
+        seen_patterns = {r.pattern for r in rewrites}
+        extra = [r for r in kb_rules if r.pattern not in seen_patterns]
+        combined = list(rewrites) + extra
+        if combined:
+            patch_results = apply_rewrites(repo_dir, combined, dry_run=False)
+    elif decision.strategy == "AI":
         ai_planner = AIPatchPlanner.from_env(api_key=llm_api_key, model=llm_model, base_url=llm_base_url)
-        if ai_planner:
+        if ai_planner is None:
+            quarantine_error = (
+                "AI repair required (novel change, no verified pattern) but no AI provider is configured. "
+                "Run `compart auth` or set ANTHROPIC_API_KEY / OPENAI_API_KEY."
+            )
+        else:
             impact = ImpactAnalyst().analyze_impact(repo_dir, provider_name)
             target_files = impact.affected_files
             if target_files:
@@ -152,6 +155,11 @@ def run_maintenance_cycle(
                 )
                 if ai_results:
                     patch_results.extend(ai_results)
+    else:
+        quarantine_error = (
+            f"No safe repair path for {provider_name} {actual_from}->{actual_to} ({decision.reason}). "
+            "Run `compart auth` to enable AI repair, or add a verified migration to the registry."
+        )
 
     modified_paths = [os.path.abspath(r.file_path) for r in patch_results if r.success]
     files_modified = len(modified_paths)
@@ -180,14 +188,14 @@ def run_maintenance_cycle(
     unintended_count = len(unintended)
     blast_radius_verified = unintended_count == 0
 
-    # Install dependencies then run tests
+    # Install dependencies then run tests. -1 means NOT RUN (no repair applied, no execution to verify).
     test_cmd = _detect_test_command(repo_dir)
-    test_exit_code = 0
-    test_duration_ms = 1
+    test_exit_code = -1
+    test_duration_ms = 0
     raw_output = ""
 
     if files_modified > 0:
-        if test_cmd not in ("exit 0", "") and not test_cmd.startswith("node test/"):
+        if test_cmd:
             try:
                 _run_install(repo_dir, timeout=120)
             except Exception:
@@ -219,14 +227,16 @@ def run_maintenance_cycle(
                 dry_run=False,
             )
             if retry_results:
+                # Explicit hybrid: deterministic pre-pass + AI repair of the failure.
+                decision.strategy = "HYBRID"
+                decision.reason = "direct_then_ai_repair"
+                decision.confidence = 0.7
                 run_style_formatter(repo_dir, modified_paths)
                 retry_proc = _run_tests(repo_dir, test_cmd, timeout=120)
                 if retry_proc.returncode == 0:
                     test_exit_code = 0
                     patch_results = retry_results
                     unified_diff = "\n".join(r.unified_diff for r in patch_results if r.unified_diff)
-
-    compressed_log = route_and_compress(raw_output)
 
     # Roll back if tests failed
     if test_exit_code != 0:
@@ -259,7 +269,7 @@ def run_maintenance_cycle(
     )
     pr_body = generate_trust_pr_markdown(meta)
 
-    success = blast_radius_verified and test_exit_code == 0 and files_modified > 0
+    success = blast_radius_verified and test_exit_code == 0 and files_modified > 0 and quarantine_error is None
 
     if success:
         record_migration_history(repo_dir, {
@@ -274,7 +284,27 @@ def run_maintenance_cycle(
             "patch_sha256": patch_hash,
             "blast_radius_zero": blast_radius_verified,
             "files_modified": modified_paths,
+            "strategy": decision.strategy,
+            "reason": decision.reason,
         })
+        kb_upsert(
+            repo_dir,
+            provider_name,
+            actual_from,
+            actual_to,
+            applied_rules=all_rules,
+            patch_results=patch_results,
+            test_command=test_cmd,
+            evidence={"patch_hash": patch_hash, "lockfile_hash": lockfile_hash},
+            rewrites=rewrites,
+        )
+    elif quarantine_error and not patch_results:
+        # G5: loud quarantine — never silent
+        pr_body = (
+            f"## Compart: repair quarantined\n\n{quarantine_error}\n\n"
+            f"Provider: {p_spec.display_name} {actual_from} -> {actual_to}\n"
+            f"Strategy: {decision.strategy} ({decision.reason})\n"
+        )
 
     pr_url = None
     pr_number = None
@@ -320,4 +350,5 @@ def run_maintenance_cycle(
         patch_results=patch_results,
         pr_url=pr_url,
         pr_number=pr_number,
+        error=quarantine_error,
     )

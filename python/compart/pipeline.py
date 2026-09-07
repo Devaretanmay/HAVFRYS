@@ -20,8 +20,6 @@ same pipeline.
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import os
 import subprocess
@@ -36,13 +34,9 @@ from compart.github.pr_render import (
     render_verification_comment,
 )
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
-from compart.audit import run_audit
-from compart.graph import build_dependency_graph, audit_dependency_graph
 from compart.autopatch import (
     ScanConfig,
     scan_callsites,
-    generate_maintenance_plan,
-    diff_schemas,
 )
 from compart.providers.registry import get_default_registry, ProviderSpec
 from compart.drift import detect_drift
@@ -53,6 +47,8 @@ from compart.test_runner import (
     _compute_lockfile_hash,
     _blake3_digest,
 )
+from compart.intelligence import CompartIntelligence, resolve_migration
+from compart.knowledge import direct_rewrites_for, upsert_learned as kb_upsert
 from compart.patch_writer import apply_rewrites
 from compart.sandbox.snapshot import SnapshotManager
 
@@ -591,7 +587,10 @@ def apply_fixes(
     analysis: AnalysisResult,
     policy: PipelinePolicy,
 ) -> AnalysisResult:
-    """Apply surgical AST patches for auto-repairable findings."""
+    """Apply fixes via Compart Intelligence: DIRECT (registry+KB) or AI fallback. Single router."""
+    from compart.ai_planner import AIPatchPlanner
+    from compart.maintenance_agents import ImpactAnalyst
+
     modified_files: List[str] = []
     unified_diffs: List[str] = []
 
@@ -600,30 +599,64 @@ def apply_fixes(
     snapshotter.snapshot()
     setattr(ctx, "_snapshotter", snapshotter)
 
+    intel = CompartIntelligence()
     patched_callsites: List[Dict[str, Any]] = []
     for finding in analysis.findings:
-        if not finding.is_auto_repairable:
+        _from, _to, migration = resolve_migration(
+            finding.provider_name, finding.current_version, finding.target_version
+        )
+        rewrites = migration.rewrites if migration else []
+        decision = intel.decide(ctx.workdir, finding.provider_name, _from, _to, has_rewrites=bool(rewrites))
+        if decision.strategy == "QUARANTINE":
+            _logger.info("pipeline.quarantine provider=%s reason=%s", finding.provider_name, decision.reason)
             continue
-        registry = get_default_registry()
-        p_spec = registry.get(finding.provider_name)
-        if not p_spec or not p_spec.migrations:
-            continue
-        migration = next(iter(p_spec.migrations.values()))
-        if not migration.rewrites:
-            continue
-
-        results = apply_rewrites(ctx.workdir, migration.rewrites, dry_run=False)
-        for r in results:
-            if r.success:
-                modified_files.append(r.file_path)
-                if r.unified_diff:
-                    unified_diffs.append(r.unified_diff)
-                rel_p = os.path.relpath(r.file_path, ctx.workdir) if os.path.isabs(r.file_path) else r.file_path
-                for rule_desc in r.rules_applied:
-                    patched_callsites.append({
-                        "file_path": rel_p,
-                        "description": rule_desc,
-                    })
+        if decision.strategy == "DIRECT":
+            kb_rules = direct_rewrites_for(ctx.workdir, finding.provider_name, _from, _to)
+            seen = {r.pattern for r in rewrites}
+            combined = list(rewrites) + [r for r in kb_rules if r.pattern not in seen]
+            if not combined:
+                continue
+            results = apply_rewrites(ctx.workdir, combined, dry_run=False)
+            for r in results:
+                if r.success:
+                    modified_files.append(r.file_path)
+                    if r.unified_diff:
+                        unified_diffs.append(r.unified_diff)
+                    rel_p = os.path.relpath(r.file_path, ctx.workdir) if os.path.isabs(r.file_path) else r.file_path
+                    for rule_desc in r.rules_applied:
+                        patched_callsites.append({
+                            "file_path": rel_p,
+                            "description": rule_desc,
+                        })
+        elif decision.strategy == "AI":
+            planner = AIPatchPlanner.from_env()
+            if planner is None:
+                _logger.info("pipeline.quarantine provider=%s reason=no_credentials_for_ai", finding.provider_name)
+                continue
+            impact = ImpactAnalyst().analyze_impact(ctx.workdir, finding.provider_name)
+            target_files = impact.affected_files or finding.affected_files
+            if not target_files:
+                continue
+            ai_results = planner.plan_and_apply(
+                repo_dir=ctx.workdir,
+                affected_files=target_files,
+                provider_name=finding.provider_name,
+                from_version=_from,
+                to_version=_to,
+                migration_details=finding.breaking_change,
+                dry_run=False,
+            )
+            for r in ai_results:
+                if r.success:
+                    modified_files.append(r.file_path)
+                    if r.unified_diff:
+                        unified_diffs.append(r.unified_diff)
+                    rel_p = os.path.relpath(r.file_path, ctx.workdir) if os.path.isabs(r.file_path) else r.file_path
+                    for rule_desc in r.rules_applied:
+                        patched_callsites.append({
+                            "file_path": rel_p,
+                            "description": rule_desc,
+                        })
 
     if modified_files:
         run_style_formatter(ctx.workdir, modified_files)
@@ -685,9 +718,22 @@ def generate_evidence(
     ctx: TriggerContext,
     analysis: AnalysisResult,
 ) -> AnalysisResult:
-    """Generate blast-radius containment receipt and Trust PR markdown."""
+    """Generate blast-radius containment receipt and Trust PR markdown. Also closes the flywheel."""
     if not analysis.verified or not analysis.modified_files:
         return analysis
+    # Flywheel: cache verified rewrites per provider migration
+    try:
+        for f in analysis.findings:
+            _from, _to, migration = resolve_migration(f.provider_name, f.current_version, f.target_version)
+            kb_upsert(
+                ctx.workdir, f.provider_name, _from, _to,
+                applied_rules=[c.get("description", "") for c in analysis.patched_callsites],
+                test_command=analysis.test_command,
+                evidence={"patch_hash": "", "lockfile_hash": ""},
+                rewrites=migration.rewrites if migration else [],
+            )
+    except Exception as e:
+        _logger.warning("kb upsert failed: %s", e)
 
     unified_diff = "\n".join(analysis.unified_diffs)
     lockfile_hash = _compute_lockfile_hash(ctx.workdir)

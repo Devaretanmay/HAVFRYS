@@ -16,13 +16,23 @@ pip install --upgrade compart
 
 ---
 
-## 2. Day-0 Dependency Check & Risk Register
-
-Immediately scan your codebase for breaking upstream API changes, deprecated callsites, and auto-repairable integrations:
+## 2. Onboarding (no AI key required)
 
 ```bash
 cd my-project
 
+compart auth              # Connect AI provider — only needed when AI repair is required
+compart doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Tests, Monitoring
+compart index .           # Zero-token static index of contracts & callsites
+```
+
+---
+
+## 3. Day-0 Dependency Check & Risk Register
+
+Immediately scan your codebase for breaking upstream changes, deprecated callsites, and auto-repairable integrations. Read-only — works with no AI credentials configured:
+
+```bash
 # Run terminal risk register:
 compart check .
 
@@ -35,21 +45,24 @@ compart graph .
 
 ---
 
-## 3. Autonomous Continuous Maintenance
+## 4. Autonomous Continuous Maintenance
 
-Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS):
+Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS).
+Compart internally decides DIRECT (verified pattern, zero tokens) vs AI (your provider) — there is
+no engine flag to choose. Unsafe repairs refuse loudly with zero files touched:
 
 ```bash
-# Detect drift and run surgical AST patch loop:
-compart fix . --provider stripe
+# Auto-detect provider and repair:
+compart fix .
 
-# Custom version bump and open PR:
+# Targeted migration and open PR:
+compart fix . --provider stripe
 compart fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
 ```
 
 ---
 
-## 4. Interactive Coding Agents & Sandboxed Governance
+## 5. Interactive Coding Agents & Sandboxed Governance (advanced)
 
 Run terminal coding agents inside a kernel-enforced sandbox with full native TUI fidelity:
 
@@ -65,7 +78,7 @@ compart commit  # Commit to Git with verified provenance trailers
 
 ---
 
-## 5. Key Guarantees
+## 6. Key Guarantees
 
 - **External Intelligence**: Full-codebase AST mapping of providers, contracts, wrappers, and callsites.
 - **Continuous Maintenance**: Surgical AST patching with local formatter matching and automated Developer Trust PRs.

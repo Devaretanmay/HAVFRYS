@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from compart.audit import render_audit_cli
 from compart.graph import audit_dependency_graph, build_dependency_graph
@@ -118,7 +118,8 @@ def handle_tool_call(name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     elif name == "compart_analyze_dependency":
-        provider = arguments.get("provider", "").lower()
+        # kind/identity accepted for future contract types; provider remains the wired path.
+        provider = (arguments.get("provider") or arguments.get("identity") or "").lower()
         detected = detect_drift(repo_path, provider if provider else None)
         graph = build_dependency_graph(repo_path)
         matching_nodes = [
@@ -141,11 +142,10 @@ def handle_tool_call(name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         from_ver = arguments.get("from_version")
         to_ver = arguments.get("to_version")
         report = run_maintenance_cycle(
-            root_dir=repo_path,
+            repo_dir=repo_path,
             provider_name=provider,
             from_version=from_ver,
             to_version=to_ver,
-            auto_commit=False,
             create_pr=False,
         )
         return {

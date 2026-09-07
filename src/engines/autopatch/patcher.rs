@@ -125,7 +125,7 @@ fn patch_integer_to_string(line: &str, field_name: &str) -> String {
 
         // Extract value up to comma, closing brace, or end of line
         let end_idx = trimmed_after
-            .find(|c| c == ',' || c == '}' || c == ')')
+            .find([',', '}', ')'])
             .unwrap_or(trimmed_after.len());
         let val = &trimmed_after[..end_idx].trim();
         let suffix = &trimmed_after[end_idx..];

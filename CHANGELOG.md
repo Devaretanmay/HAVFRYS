@@ -11,6 +11,14 @@ All notable changes to Compart are documented here.
 - **Provider Contract Registry (`compart providers`).** Pre-indexed breaking-change contract catalog for Stripe, OpenAI, Anthropic, Clerk, Sentry, Supabase, Twilio, Octokit, and AWS SDK.
 - **Time-Machine Replay Protocol (`compart reproduce`).** Historical benchmark engine evaluating verified ground-truth migrations against real open-source repositories with zero blast radius.
 - **GitHub App & Webhook Server (`compart app`).** Continuous webhook daemon for automated PR drift detection and verification.
+- **Change-source abstraction (`compart.change_source`).** Thin `ChangeSource`/`Detection` types generalizing the pipeline beyond vendor SDKs (OpenAPI, GraphQL, protobuf, webhooks, MCP, internal services as representable, fail-closed kinds).
+- **Invisible decision engine (`CompartIntelligence`).** Internal DIRECT/AI/HYBRID/QUARANTINE routing with confidence, token estimates, and blast-radius metadata. No `--ai`/`--direct` user flags.
+- **Repository knowledge flywheel (`.compart/knowledge/`).** Namespaced verified-pattern cache with legacy fallback reads, failure quarantine, and test-recipe seeding on index.
+- **Incremental indexing (`index_state.json`).** Commit-SHA + mtime tracking; `changed_since_index()` reports freshness and discovery deltas.
+- **Installation persistence (`compart.github.installations`).** Flat-JSON install records with PENDING → INDEXED → READY lifecycle and Day-0 indexing on install events.
+- **Scoped BYOK credentials.** Env → per-installation → global resolution (0600); secrets never enter repo state, logs, or knowledge.
+- **`compart doctor`.** Six-line product readiness: GitHub, AI provider, index, knowledge, test command, monitoring.
+- **Fail-closed webhook serving.** Missing secret is a hard error (`--no-secret` is local-debug only).
 
 ### Changed
 - **Relicensed Apache-2.0.** The project moves from Elastic License 2.0 to the

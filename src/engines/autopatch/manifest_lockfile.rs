@@ -146,8 +146,8 @@ pub fn parse_pnpm_lock(content: &str, dep_name: &str) -> Result<String, String> 
             continue;
         }
         if in_dep_block {
-            if trimmed.starts_with("version:") {
-                let ver = trimmed["version:".len()..]
+            if let Some(rest) = trimmed.strip_prefix("version:") {
+                let ver = rest
                     .trim()
                     .trim_matches(|c| c == '\'' || c == '"')
                     .split('(')

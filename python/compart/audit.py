@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict
+import subprocess
+import time
+from typing import Any, Dict, List, Optional
 
 from compart.graph import audit_dependency_graph, build_dependency_graph
 
@@ -92,7 +94,106 @@ def render_audit_github_issue(summary: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+STATE_FILE = "index_state.json"
+
+_MANIFESTS = ("package.json", "requirements.txt", "pyproject.toml", "Cargo.toml",
+              "go.mod", "Gemfile", "package-lock.json", "yarn.lock", "pnpm-lock.yaml")
+
+
+def _head_sha(repo_root: str) -> str:
+    try:
+        proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_root,
+                              capture_output=True, text=True, timeout=10)
+        return proc.stdout.strip() if proc.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+def _changed_since(repo_root: str, state: Dict[str, Any]) -> List[str]:
+    """Files changed since the stored index state (git-aware, mtime fallback)."""
+    changed: List[str] = []
+    old_sha = state.get("commit_sha", "")
+    new_sha = _head_sha(repo_root)
+    if old_sha and new_sha and old_sha != new_sha:
+        try:
+            proc = subprocess.run(["git", "diff", "--name-only", old_sha, new_sha],
+                                  cwd=repo_root, capture_output=True, text=True, timeout=15)
+            if proc.returncode == 0:
+                changed.extend(f for f in proc.stdout.splitlines() if f.strip())
+        except Exception:
+            pass
+    old_mtimes = state.get("mtimes", {})
+    for dirpath, dirnames, filenames in os.walk(repo_root, topdown=True):
+        dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules", ".next", "__pycache__", ".venv", "target", ".compart"}]
+        for fn in filenames:
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, repo_root)
+            try:
+                mt = os.path.getmtime(fp)
+            except OSError:
+                continue
+            if rel not in old_mtimes:
+                # brand-new file since index (skip on first-ever index)
+                if old_mtimes:
+                    changed.append(rel)
+            elif old_mtimes[rel] != mt:
+                changed.append(rel)
+    return sorted(set(changed))
+
+
+def read_index_state(repo_root: str = ".") -> Optional[Dict[str, Any]]:
+    p = os.path.join(repo_root, ".compart", STATE_FILE)
+    if not os.path.isfile(p):
+        return None
+    try:
+        with open(p, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def write_index_state(repo_root: str, summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Persist commit SHA + file mtimes + discovery counts for incremental re-indexing."""
+    repo_root = os.path.abspath(repo_root)
+    mtimes: Dict[str, float] = {}
+    for dirpath, dirnames, filenames in os.walk(repo_root, topdown=True):
+        dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules", ".next", "__pycache__", ".venv", "target", ".compart"}]
+        for fn in filenames:
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, repo_root)
+            try:
+                mtimes[rel] = os.path.getmtime(fp)
+            except OSError:
+                continue
+    state = {
+        "version": 1,
+        "commit_sha": _head_sha(repo_root),
+        "indexed_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "providers": summary.get("total_providers_detected", 0),
+        "callsites": summary.get("total_callsites_mapped", 0),
+        "mtimes": mtimes,
+    }
+    os.makedirs(os.path.join(repo_root, ".compart"), exist_ok=True)
+    with open(os.path.join(repo_root, ".compart", STATE_FILE), "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2)
+        f.write("\n")
+    return state
+
+
+def changed_since_index(repo_root: str = ".") -> Dict[str, Any]:
+    """Describe what changed since the last persisted index. Read-only."""
+    state = read_index_state(repo_root)
+    if state is None:
+        return {"indexed": False, "fresh": False, "changed_files": [], "manifests_changed": []}
+    changed = _changed_since(os.path.abspath(repo_root), state)
+    manifests = sorted({c for c in changed if os.path.basename(c) in _MANIFESTS})
+    return {"indexed": True, "fresh": not changed, "changed_files": changed,
+            "manifests_changed": manifests, "commit_sha": state.get("commit_sha", "")}
+
+
 def run_audit(repo_root: str = ".", output_format: str = "cli", write_graph: bool = False) -> str:
+    prev = read_index_state(repo_root) if write_graph else None
     summary = audit_dependency_graph(repo_root)
 
     if write_graph:
@@ -100,6 +201,15 @@ def run_audit(repo_root: str = ".", output_format: str = "cli", write_graph: boo
         os.makedirs(os.path.join(repo_root, ".compart"), exist_ok=True)
         with open(os.path.join(repo_root, ".compart", "graph.json"), "w") as f:
             json.dump(graph, f, indent=2)
+        write_index_state(repo_root, summary)
+        # discovery delta: what this re-index newly found (incremental understanding)
+        if prev is not None:
+            summary["_index_delta"] = {
+                "providers_before": prev.get("providers", 0),
+                "callsites_before": prev.get("callsites", 0),
+                "providers_now": summary.get("total_providers_detected", 0),
+                "callsites_now": summary.get("total_callsites_mapped", 0),
+            }
 
     if output_format == "json":
         return json.dumps(summary, indent=2)

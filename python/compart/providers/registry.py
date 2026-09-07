@@ -1,7 +1,7 @@
 """Provider-Neutral Contract Registry & Migration Specs Catalog."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -103,6 +103,20 @@ class ProviderRegistry:
             description="Stripe Node SDK v22 drift: amount field string requirement.",
             old_spec_path="trials/fixtures/taxonomy_stripe/specs/stripe_v21.json",
             new_spec_path="trials/fixtures/taxonomy_stripe/specs/stripe_v22.json",
+            rewrites=[
+                RewriteRule(
+                    pattern=r'amount:\s*amount',
+                    replacement='amount: String(amount)',
+                    file_extensions=[".ts", ".tsx", ".js", ".jsx"],
+                    description="Convert amount parameter to string for Stripe v22 contract",
+                ),
+                RewriteRule(
+                    pattern=r'"stripe":\s*"\^11\.\d+\.\d+"',
+                    replacement='"stripe": "^22.0.0"',
+                    file_extensions=[".json"],
+                    description="Bump stripe package version to ^22.0.0",
+                ),
+            ],
         )
         self.register(stripe_spec)
 
@@ -306,3 +320,35 @@ def get_default_registry() -> ProviderRegistry:
     if _GLOBAL_REGISTRY is None:
         _GLOBAL_REGISTRY = ProviderRegistry()
     return _GLOBAL_REGISTRY
+
+
+def find_migration_for(source: Any) -> Optional[ProviderMigration]:
+    """Adapter: resolve a ChangeSource to a registry migration.
+
+    Only sdk/external_api kinds backed by the provider registry resolve;
+    every other kind returns None (→ quarantine/AI path). Thin by design.
+    """
+    kind = getattr(source, "kind", "")
+    if kind not in ("sdk", "external_api"):
+        return None
+    identity = getattr(source, "identity", "") or ""
+    spec = get_default_registry().get(identity)
+    if not spec or not spec.migrations:
+        return None
+    want_from = getattr(source, "version_from", "") or ""
+    want_to = getattr(source, "version_to", "") or ""
+
+    def _norm(v: str) -> str:
+        return v.strip().lstrip("^~>=< ")
+
+    migs = list(spec.migrations.values())
+    nf, nt = _norm(want_from), _norm(want_to)
+    for m in migs:
+        if nf and nt and _norm(m.from_version) == nf and _norm(m.to_version) == nt:
+            return m
+    for m in migs:
+        if nf and _norm(m.from_version) == nf:
+            return m
+        if nt and _norm(m.to_version) == nt:
+            return m
+    return migs[0]

@@ -17,7 +17,6 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-import time
 from typing import Any, Callable, Dict, List, Optional
 
 from compart.github.client import GitHubAppClient
@@ -25,11 +24,6 @@ from compart.pipeline import (
     MaintenancePipeline,
     PipelinePolicy,
     TriggerContext,
-    analyze_trigger_context,
-)
-from compart.github.pr_render import (
-    render_verification_comment,
-    render_maintenance_issue_comment,
 )
 from compart.graph import build_dependency_graph
 from compart.drift import detect_drift
@@ -71,7 +65,6 @@ def handle_pull_request_event(
 
     ref = ppr.get("head", {}).get("ref")
     sha = ppr.get("head", {}).get("sha")
-    base_ref = ppr.get("base", {}).get("ref")
 
     if not number or not ref or not sha:
         return {"success": False, "error": "Missing PR head info"}
@@ -271,10 +264,21 @@ def handle_installation_event(
     event_type: str,
     client: GitHubAppClient,
     workdir_fn: Optional[Callable[[str], str]] = None,
+    store: bool = True,
 ) -> Dict[str, Any]:
-    """Handle installation.* and installation_repositories.* webhook events."""
+    """Handle installation.* and installation_repositories.* webhook events.
+
+    Persists the installation record, runs Day-0 indexing wherever a local
+    checkout is available, and posts the onboarding issue. Install → record
+    → index → READY, not just a comment.
+    """
+    from compart.github.installations import (
+        REPO_INDEXED, REPO_PENDING, record_installation_event,
+    )
+
     repos_data = payload.get("repositories") or payload.get("repositories_added") or []
     onboarded: List[str] = []
+    repo_states: Dict[str, Dict[str, Any]] = {}
 
     for repo_info in repos_data:
         repo_name = repo_info.get("full_name") if isinstance(repo_info, dict) else str(repo_info)
@@ -282,6 +286,16 @@ def handle_installation_event(
             continue
 
         workdir = workdir_fn(repo_name) if workdir_fn else None
+        state = REPO_PENDING
+        if workdir and os.path.isdir(workdir):
+            try:
+                from compart.audit import run_audit
+                run_audit(repo_root=workdir, output_format="cli", write_graph=True)
+                state = REPO_INDEXED
+            except Exception as e:
+                _logger.warning("day-0 index failed for %s: %s", repo_name, e)
+        repo_states[repo_name] = {"state": state, "workdir": workdir}
+
         issue_body = render_day0_onboarding_issue(repo_name, workdir=workdir)
         try:
             client.create_issue(
@@ -294,10 +308,13 @@ def handle_installation_event(
         except Exception as e:
             _logger.warning("failed to post Day-0 onboarding issue for %s: %s", repo_name, e)
 
+    record = record_installation_event(payload, repo_states) if store else {}
     return {
         "success": True,
         "event_type": event_type,
         "repositories_onboarded": onboarded,
+        "repo_states": {r: s["state"] for r, s in repo_states.items()},
+        "installation_id": record.get("installation_id") if record else None,
     }
 
 

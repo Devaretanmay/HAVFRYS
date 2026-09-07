@@ -59,12 +59,24 @@ def _compute_lockfile_hash(repo_dir: str) -> str:
 
 
 def _run_install(repo_dir: str, timeout: int = 120) -> subprocess.CompletedProcess:
+    # multi-ecosystem: prefer the manifest actually present
+    if os.path.exists(os.path.join(repo_dir, "Cargo.toml")) and shutil.which("cargo"):
+        return subprocess.run(["cargo", "fetch"], cwd=repo_dir, capture_output=True, text=True, timeout=timeout)
+    if (os.path.exists(os.path.join(repo_dir, "requirements.txt")) or os.path.exists(os.path.join(repo_dir, "pyproject.toml"))) and shutil.which("pip"):
+        req = os.path.join(repo_dir, "requirements.txt")
+        cmd = ["pip", "install", "-r", req] if os.path.exists(req) else ["pip", "install", "-e", "."]
+        try:
+            return subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True, timeout=timeout)
+        except Exception:
+            pass
     if shutil.which("pnpm") and os.path.exists(os.path.join(repo_dir, "pnpm-lock.yaml")):
         cmd = ["pnpm", "install", "--frozen-lockfile=false"]
     elif shutil.which("yarn") and os.path.exists(os.path.join(repo_dir, "yarn.lock")):
         cmd = ["yarn", "install"]
-    else:
+    elif shutil.which("npm") and os.path.exists(os.path.join(repo_dir, "package.json")):
         cmd = ["npm", "install"]
+    else:
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="no install needed", stderr="")
     return subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True, timeout=timeout)
 
 

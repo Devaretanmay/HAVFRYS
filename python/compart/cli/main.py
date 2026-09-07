@@ -14,12 +14,10 @@ import time
 from typing import List, Optional
 import yaml
 
-from compart.compart import Compart, AgentCompart, CompartConfig
-from compart.compartments import Compartment
 from compart.hooks.base import SandboxRunner, diff_trees, index_workdir
 from compart.sandbox.snapshot import SnapshotManager
-from compart.engine.session import SessionManager, AgentSession, SessionStatus
-from compart.engine.lane import LaneManager, Lane, LaneStatus
+from compart.engine.session import SessionManager, SessionStatus
+from compart.engine.lane import LaneManager, LaneStatus
 from compart.engine.integration import IntegrationEngine
 from compart.engine.execution import Execution, ExecutionManager, ExecutionKind, ExecutionStatus
 from compart.engine.pty_supervisor import PtySupervisor
@@ -30,22 +28,20 @@ from compart.config import (
     WorkspaceConfig,
     load_config,
     find_workspace_root,
-    is_compart_workspace,
 )
 from compart import autopatch
 from compart.audit import run_audit
 from compart.graph import build_dependency_graph
 from compart.github.webhook_server import WebhookServer
-from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 from compart.maintenance import run_maintenance_cycle, detect_drift
+from compart.providers.registry import get_default_registry
+from compart.test_runner import _detect_test_command
 import getpass
 from compart.credentials import (
     save_credentials,
-    load_credentials,
     get_active_provider_summary,
     verify_credentials,
     clear_credentials,
-    has_valid_credentials,
 )
 from compart.github.pr_bot import make_pr_bot_handler, run_on_pr_locally
 from compart.mcp_server import serve_stdio
@@ -209,7 +205,10 @@ def _write_shims(compart_dir: str) -> list[str]:
 
 
 def cmd_init(args):
-    """Initialize a Compart workspace in the current directory."""
+    """Initialize a Compart workspace in the current directory (legacy advanced path)."""
+    print("Note: `compart init` is the legacy workspace path. Normal onboarding is:")
+    print("  compart auth → compart index → compart check → compart fix")
+    print()
     for sub in ("state", "logs", "snapshots", "sessions", "lanes", "executions", "integration"):
         os.makedirs(os.path.join(COMPART_DIR, sub), exist_ok=True)
 
@@ -318,6 +317,58 @@ def cmd_status(args):
     print(f"  {blocked} blocked action(s)")
     print(f"  0 credential escapes")
     print()
+
+
+def cmd_doctor(args):
+    """Product health check: GitHub, AI provider, index, knowledge, tests, monitoring."""
+    summary = get_active_provider_summary()
+    ws_root = find_workspace_root() or os.path.abspath(".")
+    graph_path = os.path.join(ws_root, ".compart", "graph.json")
+    indexed = os.path.isfile(graph_path)
+    try:
+        tcmd = _detect_test_command(ws_root)
+    except Exception:
+        tcmd = ""
+    gh_connected = bool(os.environ.get("GITHUB_TOKEN") or os.environ.get("COMPART_GITHUB_TOKEN")
+                        or (os.environ.get("COMPART_GITHUB_APP_ID") and os.environ.get("COMPART_GITHUB_PRIVATE_KEY")))
+    kb_state = "MISSING"
+    if indexed:
+        try:
+            from compart.audit import changed_since_index
+            kb_state = "READY" if changed_since_index(ws_root).get("fresh") else "STALE"
+        except Exception:
+            kb_state = "READY"
+    monitoring = "NOT ACTIVE"
+    try:
+        from compart.github.installations import store_dir
+        idir = store_dir()
+        for fn in os.listdir(idir):
+            if not fn.endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(idir, fn), encoding="utf-8") as f:
+                    rec = json.load(f)
+                if any((s.get("state") == "READY") for s in rec.get("repos", {}).values()):
+                    monitoring = "ACTIVE"
+                    break
+            except Exception:
+                continue
+    except Exception:
+        pass
+    print("================================================================================")
+    print("                 COMPART DOCTOR — product readiness                              ")
+    print("================================================================================\n")
+    print(f"GitHub:             {'CONNECTED' if gh_connected else 'NOT CONFIGURED — set GITHUB_TOKEN or App credentials'}")
+    if summary.get("configured"):
+        print(f"AI provider:        CONNECTED ({summary.get('provider')} via {summary.get('source')})")
+    else:
+        print("AI provider:        NOT CONFIGURED — run `compart auth` (needed only for AI repair)")
+    print(f"Repository:         {ws_root}")
+    print(f"Indexed:            {'YES' if indexed else 'NOT INDEXED — run `compart index`'}")
+    print(f"Knowledge Base:     {kb_state}")
+    print(f"Test command:       {tcmd or 'NOT FOUND — verification will fail closed'}")
+    print(f"Monitoring:         {monitoring}")
+    print("\nFlow: Install → Index → Check (free) → Connect AI → Fix (when repair needs reasoning).\n================================================================================")
 
 
 def _snapshot_worktree(workspace_root: str, snapshot_id: str) -> str:
@@ -547,23 +598,9 @@ def cmd_run(args):
         topology = _load_topology()
         comps = topology.get("compartments", {})
         if comps:
-            print(f"Materializing declared topology for '{topology.get('name', 'unnamed')}'...")
-            compart = AgentCompart(workdir=ws_root, verbose=True)
-            for name, cfg_comp in comps.items():
-                perms = cfg_comp.get("permissions", ["fs_read"])
-                def dummy_fn(ctx, n=name):
-                    print(f"[{n}] Executing inside kernel sandbox...")
-                    return {"status": "ok"}
-                compart.add(Compartment(name=name, fn=dummy_fn, config=CompartmentConfig(permissions=perms)))
-            for edge in topology.get("connections", []):
-                if isinstance(edge, (list, tuple)) and len(edge) >= 2:
-                    compart.edge(edge[0], edge[1])
-            result = compart.run()
-            if result.status == "error":
-                print(f"\nExecution failed: {result.errors}")
-                sys.exit(1)
-            else:
-                print("\nExecution succeeded.")
+            print(f"Topology '{topology.get('name', 'unnamed')}' declares {len(comps)} compartment(s) but no workflow.")
+            print("Use `compart workflow show` or `compart check` for maintenance. `compart run <workflow>` to execute.")
+            print("No dummy execution performed.")
             return
 
     print("No workflow specified. Usage: compart run <workflow_name>")
@@ -1893,19 +1930,30 @@ def cmd_auth(args):
 
 
 def cmd_check(args):
-    """Day-0 External-Change Dependency Audit and Risk Register."""
-    # Mandatory AI Provider Check
-    if not getattr(args, "skip_auth", False) and not has_valid_credentials():
-        _print_auth_warning()
-        sys.exit(1)
-
+    """Day-0 External-Change Dependency Audit and Risk Register — zero-token static indexing (blueprint box 2)."""
+    # Zero-token path: never gate scan/index on LLM creds. Only gate fix/maintain when AI is actually needed.
     root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    write_graph = getattr(args, "write_graph", False)
     output = run_audit(
         repo_root=root_path,
         output_format=getattr(args, "format", "cli"),
-        write_graph=getattr(args, "write_graph", False),
+        write_graph=write_graph,
     )
     print(output)
+    # G8: index warms KB test_recipe so future DIRECT has verification context without extra tokens
+    if write_graph:
+        try:
+            from compart.drift import detect_drift
+            from compart.intelligence import resolve_migration
+            from compart.knowledge import ensure_test_recipe
+            from compart.test_runner import _detect_test_command
+            tcmd = _detect_test_command(root_path)
+            if tcmd:
+                for d in detect_drift(root_path):
+                    _f, _t, _m = resolve_migration(d["provider"], d.get("declared_version"), d.get("target_version"))
+                    ensure_test_recipe(root_path, d["provider"], _f, _t, tcmd)
+        except Exception:
+            pass
 
 
 def cmd_fix(args):
@@ -1923,8 +1971,13 @@ def cmd_app(args):
         cfg = load_config()
         policy = cfg.pipeline_policy()
         handler = make_pr_bot_handler(policy=policy)
-        server = WebhookServer(port=args.port, secret=args.secret, handler=handler)
-        sec_msg = "YES (HMAC-SHA256)" if args.secret else "NO (Set --secret or COMPART_WEBHOOK_SECRET)"
+        secret = args.secret or os.environ.get("COMPART_WEBHOOK_SECRET")
+        if not secret and not getattr(args, "no_secret", False):
+            print("Error: refusing to serve webhooks without a secret (forged events would be accepted).")
+            print("Set COMPART_WEBHOOK_SECRET, pass --secret, or use --no-secret for local debugging only.")
+            sys.exit(2)
+        server = WebhookServer(port=args.port, secret=secret, handler=handler)
+        sec_msg = "YES (HMAC-SHA256)" if secret else "NO — local debugging only (--no-secret)"
         print("================================================================================")
         print("               COMPART GITHUB APP: CONTINUOUS WEBHOOK LISTENER                  ")
         print("================================================================================\n")
@@ -1948,12 +2001,9 @@ def cmd_mcp(args):
 
 
 def cmd_maintain(args):
-    """Run autonomous continuous maintenance loop on a target repository."""
-    # Mandatory AI Provider Check
-    if not getattr(args, "skip_auth", False) and not has_valid_credentials():
-        _print_auth_warning()
-        sys.exit(1)
-
+    """Run autonomous continuous maintenance loop — intelligence decides DIRECT vs AI (blueprint box 5)."""
+    # Auth is deferred to intelligence: DIRECT (registry/KB) succeeds with 0 tokens even without creds.
+    # Only AI path will fail closed if creds missing, with a clear warning.
     root_dir = os.path.abspath(args.root_dir)
     print("================================================================================")
     print("               COMPART AUTONOMOUS MAINTENANCE LOOP: EXECUTION                   ")
@@ -1965,13 +2015,21 @@ def cmd_maintain(args):
         detected_all = detect_drift(root_dir)
         if detected_all:
             target_provider = detected_all[0]["provider"]
+            # G2: version-aware — seed from/to from manifest + registry when flags omitted
+            if not getattr(args, "from_version", None):
+                args.from_version = detected_all[0].get("declared_version")
+            if not getattr(args, "to_version", None) and detected_all[0].get("target_version"):
+                args.to_version = detected_all[0].get("target_version")
         else:
-            target_provider = "stripe"
+            print("No external provider detected in manifests. Refusing to guess.")
+            print("Run `compart check` to audit, or pass --provider explicitly.")
+            print("================================================================================")
+            return
 
     print(f"Target Provider:         {target_provider}")
-    
+
     if args.detect:
-        detected = detect_drift(root_dir, target_provider)
+        detected = detect_drift(root_dir, target_provider if target_provider != "auto" else None)
         print(f"\nDetected Manifest Dependencies ({len(detected)}):")
         for d in detected:
             print(f"  - {d['display_name']} ({d['package_name']}): {d['declared_version']}")
@@ -1985,7 +2043,6 @@ def cmd_maintain(args):
         to_version=args.to_version,
         create_pr=args.create_pr,
         github_repo=args.repo,
-        use_ai=getattr(args, "ai", False),
         llm_api_key=getattr(args, "api_key", None),
         llm_model=getattr(args, "model", None),
         llm_base_url=getattr(args, "base_url", None),
@@ -1998,7 +2055,15 @@ def cmd_maintain(args):
     print(f"Version Migration:       {report.from_version} -> {report.to_version}")
     print(f"Files Scanned/Patched:   {report.files_scanned} scanned, {report.files_modified} modified")
     print(f"Blast-Radius Check:      {'PASS (0 unintended files modified)' if report.blast_radius_verified else 'FAIL'}")
-    print(f"Repository Tests:        {'PASSED (Exit 0, ' + str(report.test_duration_ms) + 'ms)' if report.test_exit_code == 0 else 'FAILED (Exit ' + str(report.test_exit_code) + ')'}")
+    if report.files_modified == 0:
+        print("Repository Tests:        NOT RUN (no repair was applied)")
+    elif report.test_exit_code == 0:
+        print(f"Repository Tests:        PASSED (Exit 0, {report.test_duration_ms}ms)")
+    else:
+        print(f"Repository Tests:        FAILED (Exit {report.test_exit_code})")
+    if getattr(report, "error", None):
+        print(f"Quarantined:             {report.error}")
+        print("Action required:       Run `compart auth` to enable AI repair.")
     if not report.success and report.test_exit_code != 0:
         print("Rollback:                APPLIED (snapshot restored, no changes left on disk)")
     print(f"Maintenance Outcome:     {'SUCCESS (VERIFIED GREEN)' if report.success else 'REFUSED / INCOMPLETE'}\n")
@@ -2160,14 +2225,18 @@ def main():
     description = textwrap.dedent("""\
         Compart: Autonomous External-Change Intelligence & Controlled Execution
 
-        Core Commands:
-          compart auth                     Connect BYOK AI provider (OpenAI, Anthropic, etc.)
-          compart check [path]             Scan external dependencies & breaking drift (alias: scan, audit)
-          compart fix [path] [--provider]  Autonomous migration: AST patch, format & sandbox tests (alias: maintain)
-          compart index [path]             Index repository API touchpoints & build dependency graph
-          compart undo                     Instant 2ms snapshot rollback
-          compart graph [path]             Inspect external dependency & call graph
-          compart diff                     Review change sets before commit
+        Core Commands (maintenance product — keeps software working when systems around it change):
+          compart auth                     Connect BYOK AI provider (needed only for AI repair)
+          compart doctor                   Product readiness: GitHub, AI, index, knowledge, tests
+          compart index [path]             Index repository contracts & callsites (free, zero-token)
+          compart check [path]             Detect contract changes & impact (read-only, alias: scan, audit)
+          compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
+          compart providers                List monitored contract sources & migrations
+          compart app serve                Run GitHub App webhook listener
+          compart pr                       Review a pull request with contract guard
+
+        Legacy / advanced (workflows, sessions, lanes):
+          compart init | status | diff | apply | commit | undo | graph | exec | mcp
     """)
 
     parser = argparse.ArgumentParser(
@@ -2191,6 +2260,8 @@ def main():
     subparsers.add_parser("init", help="Initialize a Compart workspace in the current directory")
 
     subparsers.add_parser("status", help="Show workspace status: agents, lanes, security events")
+
+    subparsers.add_parser("doctor", help="Blueprint readiness: auth + indexed + test command")
 
     inspect_parser = subparsers.add_parser("inspect", help="Dump declarative topology and project state")
     inspect_parser.add_argument("--json", action="store_true")
@@ -2380,7 +2451,7 @@ def main():
 
     fix_p = subparsers.add_parser("fix", help="Autonomous API migration: patch AST, format style, run sandboxed tests")
     fix_p.add_argument("root_dir", nargs="?", default=".", help="Codebase directory (default: .)")
-    fix_p.add_argument("--provider", default="stripe", help="Target API provider (e.g. stripe, openai, anthropic)")
+    fix_p.add_argument("--provider", default="auto", help="Target API provider (e.g. stripe, openai, anthropic, or auto)")
     fix_p.add_argument("--from", dest="from_version", default=None, help="Current dependency version")
     fix_p.add_argument("--to", dest="to_version", default=None, help="Target dependency version")
     fix_p.add_argument("--detect", action="store_true", help="Detect installed API providers in repository")
@@ -2388,14 +2459,13 @@ def main():
     fix_p.add_argument("--show-pr", action="store_true", help="Display the Trust PR body")
     fix_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for PR creation")
     fix_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
-    fix_p.add_argument("--ai", action="store_true", help="Force AI LLM patch generation instead of deterministic rules")
     fix_p.add_argument("--model", default=None, help="BYOK LLM model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
     fix_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     fix_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
 
     maintain_p = subparsers.add_parser("maintain", help="Alias for fix")
     maintain_p.add_argument("root_dir", nargs="?", default=".", help="Codebase directory (default: .)")
-    maintain_p.add_argument("--provider", default="stripe", help="Target API provider (e.g. stripe, openai, anthropic)")
+    maintain_p.add_argument("--provider", default="auto", help="Target API provider (e.g. stripe, openai, anthropic, or auto)")
     maintain_p.add_argument("--from", dest="from_version", default=None, help="Current dependency version")
     maintain_p.add_argument("--to", dest="to_version", default=None, help="Target dependency version")
     maintain_p.add_argument("--detect", action="store_true", help="Detect installed API providers in repository")
@@ -2403,7 +2473,6 @@ def main():
     maintain_p.add_argument("--show-pr", action="store_true", help="Display the Trust PR body")
     maintain_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for PR creation")
     maintain_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
-    maintain_p.add_argument("--ai", action="store_true", help="Force AI LLM patch generation instead of deterministic rules")
     maintain_p.add_argument("--model", default=None, help="BYOK LLM model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
     maintain_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     maintain_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
@@ -2412,6 +2481,7 @@ def main():
     app_p.add_argument("app_action", nargs="?", default="serve", choices=["serve", "status"], help="App action")
     app_p.add_argument("--port", type=int, default=8080, help="Webhook server port (default: 8080)")
     app_p.add_argument("--secret", default=None, help="GitHub Webhook secret for HMAC validation")
+    app_p.add_argument("--no-secret", action="store_true", help="Allow serving without a secret (local debugging only)")
 
     providers_p = subparsers.add_parser("providers", help="List supported providers and migration contract catalog")
     providers_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
@@ -2443,12 +2513,6 @@ def main():
     index_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
     index_p.add_argument("--write-graph", action="store_true", default=True, help="Persist .compart/graph.json")
 
-    check_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check (e.g. for offline CI)")
-    scan_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
-    audit_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
-    fix_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
-    maintain_p.add_argument("--skip-auth", action="store_true", help="Bypass AI provider credential check")
-
     shim_parser = subparsers.add_parser("_exec_shim", help=argparse.SUPPRESS)
     shim_parser.add_argument("shim_args", nargs=argparse.REMAINDER)
 
@@ -2466,6 +2530,7 @@ def main():
         "init": cmd_init,
         "auth": cmd_auth,
         "status": cmd_status,
+        "doctor": cmd_doctor,
         "inspect": cmd_inspect,
         "run": cmd_run,
         "lanes": cmd_lanes,

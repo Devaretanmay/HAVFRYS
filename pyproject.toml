@@ -4,8 +4,8 @@ build-backend = "maturin"
 
 [project]
 name = "compart"
-version = "1.0.4"
-description = "Compart: the audit layer for AI coding agents. Every agent action on the record, every change undoable in milliseconds."
+version = "1.1.0"
+description = "Compart: autonomous software maintenance for systems that change. Detect contract drift, repair, verify, and deliver PRs."
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 keywords = ["ai-agents", "developer-tools", "provenance", "audit", "sandbox", "isolation"]

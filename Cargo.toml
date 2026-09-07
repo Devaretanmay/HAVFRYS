@@ -1,9 +1,9 @@
 [package]
 name = "compart-core"
-version = "1.0.4"
+version = "1.1.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Compart - the audit layer for AI coding agents (Rust core)"
+description = "Compart - autonomous software maintenance for systems that change (Rust core)"
 repository = "https://github.com/Devaretanmay/Compart"
 homepage = "https://github.com/Devaretanmay/Compart"
 documentation = "https://docs.rs/crate/compart-core"

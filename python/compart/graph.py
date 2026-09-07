@@ -1,59 +1,15 @@
-# Copyright 2026 Compart Authors
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Compart Authors; SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 try:
     from compart._core import dependency_graph_build, dependency_graph_audit
 except ImportError:
     dependency_graph_build = None
     dependency_graph_audit = None
-
-
-@dataclass
-class AtRiskItem:
-    provider_name: str
-    package_name: str
-    current_version: str
-    target_version: str
-    breaking_change: str
-    callsites_count: int = 0
-    affected_files: List[str] = field(default_factory=list)
-    is_auto_repairable: bool = True
-    migration_guide_url: str = ""
-
-
-@dataclass
-class WatchlistItem:
-    provider_name: str
-    method_pattern: str
-    deprecation_deadline: str
-    days_remaining: Optional[int] = None
-    callsite_count: int = 0
-    documentation_url: str = ""
-
-
-@dataclass
-class HealthyItem:
-    provider_name: str
-    package_name: str
-    current_version: str
-    callsite_count: int = 0
-    status_message: str = ""
-
-
-@dataclass
-class DependencyAuditSummary:
-    total_providers_detected: int
-    total_callsites_mapped: int
-    at_risk: List[Dict[str, Any]]
-    watchlist: List[Dict[str, Any]]
-    healthy: List[Dict[str, Any]]
-    total_auto_repairable: int
 
 
 def build_dependency_graph(repo_root: str = ".") -> Dict[str, Any]:

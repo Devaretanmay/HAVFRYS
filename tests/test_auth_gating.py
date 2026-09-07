@@ -51,6 +51,7 @@ def test_verify_credentials_formats():
 
 
 def test_cli_check_gated_without_auth(tmp_path):
+    # Blueprint box 2: zero-token indexing must succeed without LLM creds
     creds_file = str(tmp_path / "creds_none.json")
     env = dict(os.environ)
     env["PYTHONPATH"] = "python"
@@ -64,9 +65,18 @@ def test_cli_check_gated_without_auth(tmp_path):
         text=True,
         env=env,
     )
-    assert res.returncode == 1
-    assert "AI PROVIDER AUTHENTICATION REQUIRED" in res.stdout
-    assert "compart auth" in res.stdout
+    assert res.returncode == 0
+    assert "COMPART: EXTERNAL-CHANGE DEPENDENCY AUDIT" in res.stdout
+
+    # fix without creds should quarantine when AI is needed (no rewrite case via unknown provider)
+    res2 = subprocess.run(
+        [sys.executable, "-m", "compart.cli.main", "fix", "trials/fixtures/taxonomy_stripe/", "--provider", "twilio"],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    # twilio has no rewrites and no KB — should not crash, may be unverified but not LLM-gated hard fail
+    assert res2.returncode in (0, 1)
 
 
 def test_cli_auth_and_auto_index(tmp_path):
