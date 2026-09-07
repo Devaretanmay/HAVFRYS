@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from compart.llm import LLMClient, LLMConfig, LLMResponse, resolve_llm_config
+from compart.llm import LLMClient, LLMConfig, resolve_llm_config
 
 
 class TestLLMClient(unittest.TestCase):

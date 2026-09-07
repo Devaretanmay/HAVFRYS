@@ -1,9 +1,7 @@
 """Unit tests for AgentSession primitive and SessionManager."""
 
-import os
 import shutil
 import tempfile
-import pytest
 
 from compart.engine.session import AgentSession, SessionManager, SessionStatus
 

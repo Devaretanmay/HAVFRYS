@@ -3,8 +3,17 @@ import sys
 import os
 
 def main():
+    print("=== 0. LINT (ruff, entire tree) ===")
+    res_lint = subprocess.run(["ruff", "check", "python", "tests"],
+                              capture_output=True, text=True)
+    if res_lint.returncode != 0:
+        print("Ruff found violations:")
+        print(res_lint.stdout or res_lint.stderr)
+        sys.exit(1)
+    print("PASS: ruff clean across python/ and tests/.")
+
     print("=== 1. VERIFYING CODEBASE HYGIENE RULES ===")
-    
+
     # 1. Check comment density
     violations = []
     total_files = 0

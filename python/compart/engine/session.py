@@ -139,9 +139,9 @@ class AgentSession:
         """Render session details as a structured ASCII view."""
         duration = round((self.finished_at or time.time()) - self.started_at, 2)
         lines = [
-            f"================================================================",
+            "================================================================",
             f"              COMPART AGENT SESSION #{self.session_id}          ",
-            f"================================================================",
+            "================================================================",
             f"Workspace   : {self.workspace_id}",
             f"Lane        : {self.lane_id}",
             f"Agent       : {self.agent}",
@@ -150,7 +150,7 @@ class AgentSession:
             f"Permissions : {self.policy.get('permissions', [])}",
             f"Status      : {self.status} (Exit code: {self.returncode})",
             f"Duration    : {duration}s",
-            f"----------------------------------------------------------------",
+            "----------------------------------------------------------------",
             f"Event Stream ({len(self.events)} events):",
         ]
 

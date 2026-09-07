@@ -27,7 +27,7 @@ import shutil
 import subprocess
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 from ..compart import AgentCompart, CompartConfig
 from ..compartments import Compartment, CompartmentConfig

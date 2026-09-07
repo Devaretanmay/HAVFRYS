@@ -8,13 +8,10 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import time
 
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
-from .session import AgentSession, SessionManager, SessionStatus
-from ..sandbox.snapshot import SnapshotManager, _file_hash
 
 
 class LaneStatus:
@@ -70,8 +67,6 @@ class LaneManager:
     ) -> Lane:
         """Create and persist a new Virtual Agent Lane."""
         lane_id = name.lower().replace(" ", "-")
-        filepath = self._lane_file(lane_id)
-        
         lane = Lane(
             lane_id=lane_id,
             name=name,

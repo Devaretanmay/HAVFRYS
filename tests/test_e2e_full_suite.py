@@ -4,12 +4,11 @@ import os
 import shutil
 import subprocess
 import tempfile
-import time
 import unittest
 import uuid
 
 from compart import Compart
-from compart.compartments import Compartment, CompartmentConfig, CompartmentRuntime
+from compart.compartments import Compartment, CompartmentConfig
 from compart.sandbox.task_profile import classify
 from compart.engine.tracer import Tracer
 

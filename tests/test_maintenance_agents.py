@@ -1,6 +1,3 @@
-from unittest.mock import MagicMock, patch
-import os
-import pytest
 from compart.maintenance_agents import (
     ChangeAnalyzer,
     ImpactAnalyst,

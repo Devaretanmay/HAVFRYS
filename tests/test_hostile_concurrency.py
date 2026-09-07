@@ -1,19 +1,14 @@
 import os
 import sys
-import time
 import json
 import threading
 import subprocess
 import textwrap
-from pathlib import Path
 import pytest
 
-from compart.cli.main import cmd_exec, _resolve_compartment
-from compart.config import load_config
-from compart.engine.execution import ExecutionManager, Execution, ExecutionKind, ExecutionStatus
+from compart.engine.execution import ExecutionManager, ExecutionKind, ExecutionStatus
 from compart.sandbox.snapshot import SnapshotManager
 from compart.sandbox.enforcer import SandboxEnforcer
-from compart.sandbox.box import Box, BoxConfig
 
 
 class _Args:

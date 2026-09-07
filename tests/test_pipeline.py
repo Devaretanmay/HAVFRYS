@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
 from compart.config import PipelinePolicy
@@ -6,10 +5,8 @@ from compart.pipeline import (
     TriggerContext,
     DriftFinding,
     AnalysisResult,
-    MaintenancePipeline,
     PipelineResult,
     surface_result,
-    analyze_trigger_context,
 )
 
 

@@ -1,9 +1,8 @@
 import hashlib
 import hmac
 import json
-import pytest
 
-from compart.github.client import GitHubAppClient, verify_webhook_signature
+from compart.github.client import verify_webhook_signature
 from compart.github.webhook_server import handle_webhook_payload
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 

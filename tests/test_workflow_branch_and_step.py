@@ -19,7 +19,6 @@ import yaml
 from compart.cli.main import (
     cmd_workflow_branch, cmd_step, cmd_workflow_run, cmd_run, _infer_step_properties
 )
-from compart.config import load_config
 from compart.hooks.base import ExecutionResult
 
 

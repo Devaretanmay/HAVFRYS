@@ -13,13 +13,11 @@ import os
 import shutil
 import subprocess
 import tempfile
-import textwrap
 from contextlib import redirect_stdout
 
-import pytest
 
-from compart.cli.main import _git_commit_execution, cmd_apply, cmd_commit, cmd_diff
-from compart.engine.execution import Execution, ExecutionKind, ExecutionManager, ExecutionStatus
+from compart.cli.main import _git_commit_execution, cmd_diff
+from compart.engine.execution import Execution, ExecutionKind, ExecutionManager
 
 
 def test_execution_git_trailers_format():

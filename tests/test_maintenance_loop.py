@@ -1,6 +1,4 @@
-import os
 import shutil
-import pytest
 from compart.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
 
 

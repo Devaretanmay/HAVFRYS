@@ -2,14 +2,11 @@ import os
 import shutil
 import tempfile
 import textwrap
-import pytest
-import yaml
 
 from compart.config import (
     load_config,
     is_compart_workspace,
     find_workspace_root,
-    _default_config,
 )
 
 

@@ -12,7 +12,7 @@ import shutil
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 from ..engine.events import emit
 from .behaviour import BehaviourContext, Engine, discover

@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import time
 
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
-from .lane import Lane, LaneManager
+from .lane import LaneManager
 
 
 @dataclass
@@ -105,13 +104,13 @@ class IntegrationEngine:
             return "No active integration candidate. Run 'compart integrate <lane1> <lane2>' first."
 
         lines = [
-            f"================================================================",
+            "================================================================",
             f"            COMPART INTEGRATION CANDIDATE #{cand.candidate_id}   ",
-            f"================================================================",
+            "================================================================",
             f"Source Lanes: {', '.join(cand.source_lanes)}",
             f"Total Files : {len(cand.changes)}",
             f"Conflicts   : {len(cand.conflicts)}",
-            f"----------------------------------------------------------------",
+            "----------------------------------------------------------------",
         ]
 
         if cand.conflicts:

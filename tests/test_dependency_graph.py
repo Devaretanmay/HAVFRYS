@@ -1,7 +1,6 @@
 # Copyright 2026 Compart Authors
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 from compart.graph import build_dependency_graph, audit_dependency_graph
 from compart.audit import render_audit_cli, render_audit_github_issue, run_audit
 

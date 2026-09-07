@@ -171,9 +171,7 @@ pub struct ReplayEvidence {
 
 /// Derive causal classification and mergeability strictly from evidence.
 pub fn classify_replay(evidence: &ReplayEvidence) -> (CausalReplayClassification, bool) {
-    let placeholder_prefixes = ["hermetic_", "drift_", "post_patch_", "simulated", "synthetic"];
-    
-    // Check for synthetic placeholder hashes
+    let placeholder_prefixes = ["hermetic_", "drift_", "post_patch_", "artificial", "synthetic"];
     for p in &placeholder_prefixes {
         if evidence.lockfile_blake3_hash.starts_with(p)
             || evidence.human_diff_blake3_hash.starts_with(p)

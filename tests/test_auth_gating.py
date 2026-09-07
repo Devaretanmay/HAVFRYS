@@ -1,8 +1,6 @@
 import os
 import sys
 import subprocess
-import json
-import pytest
 from compart.credentials import save_credentials, load_credentials, clear_credentials, has_valid_credentials, verify_credentials
 
 

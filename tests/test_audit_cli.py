@@ -5,7 +5,6 @@ import os
 import sys
 import subprocess
 import json
-import pytest
 
 
 def _run_compart_cli(args):

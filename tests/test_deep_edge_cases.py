@@ -21,14 +21,14 @@ from contextlib import redirect_stdout
 import pytest
 
 from compart.cli.main import (
-    cmd_apply, cmd_commit, cmd_diff, _apply_execution, _run_declared_workflow
+    cmd_commit, cmd_diff, _apply_execution, _run_declared_workflow
 )
 from compart.config import (
     CompartmentConfig, WorkflowConfig, WorkflowNodeConfig, WorkspaceConfig,
     find_workspace_root, is_compart_workspace
 )
 from compart.engine.execution import (
-    Execution, ExecutionKind, ExecutionManager, ExecutionStatus
+    ExecutionKind, ExecutionManager, ExecutionStatus
 )
 from compart.engine.pty_supervisor import PtySupervisor
 from compart.hooks.base import ExecutionResult

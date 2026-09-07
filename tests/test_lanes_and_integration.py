@@ -1,12 +1,10 @@
 """Unit tests for Virtual Agent Lanes & Integration Engine."""
 
-import os
 import shutil
 import tempfile
-import pytest
 
-from compart.engine.lane import Lane, LaneManager, LaneStatus
-from compart.engine.integration import IntegrationEngine, IntegrationCandidate
+from compart.engine.lane import LaneManager, LaneStatus
+from compart.engine.integration import IntegrationEngine
 
 def test_lane_manager_lifecycle():
     tmp_dir = tempfile.mkdtemp()

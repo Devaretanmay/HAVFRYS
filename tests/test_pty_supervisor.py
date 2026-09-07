@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import pytest
 
-from compart.engine.pty_supervisor import PtySupervisor, CaptureResult
+from compart.engine.pty_supervisor import PtySupervisor
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")

@@ -3,9 +3,9 @@
 import difflib
 import os
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
-from compart.llm import LLMClient, LLMConfig, resolve_llm_config
+from compart.llm import LLMClient, resolve_llm_config
 from compart.patch_writer import PatchResult
 
 

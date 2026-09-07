@@ -13,7 +13,6 @@ import pytest
 
 from compart.cli.main import _topo_sort, cmd_workflow_run
 from compart.config import WorkflowNodeConfig
-from compart.engine.execution import ExecutionManager
 from compart.hooks.base import ExecutionResult
 
 CONFIG_YAML = textwrap.dedent("""\

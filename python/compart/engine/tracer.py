@@ -55,8 +55,8 @@ class Tracer:
             f"  {_colorize(sep, 'cyan')}",
         ]
         self._entries.extend(lines)
-        for l in lines:
-            print(l, file=sys.stderr, flush=True)
+        for line in lines:
+            print(line, file=sys.stderr, flush=True)
 
     def footer(self, status: str, elapsed_total: float) -> None:
         if not self.verbose:
@@ -70,8 +70,8 @@ class Tracer:
             "",
         ]
         self._entries.extend(lines)
-        for l in lines:
-            print(l, file=sys.stderr, flush=True)
+        for line in lines:
+            print(line, file=sys.stderr, flush=True)
 
     def _format_event(self, event: str, elapsed: float, data: dict) -> Optional[str]:
         prefix = f"  {elapsed:>7.3f}s"

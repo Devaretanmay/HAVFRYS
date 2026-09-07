@@ -37,7 +37,7 @@ from compart.github.installations import store_dir as installations_store_dir
 from compart.github.webhook_server import WebhookServer
 from compart.intelligence import resolve_migration
 from compart.knowledge import ensure_test_recipe
-from compart.maintenance import run_maintenance_cycle, detect_drift
+from compart.maintenance import run_maintenance_cycle
 from compart.providers.registry import get_default_registry
 from compart.test_runner import _detect_test_command
 import getpass
@@ -260,7 +260,6 @@ def cmd_status(args):
         sys.exit(1)
 
     project_name = os.path.basename(ws_root)
-    cfg = load_config(os.path.join(ws_root, ".compart", "config.yaml"))
     exec_mgr = ExecutionManager(workdir=ws_root)
     lane_mgr = LaneManager(workdir=ws_root)
     sess_mgr = SessionManager(workdir=ws_root)
@@ -311,15 +310,15 @@ def cmd_status(args):
     print()
     if lanes:
         print("LANES")
-        for l in lanes:
-            print(f"  {l.lane_id:<14} {l.agent_id:<12} {l.status:<12} {len(l.changes)} file(s)")
+        for lane in lanes:
+            print(f"  {lane.lane_id:<14} {lane.agent_id:<12} {lane.status:<12} {len(lane.changes)} file(s)")
     else:
         print("LANES\n  none")
 
     print()
     print("SECURITY")
     print(f"  {blocked} blocked action(s)")
-    print(f"  0 credential escapes")
+    print("  0 credential escapes")
     print()
 
 
@@ -788,8 +787,8 @@ def cmd_lanes(args):
         print("No virtual agent lanes found. Run 'compart lane create <name>' or 'compart wrap --lane <name>' first.")
         return
     print(f"Virtual Agent Lanes ({len(lanes)}):")
-    for l in lanes:
-        print(f"  - [{l.lane_id}] Agent: {l.agent_id:<12} | Status: {l.status:<10} | Changes: {len(l.changes)} file(s)")
+    for lane in lanes:
+        print(f"  - [{lane.lane_id}] Agent: {lane.agent_id:<12} | Status: {lane.status:<10} | Changes: {len(lane.changes)} file(s)")
 
 
 def cmd_lane_inspect(args):
@@ -802,22 +801,22 @@ def cmd_lane_inspect(args):
     if args.json:
         _print_json(lane.to_dict())
     else:
-        print(f"================================================================")
+        print("================================================================")
         print(f"              COMPART VIRTUAL AGENT LANE #{lane.lane_id}        ")
-        print(f"================================================================")
+        print("================================================================")
         print(f"Lane Name   : {lane.name}")
         print(f"Agent       : {lane.agent_id}")
         print(f"Status      : {lane.status}")
         print(f"Session ID  : {lane.session_id or 'None'}")
         print(f"Permissions : {lane.permissions}")
-        print(f"----------------------------------------------------------------")
+        print("----------------------------------------------------------------")
         print(f"Changes ({len(lane.changes)} file(s)):")
         if not lane.changes:
             print("  (No changes recorded)")
         else:
             for chg in lane.changes:
                 print(f"  {chg.get('status', 'modified').upper()}: {chg.get('path', '')}")
-        print(f"================================================================")
+        print("================================================================")
 
 
 def cmd_integrate(args):
@@ -1678,7 +1677,7 @@ def cmd_workflow_order(args):
 
     errs = autopatch.validate_workflow(data)
     if errs:
-        print(f"Workflow Validation Failed:")
+        print("Workflow Validation Failed:")
         for e in errs:
             print(f"  - {e}")
         sys.exit(1)
@@ -1821,8 +1820,10 @@ def cmd_explain(args):
 
     print(f"================================================================================\nEXPLANATION FOR FINDING: '{args.finding_id}'\n================================================================================\n")
     print(f"Classification: {cls}")
-    if prov: print(f"Provider:       {prov}")
-    if ep:   print(f"Endpoint:       {ep}")
+    if prov:
+        print(f"Provider:       {prov}")
+    if ep:
+        print(f"Endpoint:       {ep}")
     print(f"Action:         {act}\n\n================================================================================")
 
 
@@ -1852,7 +1853,7 @@ def cmd_auth(args):
         print("                 COMPART: AI PROVIDER CREDENTIAL STATUS                         ")
         print("================================================================================\n")
         if summary["configured"]:
-            print(f"Status:       CONFIGURED [OK]")
+            print("Status:       CONFIGURED [OK]")
             print(f"Provider:     {summary.get('provider')}")
             if summary.get("model"):
                 print(f"Model:        {summary.get('model')}")
@@ -2496,7 +2497,7 @@ def main():
     graph_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
     graph_p.add_argument("--json", action="store_true", help="Output full graph JSON")
 
-    mcp_p = subparsers.add_parser("mcp", help="Run Compart Model Context Protocol (MCP) server for AI assistants")
+    subparsers.add_parser("mcp", help="Run Compart Model Context Protocol (MCP) server for AI assistants")
 
     auth_p = subparsers.add_parser("auth", help="Connect and configure BYOK AI provider (OpenAI, Anthropic, etc.)")
     auth_p.add_argument("--provider", choices=["anthropic", "openai", "openai_compatible", "ollama", "local"], default=None, help="AI provider name")

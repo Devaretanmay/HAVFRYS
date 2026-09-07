@@ -14,11 +14,10 @@ import sys
 import tempfile
 import textwrap
 import pytest
-import yaml
 
 from compart.cli.main import _topo_sort
 from compart.config import load_config
-from compart.engine.execution import Execution, ExecutionKind, ExecutionManager, ExecutionStatus
+from compart.engine.execution import ExecutionKind, ExecutionManager
 from compart.engine.pty_supervisor import PtySupervisor
 
 

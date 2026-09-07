@@ -7,7 +7,6 @@ shim/binary resolution behaviour shared with `_exec_shim`.
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 import textwrap

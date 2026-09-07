@@ -26,7 +26,7 @@ import shlex
 import shutil
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Optional, Sequence
+from typing import Optional, Sequence
 
 from ..sandbox.proxy import RouteConfig
 from .base import ExecutionResult, SandboxRunner, validate_permissions
@@ -219,7 +219,6 @@ class DataScienceSandboxHook:
         -------
         ExecutionResult
         """
-        script = os.path.join(self._workspace_root, filename)
         return self._runner.run(
             f"python3 {shlex.quote(filename)}",
             permissions=self._permissions,

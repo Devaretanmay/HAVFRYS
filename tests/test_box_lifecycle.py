@@ -53,8 +53,11 @@ class TestBoxLifecycle(unittest.TestCase):
 
     def test_unsupported_native_sandbox_is_not_reported_as_applied(self):
         b = Box(workdir=self.tmpdir)
-        apply_fn = lambda *_args: False
-        check_fn = lambda: {"supported": "false", "platform": "test", "details": "unsupported"}
+        def apply_fn(*_args):
+            return False
+
+        def check_fn():
+            return {"supported": "false", "platform": "test", "details": "unsupported"}
         with patch("compart.sandbox.box._get_core", return_value=(apply_fn, check_fn)):
             self.assertFalse(b.enter(sandbox=True))
         b.exit()

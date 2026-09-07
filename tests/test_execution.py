@@ -1,9 +1,7 @@
 """Tests for the unified Execution domain primitive."""
 
-import os
 import shutil
 import tempfile
-import pytest
 
 from compart.engine.execution import (
     Execution, ExecutionManager, ExecutionKind, ExecutionStatus

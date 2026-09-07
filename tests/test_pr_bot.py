@@ -1,10 +1,8 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
 from compart.config import PipelinePolicy
 from compart.github.pr_bot import (
     handle_pull_request_event,
-    handle_external_change_event,
     handle_installation_event,
     render_day0_onboarding_issue,
     make_pr_bot_handler,

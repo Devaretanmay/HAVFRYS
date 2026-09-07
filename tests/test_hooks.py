@@ -25,14 +25,13 @@ from compart.hooks.base import (
 from compart.hooks.langchain import CompartGraphNode, CompartPythonREPLTool
 from compart.hooks.crewai import CompartCodeInterpreterTool, CrewAICodeExecutor
 from compart.hooks.autogen import CompartCodeExecutor, CodeBlock, CodeResult
-from compart.hooks.data_agent import DataSandboxConfig, DataScienceSandboxHook
+from compart.hooks.data_agent import DataScienceSandboxHook
 
 
 class TempCase(unittest.TestCase):
     def setUp(self):
-        self.base = os.path.join(tempfile.gettempdir(), "compart_hooks_test")
+        self.base = tempfile.mkdtemp(prefix="compart_hooks_test_")
         self.workdir = os.path.join(self.base, "run")
-        shutil.rmtree(self.base, ignore_errors=True)
         os.makedirs(self.workdir, exist_ok=True)
 
     def tearDown(self):

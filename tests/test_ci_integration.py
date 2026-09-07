@@ -1,6 +1,5 @@
 """Unit tests for Compart CI Integration."""
 
-import os
 import unittest
 from compart.ci.runner import CompartCIRunner, run_ci_step
 
