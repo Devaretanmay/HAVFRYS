@@ -2,7 +2,7 @@
 
 Get up and running with Sheepdog in under 2 minutes.
 
-> **“Greptile understands changes humans make to software. Sheepdog understands changes the outside world makes to software.”**
+> **“Sheepdog understands the changes the outside world makes to software — and repairs them.”**
 
 ---
 

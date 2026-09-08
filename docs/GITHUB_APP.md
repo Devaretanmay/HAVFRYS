@@ -44,6 +44,22 @@ New installations start in `consult`: accurate Issues build trust in the reasoni
 
 One engine, two voices. **Shepherd** is the Consult voice — every Consult Issue is signed `— Shepherd, Consult bot`. **Shearer** is the Work voice — every verified Trust PR is signed `— Shearer, Work bot`. The names mark authority, never intelligence: the reasoning behind both is identical.
 
-## 6. Deployment
+## 6. Anatomy of a review
+
+When a pull request opens against a monitored repository, Sheepdog:
+
+1. **Checks out the exact PR head** (falls back to the tracked branch with a disclosed marker if the fetch fails).
+2. **Scans for contract impact** — dependency drift mapped to callsites, zero model calls.
+3. **Reasons and repairs** (Work) or **assesses and files an Issue** (Consult).
+4. **Verifies** — real test command, real exit code, zero unintended files, or no merge-ready claim.
+5. **Posts** the summary comment: header, findings with P0/P1 badges, change diagram, evidence, footer.
+
+## 7. Troubleshooting
+
+- **No comment appeared**: check the webhook deliveries tab for failures, confirm the secret matches `COMPART_WEBHOOK_SECRET`, verify the repo reached READY (`compart doctor`), and confirm the PR isn't filtered by `ignore_paths` or `exclude_labels`.
+- **Stale results**: comment `@sheepdog` on the PR to re-run against the current head.
+- **REFUSED / NOT RUN**: the bot found impact it cannot safely repair (often missing AI credentials or no test suite). Run `compart doctor` for the exact missing piece.
+
+## 8. Deployment
 
 See [DEPLOY.md](DEPLOY.md) for the webhook secret requirement, environment table, Docker image, `--watch` background monitoring, volumes, and security notes.

@@ -4,7 +4,7 @@
 
 ### External-change intelligence for codebases.
 
-**Greptile understands changes humans make to software. Sheepdog understands changes the outside world makes to software.**
+**Sheepdog understands the changes the outside world makes to software — and repairs them.**
 
 [PyPI Package](https://pypi.org/project/sheepdog/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md)
 
@@ -214,20 +214,18 @@ repository memory, verified rewrite patterns, sandbox execution, and a fail-clos
 Repeated work reuses verified knowledge instead of re-reasoning, so the system gets faster,
 cheaper, and more precise the longer it watches a repository.
 
-## Sheepdog vs Greptile
+## Where Sheepdog Fits
 
-| | Greptile | Sheepdog |
-|---|---|---|
-| AI understands | Codebase + PR | Codebase + system change |
-| Starting event | PR / code change | Dependency / contract change |
-| AI asks | Is this change correct? | What does this change break? |
-| AI output | Review / fix | Repair |
-| Memory | Repository knowledge | Repository + maintenance history |
-| Verification | Tests / validation | Tests + repair evidence |
-| End result | Safe code change | Working software after ecosystem change |
+Conventional AI reviewers start from a human pull request and ask whether the change
+is correct. Sheepdog starts from the other end: a dependency or contract changed out
+in the world, and it asks what that breaks in your repository. One AI reasons over
+your codebase plus the change itself, backed by maintenance memory — past verified
+repairs and quarantined failures. The output is not a review but a repair, proven
+against your real test suite before it ever reaches a pull request.
 
-Greptile gives an AI agent context about your code. Sheepdog gives an AI agent context
-about how your software changes.
+Sheepdog is not a generic coding agent, a PR reviewer, a Dependabot clone, a
+codebase Q&A tool, or vulnerability-management software. It is autonomous
+maintenance for systems that change.
 
 ## License
 

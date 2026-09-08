@@ -2,7 +2,7 @@
 
 Sheepdog is autonomous software maintenance for systems that change. It detects contract drift, repairs the code, verifies against your real test suite, and delivers the evidence as a PR.
 
-> **“Greptile understands changes humans make to software. Sheepdog understands changes the outside world makes to software.”**
+> **“Sheepdog understands the changes the outside world makes to software — and repairs them.”**
 
 ---
 
