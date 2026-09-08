@@ -489,32 +489,6 @@ mod tests {
     }
 
     #[test]
-    fn autopatch_plan_affected_files() {
-        let old = parse_spec(old_spec()).unwrap();
-        let new = parse_spec(new_spec()).unwrap();
-        let diff = diff_specs(&old, &new);
-        let scan = mock_scan_result();
-
-        let plan = plan_from_diff_and_scan(&diff, &scan);
-        let files = plan.affected_files();
-        // Should be de-duplicated and sorted.
-        for i in 1..files.len() {
-            assert!(files[i] > files[i - 1], "affected_files should be sorted");
-        }
-    }
-
-    #[test]
-    fn autopatch_plan_needs_action() {
-        let old = parse_spec(old_spec()).unwrap();
-        let new = parse_spec(new_spec()).unwrap();
-        let diff = diff_specs(&old, &new);
-        let scan = mock_scan_result();
-
-        let plan = plan_from_diff_and_scan(&diff, &scan);
-        assert!(plan.needs_action());
-    }
-
-    #[test]
     fn autopatch_plan_serializes_to_json() {
         let old = parse_spec(old_spec()).unwrap();
         let new = parse_spec(new_spec()).unwrap();

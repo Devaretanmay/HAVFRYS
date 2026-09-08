@@ -152,24 +152,7 @@ pub struct MaintenancePlan {
     pub verification_specs: Vec<VerificationSpec>,
 }
 
-impl MaintenancePlan {
-    /// Quick check: does this plan require action?
-    pub fn needs_action(&self) -> bool {
-        self.status == PlanStatus::ActionRequired
-    }
 
-    /// List unique files that need patching.
-    pub fn affected_files(&self) -> Vec<String> {
-        let mut files: Vec<String> = self
-            .patch_targets
-            .iter()
-            .map(|t| t.file_path.clone())
-            .collect();
-        files.sort();
-        files.dedup();
-        files
-    }
-}
 
 /// Verification outcome of an automated patch or test trial.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

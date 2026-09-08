@@ -47,6 +47,22 @@ def test_record_failure_never_creates_trusted_patterns(tmp_path):
     assert len(direct_rewrites_for(str(tmp_path), "stripe", "1", "2")) == 1  # unchanged
 
 
+def test_failed_verification_records_avoidance_note(tmp_path):
+    import json
+    from compart.maintenance import run_maintenance_cycle
+    repo = tmp_path / "r"
+    (repo / "src").mkdir(parents=True)
+    (repo / "package.json").write_text(json.dumps({
+        "name": "t", "dependencies": {"stripe": "^11.18.0"},
+        "scripts": {"test": "node -e \"process.exit(1)\""}}))
+    (repo / "src" / "a.ts").write_text("stripe.subscriptions.del('s');\n")
+    report = run_maintenance_cycle(str(repo), "stripe", from_version="11.18.0", to_version="13.0.0")
+    assert not report.success
+    entry = lookup(str(repo), "stripe", "11.18.0", "13.0.0")
+    assert entry is not None and len(entry.failed_patterns) == 1
+    assert entry.patterns == []  # nothing unverified promoted to trusted
+
+
 def test_ensure_test_recipe_seeds_without_patterns(tmp_path):
     e = ensure_test_recipe(str(tmp_path), "openai", "3.3.0", "4.0.0", "pytest -q")
     assert e.test_recipe["test_command"] == "pytest -q"

@@ -21,7 +21,7 @@ from compart.providers.registry import get_default_registry
 from compart.sandbox.snapshot import SnapshotManager, _file_hash
 
 from compart.intelligence import CompartIntelligence, resolve_migration
-from compart.knowledge import direct_rewrites_for, upsert_learned as kb_upsert
+from compart.knowledge import direct_rewrites_for, record_failure, upsert_learned as kb_upsert
 from compart.test_runner import (
     _blake3_digest,
     _detect_test_command,
@@ -269,9 +269,16 @@ def run_maintenance_cycle(
                     patch_results = retry_results
                     unified_diff = "\n".join(r.unified_diff for r in patch_results if r.unified_diff)
 
-    # Roll back if tests failed
+    # Roll back if tests failed, recording the failed attempt so future
+    # reasoning avoids the same shape (failures quarantine, never promote).
     if test_exit_code != 0:
         snapshotter.restore()
+        if patch_results:
+            record_failure(
+                repo_dir, provider_name, actual_from, actual_to,
+                f"verification failed ({test_cmd or 'no test command'}, exit {test_exit_code})",
+                [os.path.relpath(p, repo_dir) for p in modified_paths],
+            )
         files_modified = 0
         unified_diff = ""
 
