@@ -32,3 +32,7 @@ logs/
 .agents/
 .claude/
 .envrc
+
+# Test runs write index state into fixture checkouts; never commit it
+trials/**/.sheepdog/
+trials/**/.compart/
