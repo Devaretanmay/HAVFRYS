@@ -1,4 +1,4 @@
-# Copyright 2026 Compart Authors
+# Copyright 2026 Sheepdog Authors
 # SPDX-License-Identifier: Apache-2.0
 """Doctor reports GitHub / AI / index / KB / test-cmd / monitoring states."""
 
@@ -10,7 +10,7 @@ import sys
 
 def _run(args, env):
     return subprocess.run(
-        [sys.executable, "-m", "compart.cli.main"] + args,
+        [sys.executable, "-m", "sheepdog.cli.main"] + args,
         capture_output=True, text=True, env=env,
     )
 
@@ -18,10 +18,10 @@ def _run(args, env):
 def _env(tmp_path):
     env = dict(os.environ)
     env["PYTHONPATH"] = "python"
-    env["COMPART_CREDENTIALS_FILE"] = str(tmp_path / "creds.json")
-    env["COMPART_INSTALLATIONS_DIR"] = str(tmp_path / "inst")
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "COMPART_LLM_KEY",
-              "GITHUB_TOKEN", "COMPART_GITHUB_TOKEN"):
+    env["SHEEPDOG_CREDENTIALS_FILE"] = str(tmp_path / "creds.json")
+    env["SHEEPDOG_INSTALLATIONS_DIR"] = str(tmp_path / "inst")
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY",
+              "GITHUB_TOKEN", "SHEEPDOG_GITHUB_TOKEN"):
         env.pop(k, None)
     return env
 
@@ -43,7 +43,7 @@ def test_doctor_ready_after_index(tmp_path):
     env = _env(tmp_path)
     _run(["index", dst, "--write-graph"], env)
     res = subprocess.run(
-        [sys.executable, "-m", "compart.cli.main", "doctor"],
+        [sys.executable, "-m", "sheepdog.cli.main", "doctor"],
         capture_output=True, text=True, env=env, cwd=dst,
     )
     assert res.returncode == 0
@@ -53,10 +53,10 @@ def test_doctor_ready_after_index(tmp_path):
 
 def test_app_serve_requires_secret(tmp_path):
     env = _env(tmp_path)
-    env.pop("COMPART_WEBHOOK_SECRET", None)
+    env.pop("SHEEPDOG_WEBHOOK_SECRET", None)
     res = subprocess.run(
         [sys.executable, "-c",
-         "from compart.cli.main import cmd_app; "
+         "from sheepdog.cli.main import cmd_app; "
          "import argparse; cmd_app(argparse.Namespace(app_action='serve', port=18099, secret=None, no_secret=False))"],
         capture_output=True, text=True, env=env,
     )

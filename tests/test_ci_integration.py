@@ -1,20 +1,20 @@
-"""Unit tests for Compart CI Integration."""
+"""Unit tests for Sheepdog CI Integration."""
 
 import unittest
-from compart.ci.runner import CompartCIRunner, run_ci_step
+from sheepdog.ci.runner import SheepdogCIRunner, run_ci_step
 
 
 class TestCIIntegration(unittest.TestCase):
 
     def test_ci_runner_executes_simple_command(self):
-        runner = CompartCIRunner(workdir=".", block_network=True, sandbox=False)
-        res = runner.run_step("echo 'Hello CI Compart'")
+        runner = SheepdogCIRunner(workdir=".", block_network=True, sandbox=False)
+        res = runner.run_step("echo 'Hello CI Sheepdog'")
         self.assertEqual(res["status"], "success")
         self.assertEqual(res["returncode"], 0)
-        self.assertIn("Hello CI Compart", res["stdout"])
+        self.assertIn("Hello CI Sheepdog", res["stdout"])
 
     def test_ci_runner_captures_failure_exit_code(self):
-        runner = CompartCIRunner(workdir=".", block_network=True, sandbox=False)
+        runner = SheepdogCIRunner(workdir=".", block_network=True, sandbox=False)
         res = runner.run_step("exit 42")
         self.assertEqual(res["returncode"], 42)
 

@@ -1,4 +1,4 @@
-# Copyright 2026 Compart Authors
+# Copyright 2026 Sheepdog Authors
 # SPDX-License-Identifier: Apache-2.0
 """Incremental indexing: fresh-skip, change detection, discovery deltas."""
 
@@ -6,7 +6,7 @@ import os
 import shutil
 import time
 
-from compart.audit import changed_since_index, read_index_state, run_audit
+from sheepdog.audit import changed_since_index, read_index_state, run_audit
 
 
 def _seed_repo(dst: str):

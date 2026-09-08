@@ -32,24 +32,24 @@ switch (platform) {
   case 'android':
     switch (arch) {
       case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'compart-native.android-arm64.node'))
+        localFileExisted = existsSync(join(__dirname, 'sheepdog-native.android-arm64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.android-arm64.node')
+            nativeBinding = require('./sheepdog-native.android-arm64.node')
           } else {
-            nativeBinding = require('@compart/sdk-android-arm64')
+            nativeBinding = require('@sheepdog/sdk-android-arm64')
           }
         } catch (e) {
           loadError = e
         }
         break
       case 'arm':
-        localFileExisted = existsSync(join(__dirname, 'compart-native.android-arm-eabi.node'))
+        localFileExisted = existsSync(join(__dirname, 'sheepdog-native.android-arm-eabi.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.android-arm-eabi.node')
+            nativeBinding = require('./sheepdog-native.android-arm-eabi.node')
           } else {
-            nativeBinding = require('@compart/sdk-android-arm-eabi')
+            nativeBinding = require('@sheepdog/sdk-android-arm-eabi')
           }
         } catch (e) {
           loadError = e
@@ -63,13 +63,13 @@ switch (platform) {
     switch (arch) {
       case 'x64':
         localFileExisted = existsSync(
-          join(__dirname, 'compart-native.win32-x64-msvc.node')
+          join(__dirname, 'sheepdog-native.win32-x64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.win32-x64-msvc.node')
+            nativeBinding = require('./sheepdog-native.win32-x64-msvc.node')
           } else {
-            nativeBinding = require('@compart/sdk-win32-x64-msvc')
+            nativeBinding = require('@sheepdog/sdk-win32-x64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -77,13 +77,13 @@ switch (platform) {
         break
       case 'ia32':
         localFileExisted = existsSync(
-          join(__dirname, 'compart-native.win32-ia32-msvc.node')
+          join(__dirname, 'sheepdog-native.win32-ia32-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.win32-ia32-msvc.node')
+            nativeBinding = require('./sheepdog-native.win32-ia32-msvc.node')
           } else {
-            nativeBinding = require('@compart/sdk-win32-ia32-msvc')
+            nativeBinding = require('@sheepdog/sdk-win32-ia32-msvc')
           }
         } catch (e) {
           loadError = e
@@ -91,13 +91,13 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'compart-native.win32-arm64-msvc.node')
+          join(__dirname, 'sheepdog-native.win32-arm64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.win32-arm64-msvc.node')
+            nativeBinding = require('./sheepdog-native.win32-arm64-msvc.node')
           } else {
-            nativeBinding = require('@compart/sdk-win32-arm64-msvc')
+            nativeBinding = require('@sheepdog/sdk-win32-arm64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -108,23 +108,23 @@ switch (platform) {
     }
     break
   case 'darwin':
-    localFileExisted = existsSync(join(__dirname, 'compart-native.darwin-universal.node'))
+    localFileExisted = existsSync(join(__dirname, 'sheepdog-native.darwin-universal.node'))
     try {
       if (localFileExisted) {
-        nativeBinding = require('./compart-native.darwin-universal.node')
+        nativeBinding = require('./sheepdog-native.darwin-universal.node')
       } else {
-        nativeBinding = require('@compart/sdk-darwin-universal')
+        nativeBinding = require('@sheepdog/sdk-darwin-universal')
       }
       break
     } catch {}
     switch (arch) {
       case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'compart-native.darwin-x64.node'))
+        localFileExisted = existsSync(join(__dirname, 'sheepdog-native.darwin-x64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.darwin-x64.node')
+            nativeBinding = require('./sheepdog-native.darwin-x64.node')
           } else {
-            nativeBinding = require('@compart/sdk-darwin-x64')
+            nativeBinding = require('@sheepdog/sdk-darwin-x64')
           }
         } catch (e) {
           loadError = e
@@ -132,13 +132,13 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'compart-native.darwin-arm64.node')
+          join(__dirname, 'sheepdog-native.darwin-arm64.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.darwin-arm64.node')
+            nativeBinding = require('./sheepdog-native.darwin-arm64.node')
           } else {
-            nativeBinding = require('@compart/sdk-darwin-arm64')
+            nativeBinding = require('@sheepdog/sdk-darwin-arm64')
           }
         } catch (e) {
           loadError = e
@@ -152,12 +152,12 @@ switch (platform) {
     if (arch !== 'x64') {
       throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
     }
-    localFileExisted = existsSync(join(__dirname, 'compart-native.freebsd-x64.node'))
+    localFileExisted = existsSync(join(__dirname, 'sheepdog-native.freebsd-x64.node'))
     try {
       if (localFileExisted) {
-        nativeBinding = require('./compart-native.freebsd-x64.node')
+        nativeBinding = require('./sheepdog-native.freebsd-x64.node')
       } else {
-        nativeBinding = require('@compart/sdk-freebsd-x64')
+        nativeBinding = require('@sheepdog/sdk-freebsd-x64')
       }
     } catch (e) {
       loadError = e
@@ -168,26 +168,26 @@ switch (platform) {
       case 'x64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-x64-musl.node')
+            join(__dirname, 'sheepdog-native.linux-x64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-x64-musl.node')
+              nativeBinding = require('./sheepdog-native.linux-x64-musl.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-x64-musl')
+              nativeBinding = require('@sheepdog/sdk-linux-x64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-x64-gnu.node')
+            join(__dirname, 'sheepdog-native.linux-x64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-x64-gnu.node')
+              nativeBinding = require('./sheepdog-native.linux-x64-gnu.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-x64-gnu')
+              nativeBinding = require('@sheepdog/sdk-linux-x64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -197,26 +197,26 @@ switch (platform) {
       case 'arm64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-arm64-musl.node')
+            join(__dirname, 'sheepdog-native.linux-arm64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-arm64-musl.node')
+              nativeBinding = require('./sheepdog-native.linux-arm64-musl.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-arm64-musl')
+              nativeBinding = require('@sheepdog/sdk-linux-arm64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-arm64-gnu.node')
+            join(__dirname, 'sheepdog-native.linux-arm64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-arm64-gnu.node')
+              nativeBinding = require('./sheepdog-native.linux-arm64-gnu.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-arm64-gnu')
+              nativeBinding = require('@sheepdog/sdk-linux-arm64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -226,26 +226,26 @@ switch (platform) {
       case 'arm':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-arm-musleabihf.node')
+            join(__dirname, 'sheepdog-native.linux-arm-musleabihf.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-arm-musleabihf.node')
+              nativeBinding = require('./sheepdog-native.linux-arm-musleabihf.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-arm-musleabihf')
+              nativeBinding = require('@sheepdog/sdk-linux-arm-musleabihf')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-arm-gnueabihf.node')
+            join(__dirname, 'sheepdog-native.linux-arm-gnueabihf.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-arm-gnueabihf.node')
+              nativeBinding = require('./sheepdog-native.linux-arm-gnueabihf.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-arm-gnueabihf')
+              nativeBinding = require('@sheepdog/sdk-linux-arm-gnueabihf')
             }
           } catch (e) {
             loadError = e
@@ -255,26 +255,26 @@ switch (platform) {
       case 'riscv64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-riscv64-musl.node')
+            join(__dirname, 'sheepdog-native.linux-riscv64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-riscv64-musl.node')
+              nativeBinding = require('./sheepdog-native.linux-riscv64-musl.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-riscv64-musl')
+              nativeBinding = require('@sheepdog/sdk-linux-riscv64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'compart-native.linux-riscv64-gnu.node')
+            join(__dirname, 'sheepdog-native.linux-riscv64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./compart-native.linux-riscv64-gnu.node')
+              nativeBinding = require('./sheepdog-native.linux-riscv64-gnu.node')
             } else {
-              nativeBinding = require('@compart/sdk-linux-riscv64-gnu')
+              nativeBinding = require('@sheepdog/sdk-linux-riscv64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -283,13 +283,13 @@ switch (platform) {
         break
       case 's390x':
         localFileExisted = existsSync(
-          join(__dirname, 'compart-native.linux-s390x-gnu.node')
+          join(__dirname, 'sheepdog-native.linux-s390x-gnu.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./compart-native.linux-s390x-gnu.node')
+            nativeBinding = require('./sheepdog-native.linux-s390x-gnu.node')
           } else {
-            nativeBinding = require('@compart/sdk-linux-s390x-gnu')
+            nativeBinding = require('@sheepdog/sdk-linux-s390x-gnu')
           }
         } catch (e) {
           loadError = e

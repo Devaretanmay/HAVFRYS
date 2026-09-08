@@ -5,12 +5,12 @@ import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
-from compart.sandbox.box import Box
+from sheepdog.sandbox.box import Box
 
 
 class TestBoxLifecycle(unittest.TestCase):
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), "compart_test")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), "sheepdog_test")
         os.makedirs(self.tmpdir, exist_ok=True)
 
     def tearDown(self):
@@ -58,6 +58,6 @@ class TestBoxLifecycle(unittest.TestCase):
 
         def check_fn():
             return {"supported": "false", "platform": "test", "details": "unsupported"}
-        with patch("compart.sandbox.box._get_core", return_value=(apply_fn, check_fn)):
+        with patch("sheepdog.sandbox.box._get_core", return_value=(apply_fn, check_fn)):
             self.assertFalse(b.enter(sandbox=True))
         b.exit()

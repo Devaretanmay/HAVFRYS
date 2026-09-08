@@ -1,17 +1,17 @@
-# Product Validation Guide: Testing Compart with Your AI Agents
+# Product Validation Guide: Testing Sheepdog with Your AI Agents
 
-This guide provides a quick test suite for validating Compart as the audit and control layer for your AI agents and codebase dependencies.
+This guide provides a quick test suite for validating Sheepdog as the audit and control layer for your AI agents and codebase dependencies.
 
 ---
 
 ## The Core Validation Model
 
 ```text
-WITHOUT COMPART
+WITHOUT SHEEPDOG
 Agent -> Tools -> OS / Credentials / Network (Unmonitored)
 
-WITH COMPART
-Agent -> COMPART (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
+WITH SHEEPDOG
+Agent -> SHEEPDOG (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
 ```
 
 ---
@@ -21,16 +21,16 @@ Agent -> COMPART (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
 Validate that an AI agent reading your repo and executing bash commands is blocked from reading `~/.ssh` or `~/.aws` credentials while executing workspace tasks cleanly.
 
 ```bash
-compart claude
+sheepdog claude
 # or arbitrary command execution:
-compart exec -- cat ~/.ssh/id_rsa
+sheepdog exec -- cat ~/.ssh/id_rsa
 ```
 
 ### What You Observe:
 - Host SSH credential access is blocked by the OS kernel.
 - Workspace file modifications are tracked with BLAKE3 file diffs.
-- `compart diff` isolates agent modifications.
-- `compart undo` restores workspace state in 2ms.
+- `sheepdog diff` isolates agent modifications.
+- `sheepdog undo` restores workspace state in 2ms.
 
 ---
 
@@ -39,8 +39,8 @@ compart exec -- cat ~/.ssh/id_rsa
 Audit your entire codebase for upstream breaking changes, deprecated API callsites, and auto-repairable integrations.
 
 ```bash
-compart audit .
-compart audit . --format=github-issue
+sheepdog audit .
+sheepdog audit . --format=github-issue
 ```
 
 ### What You Observe:
@@ -55,7 +55,7 @@ compart audit . --format=github-issue
 Detect upstream API drift and synthesize verified AST patches against breaking changes.
 
 ```bash
-compart maintain . --provider stripe
+sheepdog maintain . --provider stripe
 ```
 
 ### What You Observe:
@@ -69,4 +69,4 @@ compart maintain . --provider stripe
 
 After running these validation scenarios on your codebase:
 
-> **"Would you run your coding agents without Compart?"**
+> **"Would you run your coding agents without Sheepdog?"**

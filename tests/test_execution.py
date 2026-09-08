@@ -3,7 +3,7 @@
 import shutil
 import tempfile
 
-from compart.engine.execution import (
+from sheepdog.engine.execution import (
     Execution, ExecutionManager, ExecutionKind, ExecutionStatus
 )
 

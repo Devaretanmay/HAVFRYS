@@ -2,7 +2,7 @@
 
 Version: 0.1 (draft)
 Status: open for comment
-Maintainer: Compart Labs
+Maintainer: Sheepdog Labs
 
 ## Why this exists
 
@@ -15,7 +15,7 @@ scope an incident to "everything that one run touched."
 This spec fixes that with something git already understands: commit trailers.
 
 No new tools are required to read these trailers. `git log`, GitHub, GitLab,
-and every code host render them today. Any tool - Compart, your CI, someone
+and every code host render them today. Any tool - Sheepdog, your CI, someone
 else's agent harness - can write them. That's the point.
 
 ## Design rules
@@ -90,16 +90,17 @@ git log --grep "Agent-Sandbox: none"
 
 ## Compatibility
 
-Compart v1.x emits legacy `Compart-*` trailers (`Compart-Execution`,
-`Compart-Agent`, `Compart-Compartment`, `Compart-Security`). These map 1:1 onto
-the `Agent-*` fields above:
+Sheepdog v1.x emits legacy `Sheepdog-*` trailers (`Sheepdog-Execution`,
+`Sheepdog-Agent`, `Sheepdog-Compartment`, `Sheepdog-Security`). These map 1:1 onto
+the `Agent-*` fields above (earlier Compart v1.x releases emitted the same
+fields under `Compart-*` names; readers should accept all three):
 
 | Legacy | Spec |
 | :--- | :--- |
-| `Compart-Agent` | `Agent-Agent` |
-| `Compart-Execution` | `Agent-Execution` |
-| `Compartment` → `Compart-Compartment` | `Agent-Compartment` |
-| `Compart-Security` | `Agent-Sandbox` |
+| `Sheepdog-Agent` | `Agent-Agent` |
+| `Sheepdog-Execution` | `Agent-Execution` |
+| `Compartment` → `Sheepdog-Compartment` | `Agent-Compartment` |
+| `Sheepdog-Security` | `Agent-Sandbox` |
 
 Writers SHOULD emit spec names going forward. Readers SHOULD accept both.
 
@@ -121,7 +122,7 @@ build an agent harness and start emitting these, open a PR against this file's
 
 ### Implementations
 
-- [Compart](https://github.com/Devaretanmay/Compart) - CLI + Python SDK, emits trailers automatically via `compart commit`
+- [Sheepdog](https://github.com/Devaretanmay/Sheepdog) - CLI + Python SDK, emits trailers automatically via `sheepdog commit`
 
 ## License
 

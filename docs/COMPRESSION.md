@@ -1,12 +1,12 @@
 # Execution-Evidence Compression & Failure Summarization
 
-Sandboxed test suites, build runs, and compiler outputs can easily produce tens of thousands of lines of terminal text. Compart includes high-speed native Rust compression engines (`src/engines/compression/`) to distill verbose test logs down to high-signal failure traces, stack traces, and verification evidence for LLM maintenance agents and Developer Trust PR receipts without exceeding context limits.
+Sandboxed test suites, build runs, and compiler outputs can easily produce tens of thousands of lines of terminal text. Sheepdog includes high-speed native Rust compression engines (`src/engines/compression/`) to distill verbose test logs down to high-signal failure traces, stack traces, and verification evidence for LLM maintenance agents and Developer Trust PR receipts without exceeding context limits.
 
 ---
 
 ## 1. Core Compression Engines
 
-The Compart Rust core includes four specialized evidence compression engines:
+The Sheepdog Rust core includes four specialized evidence compression engines:
 
 1. **LogCompressor & Stack Trace Isolator**: Strips noisy repetitive progress loops, polling logs, and build progress bars while preserving critical error tracebacks, panic messages, failing assertion lines, and exit statuses.
 2. **SmartCrusher (JSON & Contract Compaction)**: Compacts large OpenAPI schemas, dependency trees, and payload arrays into structural schemas and representative records.
@@ -17,10 +17,10 @@ The Compart Rust core includes four specialized evidence compression engines:
 
 ## 2. Dynamic Content Routing (`route_and_compress`)
 
-Compart automatically detects the content type of execution output (build logs, JSON, diffs, raw text) and applies the optimal engine:
+Sheepdog automatically detects the content type of execution output (build logs, JSON, diffs, raw text) and applies the optimal engine:
 
 ```python
-from compart.maintenance_agents import PatchVerifier
+from sheepdog.maintenance_agents import PatchVerifier
 
 verifier = PatchVerifier()
 result = verifier.verify(repo_dir=".", test_cmd="npm test")

@@ -1,10 +1,10 @@
-# Contributing to Compart
+# Contributing to Sheepdog
 
-We welcome contributions to the Compart source-available runtime!
+We welcome contributions to the Sheepdog source-available runtime!
 
 ## Licensing & License Agreement
 
-By contributing to Compart, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE), and to the terms of the [CLA](CLA.md).
+By contributing to Sheepdog, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE), and to the terms of the [CLA](CLA.md).
 
 ## Development Setup
 

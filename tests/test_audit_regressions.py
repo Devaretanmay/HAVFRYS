@@ -15,10 +15,10 @@ import tempfile
 import textwrap
 import pytest
 
-from compart.cli.main import _topo_sort
-from compart.config import load_config
-from compart.engine.execution import ExecutionKind, ExecutionManager
-from compart.engine.pty_supervisor import PtySupervisor
+from sheepdog.cli.main import _topo_sort
+from sheepdog.config import load_config
+from sheepdog.engine.execution import ExecutionKind, ExecutionManager
+from sheepdog.engine.pty_supervisor import PtySupervisor
 
 
 def test_config_null_compartments_section():
@@ -119,11 +119,11 @@ def test_snapshot_dir_persists():
     try:
         mgr = ExecutionManager(workdir=tmp)
         ex = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"])
-        ex.snapshot_dir = "/tmp/compart_test_snap"
+        ex.snapshot_dir = "/tmp/sheepdog_test_snap"
         mgr.save(ex)
         loaded = mgr.get(ex.execution_id)
         assert loaded is not None
-        assert loaded.snapshot_dir == "/tmp/compart_test_snap"
+        assert loaded.snapshot_dir == "/tmp/sheepdog_test_snap"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

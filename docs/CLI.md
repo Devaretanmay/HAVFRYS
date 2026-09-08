@@ -1,8 +1,8 @@
-# Compart CLI Reference & User Guide
+# Sheepdog CLI Reference & User Guide
 
-Compart is autonomous software maintenance for systems that change. It detects contract drift, repairs the code, verifies against your real test suite, and delivers the evidence as a PR.
+Sheepdog is autonomous software maintenance for systems that change. It detects contract drift, repairs the code, verifies against your real test suite, and delivers the evidence as a PR.
 
-> **“Greptile understands changes humans make to software. Compart understands changes the outside world makes to software.”**
+> **“Greptile understands changes humans make to software. Sheepdog understands changes the outside world makes to software.”**
 
 ---
 
@@ -10,40 +10,40 @@ Compart is autonomous software maintenance for systems that change. It detects c
 
 ```text
 Maintenance product (normal flow: auth → doctor → index → check → fix)
-  compart auth                     Connect BYOK AI provider (needed only for AI repair)
-  compart doctor                   Product readiness: GitHub, AI, index, knowledge, tests
-  compart index [path]             Index repository contracts & callsites (free, zero-token)
-  compart check [path]             Detect contract changes & impact (read-only; needs no AI key)
-          compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
-          compart consult [path]         Assess with AI reasoning, file GitHub Issue, change nothing
-          compart reviews [path]         List past maintenance runs from the ledger
-          compart onboard [path]         Guided setup: auth → index → doctor
-          compart logout                 Remove stored credentials (alias for auth --clear)
-  compart providers                List monitored contract sources & migrations
-  compart app serve                Run GitHub App webhook listener (secret required)
-  compart pr                       Review a pull request with the contract guard
+  sheepdog auth                     Connect BYOK AI provider (needed only for AI repair)
+  sheepdog doctor                   Product readiness: GitHub, AI, index, knowledge, tests
+  sheepdog index [path]             Index repository contracts & callsites (free, zero-token)
+  sheepdog check [path]             Detect contract changes & impact (read-only; needs no AI key)
+          sheepdog fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
+          sheepdog consult [path]         Assess with AI reasoning, file GitHub Issue, change nothing
+          sheepdog reviews [path]         List past maintenance runs from the ledger
+          sheepdog onboard [path]         Guided setup: auth → index → doctor
+          sheepdog logout                 Remove stored credentials (alias for auth --clear)
+  sheepdog providers                List monitored contract sources & migrations
+  sheepdog app serve                Run GitHub App webhook listener (secret required)
+  sheepdog pr                       Review a pull request with the contract guard
 
 Legacy / advanced (workflows, sessions, lanes)
-  compart init                     Initialize a Compart workspace (legacy path; onboarding no longer needs this)
-  compart status                   Show workspace health & active executions
-  compart inspect                  Dump declared compartments & policies
+  sheepdog init                     Initialize a Sheepdog workspace (legacy path; onboarding no longer needs this)
+  sheepdog status                   Show workspace health & active executions
+  sheepdog inspect                  Dump declared compartments & policies
 
 Agents
-  compart claude | opencode | codex | cursor | aider
+  sheepdog claude | opencode | codex | cursor | aider
                                    Run coding agent in governed OS sandbox
-  compart exec -- <cmd>            Run arbitrary command inside a compartment
+  sheepdog exec -- <cmd>            Run arbitrary command inside a compartment
 
 Workflows
-  compart -w <name>                Create a new workflow branch
-  compart step <workflow> <target> Add a step with auto-inferred properties
-  compart --run <workflow>         Execute declared workflow DAG
+  sheepdog -w <name>                Create a new workflow branch
+  sheepdog step <workflow> <target> Add a step with auto-inferred properties
+  sheepdog --run <workflow>         Execute declared workflow DAG
 
 Changes
-  compart diff                     Review change sets attributed by agent
-  compart apply                    Promote changes to workspace baseline
-  compart commit -m <msg>          Commit to Git with RFC-5322 metadata trailers
-  compart undo                     Instant physical snapshot rollback
-  compart restore                  Restore from session checkpoint
+  sheepdog diff                     Review change sets attributed by agent
+  sheepdog apply                    Promote changes to workspace baseline
+  sheepdog commit -m <msg>          Commit to Git with RFC-5322 metadata trailers
+  sheepdog undo                     Instant physical snapshot rollback
+  sheepdog restore                  Restore from session checkpoint
 ```
 
 ---
@@ -51,11 +51,11 @@ Changes
 ## 0. Product Onboarding
 
 ```bash
-compart auth              # Connect AI provider (OpenAI / Anthropic / local). Needed only for AI repair.
-compart doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Test command, Monitoring
-compart index .           # Zero-token static index → .compart/graph.json + knowledge test recipes
-compart check .           # Read-only drift & impact audit (works with no AI key configured)
-compart fix .             # Auto-detect provider, repair, sandbox-verify, report evidence
+sheepdog auth              # Connect AI provider (OpenAI / Anthropic / local). Needed only for AI repair.
+sheepdog doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Test command, Monitoring
+sheepdog index .           # Zero-token static index → .sheepdog/graph.json + knowledge test recipes
+sheepdog check .           # Read-only drift & impact audit (works with no AI key configured)
+sheepdog fix .             # Auto-detect provider, repair, sandbox-verify, report evidence
 ```
 
 `check` never modifies code. `fix` with no safe path and no AI credentials refuses loudly
@@ -67,48 +67,48 @@ compart fix .             # Auto-detect provider, repair, sandbox-verify, report
 
 > `init` is the legacy workspace path. Normal onboarding (`auth → index → check → fix`) does not need it.
 
-### `compart init`
-Initializes a `.compart/` control plane in the current directory:
+### `sheepdog init`
+Initializes a `.sheepdog/` control plane in the current directory:
 - Detects installed agents (`claude`, `codex`, `opencode`, `cursor`, `aider`).
 - Configures default security compartments (`default`, `research`, `builder`, `network`, `tester`).
 - Sets up execution tracking and BLAKE3 snapshot storage.
 
 ```bash
-compart init
+sheepdog init
 ```
 
 ---
 
-### `compart status`
+### `sheepdog status`
 Shows live workspace health, active agents, recent executions, and security events.
 
 ```bash
-compart status
+sheepdog status
 ```
 
 ---
 
-### `compart inspect`
+### `sheepdog inspect`
 Dumps declarative topology, active compartments, filesystem permissions, and network policies.
 
 ```bash
-compart inspect
-compart inspect --json
+sheepdog inspect
+sheepdog inspect --json
 ```
 
 ---
 
 ## 2. Interactive Agent Execution
 
-### Direct Agent Commands (`compart <agent>`)
+### Direct Agent Commands (`sheepdog <agent>`)
 Launch any interactive coding agent inside an isolated kernel sandbox with full native terminal TUI fidelity (colors, alternate screen, Ctrl+C, Ctrl+D, window resizing):
 
 ```bash
-compart claude
-compart opencode
-compart codex
-compart cursor
-compart aider
+sheepdog claude
+sheepdog opencode
+sheepdog codex
+sheepdog cursor
+sheepdog aider
 ```
 
 **Under the Hood:**
@@ -116,58 +116,58 @@ compart aider
 2. Allocates a pseudo-terminal master/slave pair (`PtySupervisor`).
 3. Takes a pre-execution BLAKE3 hash snapshot of the workspace.
 4. Applies OS kernel sandboxing (Seatbelt on macOS / Landlock on Linux).
-5. Captures file changes upon exit into `compart diff`.
+5. Captures file changes upon exit into `sheepdog diff`.
 
 ---
 
-### `compart exec`
+### `sheepdog exec`
 Runs any arbitrary script, tool, or shell command inside an explicitly selected compartment:
 
 ```bash
 # Run inside default compartment
-compart exec -- python3 script.py
+sheepdog exec -- python3 script.py
 
 # Run inside 'research' (read-only filesystem, network allowed)
-compart exec --compartment research -- python3 scraper.py
+sheepdog exec --compartment research -- python3 scraper.py
 
 # Run inside 'builder' (read-write filesystem, network restricted)
-compart exec --compartment builder -- pytest tests/
+sheepdog exec --compartment builder -- pytest tests/
 ```
 
 ---
 
 ## 3. Agentic Workflows (Git-Style Pipelines)
 
-### `compart -w <name>` (or `compart workflow create <name>`)
-Creates a new workflow branch in `workflows/<name>.yaml` or `.compart/workflows/<name>.yaml`:
+### `sheepdog -w <name>` (or `sheepdog workflow create <name>`)
+Creates a new workflow branch in `workflows/<name>.yaml` or `.sheepdog/workflows/<name>.yaml`:
 
 ```bash
-compart -w invoice-pipeline
+sheepdog -w invoice-pipeline
 ```
 
 ---
 
-### `compart step <workflow> <target>`
-Adds steps to your workflow branch. Point Compart at an individual file, a command, or an entire directory:
+### `sheepdog step <workflow> <target>`
+Adds steps to your workflow branch. Point Sheepdog at an individual file, a command, or an entire directory:
 
 ```bash
 # Add a single script with auto-inferred runner & compartment
-compart step invoice-pipeline src/ocr.py
+sheepdog step invoice-pipeline src/ocr.py
 
 # Ingest an entire directory (scans and auto-chains scripts)
-compart step invoice-pipeline src/
+sheepdog step invoice-pipeline src/
 
 # Add a test or shell command
-compart step invoice-pipeline "pytest tests/" --compartment tester
+sheepdog step invoice-pipeline "pytest tests/" --compartment tester
 ```
 
 ---
 
-### `compart --run <workflow>` (or `compart run <workflow>`)
+### `sheepdog --run <workflow>` (or `sheepdog run <workflow>`)
 Executes the declared workflow DAG under kernel isolation:
 
 ```bash
-compart --run invoice-pipeline
+sheepdog --run invoice-pipeline
 ```
 
 - Topologically sorts the execution graph.
@@ -176,44 +176,44 @@ compart --run invoice-pipeline
 
 ---
 
-### `compart workflow show <workflow>`
+### `sheepdog workflow show <workflow>`
 Inspects and visualizes declared workflow DAG nodes, commands, and dependencies:
 
 ```bash
-compart workflow show invoice-pipeline
+sheepdog workflow show invoice-pipeline
 ```
 
 ---
 
 ## 4. Change Management & Git Provenance
 
-### `compart diff`
+### `sheepdog diff`
 Review change sets attributed by execution ID and agent name:
 
 ```bash
-compart diff               # Show all execution change sets
-compart diff --unapplied   # Only show pending changes not yet applied
-compart diff --trailers    # View formatted RFC-5322 Git metadata trailers
+sheepdog diff               # Show all execution change sets
+sheepdog diff --unapplied   # Only show pending changes not yet applied
+sheepdog diff --trailers    # View formatted RFC-5322 Git metadata trailers
 ```
 
 ---
 
-### `compart apply`
+### `sheepdog apply`
 Promotes an execution's recorded change set into the workspace baseline. Detects conflicts if another execution modified the same files.
 
 ```bash
-compart apply                         # Apply all pending completed executions
-compart apply --execution exec_101    # Apply a specific execution
-compart apply --force                 # Apply even if changes overlap
+sheepdog apply                         # Apply all pending completed executions
+sheepdog apply --execution exec_101    # Apply a specific execution
+sheepdog apply --force                 # Apply even if changes overlap
 ```
 
 ---
 
-### `compart commit`
+### `sheepdog commit`
 Commits applied agent changes to Git, automatically embedding structured RFC-5322 metadata trailers for auditability and compliance:
 
 ```bash
-compart commit -m "feat(auth): implement token verification"
+sheepdog commit -m "feat(auth): implement token verification"
 ```
 
 *Commit will contain metadata trailers (per the [Agent Provenance Trailers spec](../SPEC.md)):*
@@ -227,81 +227,81 @@ Agent-Sandbox: clean
 
 ---
 
-### `compart undo`
+### `sheepdog undo`
 Physically restores the workspace to its exact state before the execution ran using the pre-execution BLAKE3 hash snapshot (restores in ~2 milliseconds):
 
 ```bash
-compart undo                         # Undo latest execution
-compart undo --execution exec_101    # Undo a specific execution
+sheepdog undo                         # Undo latest execution
+sheepdog undo --execution exec_101    # Undo a specific execution
 ```
 
 ---
 
-### `compart restore [session_id]`
+### `sheepdog restore [session_id]`
 Restores workspace files from an Agent Session snapshot checkpoint:
 
 ```bash
-compart restore                       # Restores latest session checkpoint
-compart restore sess_1787082470931    # Restores specific session checkpoint
+sheepdog restore                       # Restores latest session checkpoint
+sheepdog restore sess_1787082470931    # Restores specific session checkpoint
 ```
 
 ---
 
 ## 5. External-Change Intelligence & Autonomous Maintenance
 
-### `compart auth [--provider … --api-key …] [--status] [--clear]`
-Connects a BYOK AI provider, saved to `~/.compart/credentials.json` (0600), with per-installation
+### `sheepdog auth [--provider … --api-key …] [--status] [--clear]`
+Connects a BYOK AI provider, saved to `~/.sheepdog/credentials.json` (0600), with per-installation
 scoping available. Credentials are required only when AI reasoning/generation is actually needed —
 `index` and `check` work without them. `--status` shows the masked active provider.
 
-### `compart doctor`
+### `sheepdog doctor`
 Prints product readiness: GitHub CONNECTED / NOT CONFIGURED, AI provider, repository Indexed state,
 Knowledge Base READY / STALE / MISSING, detected test command, and monitoring ACTIVE / NOT ACTIVE,
 with remediation hints.
 
-### `compart index [path]`
-Zero-token static index: AST callsites, manifests, dependency graph → `.compart/graph.json`, plus
+### `sheepdog index [path]`
+Zero-token static index: AST callsites, manifests, dependency graph → `.sheepdog/graph.json`, plus
 `index_state.json` (commit SHA + mtimes) for incremental re-indexing and knowledge test recipes.
 
-### `compart check [path]` (alias: `scan`, `audit`)
+### `sheepdog check [path]` (alias: `scan`, `audit`)
 Day-0 external-change dependency audit and risk register. Scans manifests, lockfiles, and AST callsites to report at-risk, deprecated, or breaking external integrations:
 
 ```bash
-compart check .
-compart check . --format=github-issue    # Markdown for GitHub Issue
-compart check . --format=json            # Machine-readable JSON risk register
-compart check . --write-graph            # Persists .compart/graph.json
+sheepdog check .
+sheepdog check . --format=github-issue    # Markdown for GitHub Issue
+sheepdog check . --format=json            # Machine-readable JSON risk register
+sheepdog check . --write-graph            # Persists .sheepdog/graph.json
 ```
 
 ---
 
-### `compart graph [path]`
+### `sheepdog graph [path]`
 Queries and inspects the repository's External-Change Dependency Graph (providers, contracts, manifest dependencies, wrapper clients, AST callsites, and active edges):
 
 ```bash
-compart graph .
-compart graph . --json
+sheepdog graph .
+sheepdog graph . --json
 ```
 
 ---
 
-### `compart fix [root_dir]` (alias: `maintain`, `update`)
-Executes an autonomous continuous maintenance cycle: Compart's AI reasons over the repository,
+### `sheepdog fix [root_dir]` (alias: `maintain`, `update`)
+Executes an autonomous continuous maintenance cycle: Sheepdog's AI reasons over the repository,
 the change, and maintenance memory, then repairs with deterministic tools, formats with local tools
 (`prettier`/`ruff`), runs repository tests, verifies zero blast radius, and reports evidence.
 Verified patterns execute without model calls; novel work uses your provider; unsafe repairs are
 refused loudly with zero files touched. There is no engine flag — strategy is internal:
 
 ```bash
-compart fix .                       # Auto-detect provider from manifests
-compart fix . --provider stripe
-compart fix . --provider openai --from v3.28.0 --to v4.0.0
-compart fix . --detect              # Detect installed API providers
-compart fix . --show-pr             # Preview Developer Trust PR body
-compart fix . --create-pr --repo owner/repo
+sheepdog fix .                       # Auto-detect provider from manifests
+sheepdog fix . --provider stripe
+sheepdog fix . --provider openai --from v3.28.0 --to v4.0.0
+sheepdog fix . --detect              # Detect installed API providers
+sheepdog fix . --show-pr             # Preview Developer Trust PR body
+sheepdog fix . --create-pr --repo owner/repo
 ```
 
-### `compart consult [path] [--repo owner/repo]`
+### `sheepdog consult [path] [--repo owner/repo]`
 Same AI reasoning as `fix` — codebase context, change context, maintenance memory, impact
 analysis — but Consult authority: assess and report only. Files a GitHub Issue with findings,
 affected files, inheritance notes, recommendation, and confidence, then declares no code was
@@ -309,11 +309,11 @@ modified. Requires AI credentials (refuses loudly without them); requires a reso
 to file the Issue. Start here to build trust before enabling Work:
 
 ```bash
-compart consult . --repo owner/repo
+sheepdog consult . --repo owner/repo
 ```
 
-### `compart reviews [path]` / `compart onboard [path]` / `compart logout`
-- `reviews` lists past maintenance runs (provider, versions, outcome) from `.compart/history.json`.
+### `sheepdog reviews [path]` / `sheepdog onboard [path]` / `sheepdog logout`
+- `reviews` lists past maintenance runs (provider, versions, outcome) from `.sheepdog/history.json`.
 - `onboard` chains `auth → index → doctor` as one guided setup.
 - `logout` clears stored credentials. `auth --status` also reports GitHub identity when a token is present.
 
@@ -322,27 +322,27 @@ On refusal (no safe path, no AI credentials): `Repository Tests: NOT RUN`, zero 
 
 ---
 
-### `compart providers`
+### `sheepdog providers`
 Lists the built-in provider contract registry and available breaking-change migration specifications:
 
 ```bash
-compart providers
-compart providers --json
+sheepdog providers
+sheepdog providers --json
 ```
 
 ---
 
-### `compart app [serve|status]`
+### `sheepdog app [serve|status]`
 Runs the GitHub App continuous webhook listener daemon for automated PR drift detection and verification.
 A webhook secret is required (fail-closed); `--no-secret` is local-debugging only:
 
 ```bash
-compart app serve --port 8080 --secret $COMPART_WEBHOOK_SECRET
+sheepdog app serve --port 8080 --secret $SHEEPDOG_WEBHOOK_SECRET
 ```
 
-On installation events Compart persists the installation record, runs Day-0 indexing where a
+On installation events Sheepdog persists the installation record, runs Day-0 indexing where a
 checkout is available, and tracks per-repository state (PENDING → INDEXED → READY).
 
-### `compart pr [number]`
+### `sheepdog pr [number]`
 Runs the contract guard against a local checkout of a PR (mergeable only on real green tests).
 

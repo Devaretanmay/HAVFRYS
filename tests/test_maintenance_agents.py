@@ -1,4 +1,4 @@
-from compart.maintenance_agents import ImpactAnalyst
+from sheepdog.maintenance_agents import ImpactAnalyst
 
 
 def test_impact_analyst_dummy(tmp_path):

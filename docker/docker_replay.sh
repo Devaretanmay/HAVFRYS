@@ -2,10 +2,10 @@
 set -euo pipefail
 
 echo "================================================================================"
-echo "          COMPART HERMETIC CONTAINER REPLAY RUNNER"
+echo "          SHEEPDOG HERMETIC CONTAINER REPLAY RUNNER"
 echo "================================================================================"
 
-IMAGE_NAME="compart-replay:latest"
+IMAGE_NAME="sheepdog-replay:latest"
 docker build -t "$IMAGE_NAME" -f docker/Dockerfile.replay .
 
 echo "[RUNNING] Executing ground-truth benchmark suite inside container..."

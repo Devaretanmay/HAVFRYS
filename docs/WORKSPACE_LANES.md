@@ -1,9 +1,9 @@
-# Compart Virtual Agent Lanes & Integration Architecture
+# Sheepdog Virtual Agent Lanes & Integration Architecture
 
-Compart introduces **Virtual Agent Lanes**-the developer workspace abstraction for AI agents.
+Sheepdog introduces **Virtual Agent Lanes**-the developer workspace abstraction for AI agents.
 
 ```text
-COMPART WORKSPACE
+SHEEPDOG WORKSPACE
    │
    ├── Agent Sessions & Virtual Lanes
    │   ├── Lane: auth-fix  (Claude Code)  -> Changes: [src/auth.py]
@@ -11,9 +11,9 @@ COMPART WORKSPACE
    │   └── Lane: tests     (Codex)        -> Changes: [tests/test_auth.py]
    │
    ├── Integration Engine
-   │   ├── compart integrate create auth-fix logging
-   │   ├── compart integrate preview
-   │   └── compart integrate apply
+   │   ├── sheepdog integrate create auth-fix logging
+   │   ├── sheepdog integrate preview
+   │   └── sheepdog integrate apply
    │
    └── Kernel Execution Isolation
        ├── Landlock (Linux) / Seatbelt (macOS) Process Sandboxing
@@ -41,28 +41,28 @@ COMPART WORKSPACE
 ### 1. Running Concurrent Agent Lanes
 ```bash
 # Agent 1 (Claude Code) in 'auth-fix' lane
-compart wrap --agent "Claude Code" --task "Fix authentication bug" --lane auth-fix -- claude
+sheepdog wrap --agent "Claude Code" --task "Fix authentication bug" --lane auth-fix -- claude
 
 # Agent 2 (OpenCode) in 'logging' lane concurrently
-compart wrap --agent "OpenCode" --task "Add structured logging" --lane logging -- opencode
+sheepdog wrap --agent "OpenCode" --task "Add structured logging" --lane logging -- opencode
 ```
 
 ### 2. Inspecting Workspace Lanes
 ```bash
-compart lanes
-compart lane inspect auth-fix
+sheepdog lanes
+sheepdog lane inspect auth-fix
 ```
 
 ### 3. Combining & Integrating Lanes
 ```bash
 # Create integration candidate combining auth-fix and logging
-compart integrate create auth-fix logging
+sheepdog integrate create auth-fix logging
 
 # Preview candidate diffs and conflict status
-compart integrate preview
+sheepdog integrate preview
 
 # Apply cleanly to workspace
-compart integrate apply
+sheepdog integrate apply
 ```
 
 ---
@@ -73,25 +73,25 @@ Every governed execution records a **change set** (BLAKE3 file diffs attributed 
 
 ```bash
 # Review what agents changed (filter by execution, or --unapplied for pending work)
-compart diff
-compart diff --execution exec_1723635840000
-compart diff --unapplied
+sheepdog diff
+sheepdog diff --execution exec_1723635840000
+sheepdog diff --unapplied
 
 # Promote a change set into the workspace baseline.
 # Overlapping changes from other un-applied executions surface as conflicts;
 # --force applies anyway.
-compart apply
-compart apply --execution exec_1723635840000
+sheepdog apply
+sheepdog apply --execution exec_1723635840000
 
 # Reverse the last apply operation (or a specific one)
-compart undo
-compart undo --execution exec_1723635840000
+sheepdog undo
+sheepdog undo --execution exec_1723635840000
 
 # Restore the workspace from a session's pre-execution snapshot checkpoint
-compart restore sess_1723635840000
+sheepdog restore sess_1723635840000
 
 # Roll back a session (restores its snapshot and marks it ROLLED_BACK)
-compart session rollback sess_1723635840000
+sheepdog session rollback sess_1723635840000
 ```
 
 **Semantics:**

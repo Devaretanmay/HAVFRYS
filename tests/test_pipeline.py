@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-from compart.config import PipelinePolicy
-from compart.pipeline import (
+from sheepdog.config import PipelinePolicy
+from sheepdog.pipeline import (
     TriggerContext,
     DriftFinding,
     AnalysisResult,
@@ -103,9 +103,9 @@ def test_surface_result_clean_when_no_findings():
     policy = PipelinePolicy(always_report_clean=True)
 
     surface = surface_result(ctx, analysis, policy, client)
-    assert surface.status_description == "Compart: no external contract impact detected"
+    assert surface.status_description == "Sheepdog: no external contract impact detected"
     client.post_pr_comment.assert_called_once()
-    assert "Compart checked 1 external API touchpoint(s)" in surface.comment_body
+    assert "Sheepdog checked 1 external API touchpoint(s)" in surface.comment_body
     assert "No contract violations detected. No changes made." in surface.comment_body
 
 
@@ -135,9 +135,9 @@ def test_surface_result_with_drift_findings():
     policy = PipelinePolicy(inline_comments=False)
 
     surface = surface_result(ctx, analysis, policy, client)
-    assert "Compart found 1 maintenance issue(s)" in surface.status_description
+    assert "Sheepdog found 1 maintenance issue(s)" in surface.status_description
     client.post_pr_comment.assert_called_once()
-    assert "COMPART FOUND A MAINTENANCE ISSUE" in surface.comment_body
+    assert "SHEEPDOG FOUND A MAINTENANCE ISSUE" in surface.comment_body
 
 
 def test_surface_result_verified_autofix():

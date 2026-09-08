@@ -1,10 +1,10 @@
-"""Deep Edge-Case Test Suite for Compart Workspace & Execution Architecture.
+"""Deep Edge-Case Test Suite for Sheepdog Workspace & Execution Architecture.
 
 Covers:
-1. Cross-agent merge conflict detection during `compart apply`
+1. Cross-agent merge conflict detection during `sheepdog apply`
 2. Workflow DAG node failure cascading into skipped downstream nodes
 3. Deeply nested workspace discovery from 5-level deep subdirectories
-4. Child process and subshell `COMPART_EXECUTION_ID` boundary inheritance
+4. Child process and subshell `SHEEPDOG_EXECUTION_ID` boundary inheritance
 5. Path traversal security checks on ExecutionManager
 6. Read-only zero-change agent execution handling
 7. Malformed workflow DAG (cycles and missing dependencies)
@@ -20,18 +20,18 @@ from contextlib import redirect_stdout
 
 import pytest
 
-from compart.cli.main import (
+from sheepdog.cli.main import (
     cmd_commit, cmd_diff, _apply_execution, _run_declared_workflow
 )
-from compart.config import (
+from sheepdog.config import (
     CompartmentConfig, WorkflowConfig, WorkflowNodeConfig, WorkspaceConfig,
-    find_workspace_root, is_compart_workspace
+    find_workspace_root, is_sheepdog_workspace
 )
-from compart.engine.execution import (
+from sheepdog.engine.execution import (
     ExecutionKind, ExecutionManager, ExecutionStatus
 )
-from compart.engine.pty_supervisor import PtySupervisor
-from compart.hooks.base import ExecutionResult
+from sheepdog.engine.pty_supervisor import PtySupervisor
+from sheepdog.hooks.base import ExecutionResult
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -42,7 +42,7 @@ def test_cross_agent_conflict_detection():
     os.chdir(REPO_ROOT)
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".compart"))
+        os.makedirs(os.path.join(tmp, ".sheepdog"))
         mgr = ExecutionManager(workdir=tmp)
 
         ex_a = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"], compartment_id="coding")
@@ -81,7 +81,7 @@ def test_workflow_dag_node_failure_cascades_to_skipped(monkeypatch):
     os.chdir(REPO_ROOT)
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".compart"))
+        os.makedirs(os.path.join(tmp, ".sheepdog"))
 
         class _MockRunner:
             def __init__(self, workdir, verbose=False, block_network=False):
@@ -91,7 +91,7 @@ def test_workflow_dag_node_failure_cascades_to_skipped(monkeypatch):
                     return ExecutionResult(returncode=1, stderr="fail", stdout="", diffs=[])
                 return ExecutionResult(returncode=0, stderr="", stdout="ok", diffs=[])
 
-        monkeypatch.setattr("compart.cli.main.SandboxRunner", _MockRunner)
+        monkeypatch.setattr("sheepdog.cli.main.SandboxRunner", _MockRunner)
 
         cfg = WorkspaceConfig(
             compartments={
@@ -132,15 +132,15 @@ def test_workflow_dag_node_failure_cascades_to_skipped(monkeypatch):
 
 
 def test_deeply_nested_workspace_root_discovery():
-    """find_workspace_root correctly locates .compart/ even 5 directories down."""
+    """find_workspace_root correctly locates .sheepdog/ even 5 directories down."""
     os.chdir(REPO_ROOT)
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".compart"))
+        os.makedirs(os.path.join(tmp, ".sheepdog"))
         deep_dir = os.path.join(tmp, "a", "b", "c", "d", "e")
         os.makedirs(deep_dir)
 
-        assert is_compart_workspace(deep_dir) is True
+        assert is_sheepdog_workspace(deep_dir) is True
         assert find_workspace_root(deep_dir) == tmp
     finally:
         os.chdir(REPO_ROOT)
@@ -149,12 +149,12 @@ def test_deeply_nested_workspace_root_discovery():
 
 
 def test_child_execution_id_inheritance():
-    """Child processes receive COMPART_EXECUTION_ID in extra_env."""
+    """Child processes receive SHEEPDOG_EXECUTION_ID in extra_env."""
     os.chdir(REPO_ROOT)
     tmp = tempfile.mkdtemp()
     try:
-        sup = PtySupervisor(workdir=tmp, extra_env={"COMPART_EXECUTION_ID": "exec_parent_12345"})
-        result = sup.capture(["sh", "-c", "echo $COMPART_EXECUTION_ID"])
+        sup = PtySupervisor(workdir=tmp, extra_env={"SHEEPDOG_EXECUTION_ID": "exec_parent_12345"})
+        result = sup.capture(["sh", "-c", "echo $SHEEPDOG_EXECUTION_ID"])
         assert result.returncode == 0
         assert "exec_parent_12345" in result.stdout
     finally:
@@ -173,9 +173,9 @@ def test_execution_manager_path_traversal_protection():
         path_1 = mgr._path("../../etc/passwd")
         path_2 = mgr._path("../../../secret.json")
 
-        assert os.path.dirname(path_1) == os.path.join(tmp, ".compart", "executions")
+        assert os.path.dirname(path_1) == os.path.join(tmp, ".sheepdog", "executions")
         assert os.path.basename(path_1) == "passwd.json"
-        assert os.path.dirname(path_2) == os.path.join(tmp, ".compart", "executions")
+        assert os.path.dirname(path_2) == os.path.join(tmp, ".sheepdog", "executions")
         assert os.path.basename(path_2) == "secret.json"
     finally:
         os.chdir(REPO_ROOT)
@@ -188,7 +188,7 @@ def test_zero_change_execution_diff_and_commit():
     os.chdir(REPO_ROOT)
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".compart"))
+        os.makedirs(os.path.join(tmp, ".sheepdog"))
         os.chdir(tmp)
         mgr = ExecutionManager(workdir=tmp)
 

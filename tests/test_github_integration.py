@@ -2,13 +2,13 @@ import hashlib
 import hmac
 import json
 
-from compart.github.client import verify_webhook_signature
-from compart.github.webhook_server import handle_webhook_payload
-from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
+from sheepdog.github.client import verify_webhook_signature
+from sheepdog.github.webhook_server import handle_webhook_payload
+from sheepdog.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 
 
 def test_webhook_signature_verification():
-    secret = "test_compart_secret_key_123"
+    secret = "test_sheepdog_secret_key_123"
     payload = b'{"action": "push", "repository": {"full_name": "owner/repo"}}'
     
     mac = hmac.new(secret.encode("utf-8"), msg=payload, digestmod=hashlib.sha256)

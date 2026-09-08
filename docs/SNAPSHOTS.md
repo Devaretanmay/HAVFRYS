@@ -1,6 +1,6 @@
 # BLAKE3 Snapshot & Differential Rollback Guide
 
-Compart provides high-speed, BLAKE3 hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee physical workspace recovery.
+Sheepdog provides high-speed, BLAKE3 hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee physical workspace recovery.
 
 ---
 
@@ -8,24 +8,24 @@ Compart provides high-speed, BLAKE3 hash-based workspace snapshotting and differ
 
 1. **Pre-Execution Manifest**: Before an agent or workflow step executes, `SnapshotManager` scans the workspace directory (excluding `.git`, `.venv`, `node_modules`, `target`) and computes 16-byte BLAKE3 hashes for every file.
 2. **Execution Tracking**: The agent runs inside its isolated kernel compartment.
-3. **Differential Restoration (`compart undo`)**:
+3. **Differential Restoration (`sheepdog undo`)**:
    - Modified files are restored to their exact pre-execution content.
    - Deleted files are recovered.
    - Newly created stray files are cleanly purged.
 
 ---
 
-## 2. CLI Usage (`compart undo`)
+## 2. CLI Usage (`sheepdog undo`)
 
 ```bash
 # Execute an agent
-compart claude
+sheepdog claude
 
 # Inspect changes
-compart diff
+sheepdog diff
 
 # Rollback physical files instantly if the agent corrupted code
-compart undo
+sheepdog undo
 ```
 
 ---
@@ -33,12 +33,12 @@ compart undo
 ## 3. Python SDK Usage
 
 ```python
-from compart.sandbox.snapshot import SnapshotManager
+from sheepdog.sandbox.snapshot import SnapshotManager
 
 # Initialize manager for the target worktree
 snap = SnapshotManager(
     workdir=".",
-    snapshot_dir=".compart/snapshots/exec_101"
+    snapshot_dir=".sheepdog/snapshots/exec_101"
 )
 
 # Take pre-execution snapshot
@@ -59,4 +59,4 @@ snap.cleanup()
 
 ## 4. Automatic Snapshotting in Workflows & Agent Sessions
 
-When using `compart claude`, `compart --run <workflow>`, or `AgentCompart`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.
+When using `sheepdog claude`, `sheepdog --run <workflow>`, or `AgentSheepdog`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.

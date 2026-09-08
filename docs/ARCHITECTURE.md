@@ -1,6 +1,6 @@
-# Compart Architecture: Maintenance Layer for Systems That Change
+# Sheepdog Architecture: Maintenance Layer for Systems That Change
 
-> **Compart keeps software working when the systems around it change.**
+> **Sheepdog keeps software working when the systems around it change.**
 
 The wedge is vendor SDK/API migrations. The architecture is a general contract-maintenance
 loop: any machine-readable interface a repository depends on is a `ChangeSource`, and every
@@ -16,7 +16,7 @@ Stripe / OpenAI / AWS / MCP / APIs    Service A → API → Service B → SDK �
 │                                     │
 └──────────────┬──────────────────────┘
                ▼
-      COMPART CHANGE RADAR (detect_changes: read-only, zero-token)
+      SHEEPDOG CHANGE RADAR (detect_changes: read-only, zero-token)
                ▼
       ┌────────────────────────┴────────────────────────┐
       ↓                                                 ↓
@@ -55,15 +55,15 @@ Adoption ladder: start in Consult, graduate to Work when the reasoning earns it.
 
 | Type | Module | Role |
 |---|---|---|
-| `ChangeSource` | `compart.change_source` | Names the depended-upon system: `kind` (`sdk`, `external_api`, `openapi`, `graphql`, `protobuf`, `webhook`, `mcp_server`, `internal_service`), `identity`, versions or `contract_hash` |
-| `Detection` | `compart.change_source` | Read-only outcome: `NO_IMPACT`, `IMPACT_DIRECT`, `IMPACT_AI`, `IMPACT_QUARANTINE` (+ `ai_dependent` flag for checks needing reasoning) |
-| `Decision` | `compart.intelligence` | Internal routing: `DIRECT / AI / HYBRID / QUARANTINE` + `confidence`, `estimated_tokens` (`0` = verified zero-token, `None` = unknown), `expected_blast_radius`, `verification_required`. Never a CLI flag |
-| `KBEntry` | `compart.knowledge` | Repository memory at `.compart/knowledge/{kind}/{identity}/{contract}.json` (legacy provider paths still read). Executable patterns + test recipes + evidence + quarantined `failed_patterns` |
+| `ChangeSource` | `sheepdog.change_source` | Names the depended-upon system: `kind` (`sdk`, `external_api`, `openapi`, `graphql`, `protobuf`, `webhook`, `mcp_server`, `internal_service`), `identity`, versions or `contract_hash` |
+| `Detection` | `sheepdog.change_source` | Read-only outcome: `NO_IMPACT`, `IMPACT_DIRECT`, `IMPACT_AI`, `IMPACT_QUARANTINE` (+ `ai_dependent` flag for checks needing reasoning) |
+| `Decision` | `sheepdog.intelligence` | Internal routing: `DIRECT / AI / HYBRID / QUARANTINE` + `confidence`, `estimated_tokens` (`0` = verified zero-token, `None` = unknown), `expected_blast_radius`, `verification_required`. Never a CLI flag |
+| `KBEntry` | `sheepdog.knowledge` | Repository memory at `.sheepdog/knowledge/{kind}/{identity}/{contract}.json` (legacy provider paths still read). Executable patterns + test recipes + evidence + quarantined `failed_patterns` |
 
 ## 3. State on disk (per repository)
 
 ```text
-.compart/
+.sheepdog/
   graph.json            Full dependency graph (Rust AST engine, zero-token)
   index_state.json      commit SHA + file mtimes + discovery counts (incremental re-index)
   knowledge/            Verified repair patterns + test recipes (the flywheel)
@@ -71,7 +71,7 @@ Adoption ladder: start in Consult, graduate to Work when the reasoning earns it.
   snapshots/            Pre-execution BLAKE3 snapshots for rollback
 ```
 
-Per installation (host side, `~/.compart/installations/{id}.json`, 0600):
+Per installation (host side, `~/.sheepdog/installations/{id}.json`, 0600):
 repositories with `PENDING → INDEXED → READY`, provider association, index timestamps.
 
 ## 4. Trust rules (non-negotiable)
@@ -85,4 +85,4 @@ repositories with `PENDING → INDEXED → READY`, provider association, index t
 
 ## 5. Deliberately not built yet
 
-Connectors for OpenAPI/GraphQL/protobuf/MCP/internal-service kinds (types exist, resolution returns `None` → quarantine/AI), multi-repository fan-out orchestration, hosted background monitoring daemon, web dashboard beyond `compart doctor`. Seams are defined; products wait for users.
+Connectors for OpenAPI/GraphQL/protobuf/MCP/internal-service kinds (types exist, resolution returns `None` → quarantine/AI), multi-repository fan-out orchestration, hosted background monitoring daemon, web dashboard beyond `sheepdog doctor`. Seams are defined; products wait for users.

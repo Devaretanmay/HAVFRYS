@@ -1,4 +1,4 @@
-# Copyright 2026 Compart Authors
+# Copyright 2026 Sheepdog Authors
 # SPDX-License-Identifier: Apache-2.0
 """Watch loop: polls READY checkouts, fires pipeline only on new findings."""
 
@@ -7,8 +7,8 @@ import shutil
 import subprocess
 from unittest.mock import MagicMock
 
-from compart.github.installations import REPO_READY, record_installation_event
-from compart.github.watch import watch_once
+from sheepdog.github.installations import REPO_READY, record_installation_event
+from sheepdog.github.watch import watch_once
 
 
 def _seed_repo_with_remote(tmp_path, name="backend"):
@@ -33,10 +33,10 @@ def _seed_repo_with_remote(tmp_path, name="backend"):
 
 
 def test_watch_fires_once_then_quiet(tmp_path, monkeypatch):
-    monkeypatch.setenv("COMPART_INSTALLATIONS_DIR", str(tmp_path / "inst"))
-    monkeypatch.setenv("COMPART_REPOS_DIR", str(tmp_path / "repos"))
-    monkeypatch.setenv("COMPART_REPO_REMOTE_ACME__BACKEND", _seed_repo_with_remote(tmp_path))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "COMPART_LLM_KEY", "GITHUB_TOKEN"):
+    monkeypatch.setenv("SHEEPDOG_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("SHEEPDOG_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("SHEEPDOG_REPO_REMOTE_ACME__BACKEND", _seed_repo_with_remote(tmp_path))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY", "GITHUB_TOKEN"):
         monkeypatch.delenv(k, raising=False)
     record_installation_event(
         {"action": "created", "installation": {"id": 21, "account": {"login": "acme"}}},
@@ -50,8 +50,8 @@ def test_watch_fires_once_then_quiet(tmp_path, monkeypatch):
 
 
 def test_watch_skips_non_ready(tmp_path, monkeypatch):
-    monkeypatch.setenv("COMPART_INSTALLATIONS_DIR", str(tmp_path / "inst"))
-    monkeypatch.setenv("COMPART_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("SHEEPDOG_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("SHEEPDOG_REPOS_DIR", str(tmp_path / "repos"))
     record_installation_event(
         {"installation": {"id": 22}}, {"acme/pending": {"state": "PENDING"}})
     assert watch_once(client=MagicMock()) == []

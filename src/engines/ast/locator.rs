@@ -295,7 +295,7 @@ const SKIP_DIRS: &[&str] = &[
     "build",
     "dist",
     ".next",
-    ".compart",
+    ".sheepdog",
     "vendor",
     ".mypy_cache",
     ".pytest_cache",
@@ -475,7 +475,7 @@ function processCharge(charge: Stripe.Charge): void {
     #[test]
     fn ast_locate_callsites_in_temp_dir() {
         let dir = std::env::temp_dir().join(format!(
-            "compart_ast_test_{}",
+            "sheepdog_ast_test_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

@@ -1,18 +1,18 @@
 <div align="center">
 
-# Compart
+# Sheepdog
 
 ### External-change intelligence for codebases.
 
-**Greptile understands changes humans make to software. Compart understands changes the outside world makes to software.**
+**Greptile understands changes humans make to software. Sheepdog understands changes the outside world makes to software.**
 
-[PyPI Package](https://pypi.org/project/compart/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md)
+[PyPI Package](https://pypi.org/project/sheepdog/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md)
 
 <br/>
 
 ```text
    APIs drift. SDKs break.
-   Compart keeps your codebase continuously updated and verified.
+   Sheepdog keeps your codebase continuously updated and verified.
 ```
 
 </div>
@@ -27,7 +27,7 @@ Software changes in two ways:
 
 Dependabot bumps version strings in lockfiles and leaves CI broken. Human engineers spend 20%+ of engineering cycles reading migration guides, mapping AST callsites, updating wrappers, and fixing broken tests.
 
-**Compart manages software changes originating outside the repository** — mapping external contracts to internal callsites, synthesizing surgical AST patches, running local formatters, and verifying zero blast radius with sandbox isolation.
+**Sheepdog manages software changes originating outside the repository** — mapping external contracts to internal callsites, synthesizing surgical AST patches, running local formatters, and verifying zero blast radius with sandbox isolation.
 
 ---
 
@@ -44,12 +44,12 @@ Sandbox + real tests → Evidence → GitHub PR → Knowledge capture (next run 
 ```
 
 ```bash
-compart auth              # BYOK provider — needed only for AI repair
-compart doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
-compart index .           # Zero-token static index
-compart check .           # Read-only drift & impact audit
-compart consult .         # AI assessment as a GitHub Issue, modifies nothing
-compart fix .             # Repair, verify, report (refuses loudly when unsafe)
+sheepdog auth              # BYOK provider — needed only for AI repair
+sheepdog doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
+sheepdog index .           # Zero-token static index
+sheepdog check .           # Read-only drift & impact audit
+sheepdog consult .         # AI assessment as a GitHub Issue, modifies nothing
+sheepdog fix .             # Repair, verify, report (refuses loudly when unsafe)
 ```
 
 Start in Consult to build trust in the reasoning, enable Work when ready —
@@ -70,20 +70,20 @@ See [GitHub App behavior](docs/GITHUB_APP.md).
 
 ---
 
-## 1. Day-0 Risk Register (`compart check`)
+## 1. Day-0 Risk Register (`sheepdog check`)
 
-When you run Compart on any repository, it immediately answers:
+When you run Sheepdog on any repository, it immediately answers:
 - *What external APIs and SDKs does this codebase depend on?*
 - *Which integrations are deprecated, behind, or at risk?*
-- *Which breaking changes can Compart already auto-repair?*
+- *Which breaking changes can Sheepdog already auto-repair?*
 
 ```bash
-compart check .
+sheepdog check .
 ```
 
 ```text
 ================================================================================
-         COMPART: EXTERNAL-CHANGE DEPENDENCY AUDIT & RISK REGISTER
+         SHEEPDOG: EXTERNAL-CHANGE DEPENDENCY AUDIT & RISK REGISTER
 ================================================================================
 Total External Providers Detected: 3
 Total AST Callsites Mapped:        14
@@ -92,7 +92,7 @@ Auto-Repairable Callsites:         6
 [CRITICAL] AT RISK (Action Required):
   * Stripe (stripe@v21.0.0 -> v22.0.0)
     - Status: Breaking parameter mutation detected (amount: number -> string)
-    - 4 callsites affected (4 auto-repairable by Compart)
+    - 4 callsites affected (4 auto-repairable by Sheepdog)
 
 [WATCHLIST] UPCOMING DEPRECATION:
   * OpenAI (openai@v3.28.0)
@@ -107,24 +107,24 @@ Auto-Repairable Callsites:         6
 
 Export directly to GitHub Issues or JSON:
 ```bash
-compart check . --format=github-issue   # Formatted markdown table for GitHub Issues
-compart check . --format=json           # Machine-readable risk register
+sheepdog check . --format=github-issue   # Formatted markdown table for GitHub Issues
+sheepdog check . --format=json           # Machine-readable risk register
 ```
 
 ---
 
-## 2. External-Change Dependency Graph (`compart graph`)
+## 2. External-Change Dependency Graph (`sheepdog graph`)
 
-Compart builds a unified dependency graph linking:
+Sheepdog builds a unified dependency graph linking:
 `Provider -> Version -> API Contract -> Manifest Dependency -> Wrapper Client -> AST Callsite -> Migration History`
 
 ```bash
-compart graph .
+sheepdog graph .
 ```
 
 ```text
 ================================================================================
-                 COMPART: EXTERNAL-CHANGE DEPENDENCY GRAPH                     
+                 SHEEPDOG: EXTERNAL-CHANGE DEPENDENCY GRAPH                     
 ================================================================================
 Repository:              /path/to/my-repo
 Providers Ingested:      3
@@ -142,19 +142,19 @@ Active Graph Edges:      28
 
 ---
 
-## 3. Autonomous Continuous Maintenance (`compart fix`)
+## 3. Autonomous Continuous Maintenance (`sheepdog fix`)
 
-When upstream providers release breaking changes, Compart detects the drift, synthesizes surgical AST transformations, matches your team's code formatting (`prettier`/`ruff`), validates local tests, and opens a Developer Trust PR:
+When upstream providers release breaking changes, Sheepdog detects the drift, synthesizes surgical AST transformations, matches your team's code formatting (`prettier`/`ruff`), validates local tests, and opens a Developer Trust PR:
 
 ```bash
 # Autonomous migration for a target provider:
-compart fix . --provider stripe
+sheepdog fix . --provider stripe
 
 # Custom version bump:
-compart fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
+sheepdog fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
 ```
 
-### What `compart fix` guarantees:
+### What `sheepdog fix` guarantees:
 1. **Surgical AST Patching**: Only transforms affected callsites and wrappers.
 2. **Local Formatter Bridge**: Formats changed files with your project's `prettier`, `ruff`, or `biome`.
 3. **Local Test Verification**: Executes test suites and rejects patches if tests remain red.
@@ -165,15 +165,15 @@ compart fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo ow
 
 ## 4. Controlled Execution & Sandboxed Verification
 
-Compart provides **controlled, reproducible execution** across local kernel sandboxes (macOS Seatbelt, Linux Landlock), Docker, and CI runners:
+Sheepdog provides **controlled, reproducible execution** across local kernel sandboxes (macOS Seatbelt, Linux Landlock), Docker, and CI runners:
 - **Zero-Exfiltration Isolation**: Credentials (`~/.ssh`, `~/.aws`, keychains) denied at the kernel boundary.
 - **Execution-Evidence Compression**: Native Rust engines distill massive test outputs down to high-signal failure traces and stack traces for PR evidence.
 - **2ms Instant Undo**: Pre-execution BLAKE3 hash snapshots enable physical rollback of modified and generated files in 2 milliseconds.
 
 ```bash
-compart init                          # Initialize workspace control plane
-compart diff                          # Inspect isolated execution change sets
-compart undo                          # Instant 2ms physical rollback
+sheepdog init                          # Initialize workspace control plane
+sheepdog diff                          # Inspect isolated execution change sets
+sheepdog undo                          # Instant 2ms physical rollback
 ```
 
 ---
@@ -181,8 +181,8 @@ compart undo                          # Instant 2ms physical rollback
 ## Python SDK
 
 ```python
-from compart.graph import build_dependency_graph, audit_dependency_graph
-from compart.maintenance import run_maintenance_cycle
+from sheepdog.graph import build_dependency_graph, audit_dependency_graph
+from sheepdog.maintenance import run_maintenance_cycle
 
 # 1. Audit repository external dependencies
 summary = audit_dependency_graph(repo_root=".")
@@ -205,18 +205,18 @@ print(report.unified_diff)
 [Quickstart Guide](docs/QUICKSTART.md) · [CLI Reference](docs/CLI.md) · [Architecture](docs/ARCHITECTURE.md) · [API Reference](docs/API_REFERENCE.md) · [Validation Guide](docs/VALIDATION_GUIDE.md) · [Agent Governance & Trailers](SPEC.md)
 
 The core abstraction is `ChangeSource` (external API, SDK, OpenAPI, GraphQL, protobuf, webhook,
-MCP server, internal service): Compart keeps software working when the systems around it change.
+MCP server, internal service): Sheepdog keeps software working when the systems around it change.
 Vendor SDK migrations are the working wedge; other contract kinds are representable types with no
 connectors yet — they fail closed to quarantine instead of guessing.
 
-Under the hood, Compart is an AI maintenance agent with deterministic tools: a code graph,
+Under the hood, Sheepdog is an AI maintenance agent with deterministic tools: a code graph,
 repository memory, verified rewrite patterns, sandbox execution, and a fail-closed verifier.
 Repeated work reuses verified knowledge instead of re-reasoning, so the system gets faster,
 cheaper, and more precise the longer it watches a repository.
 
-## Compart vs Greptile
+## Sheepdog vs Greptile
 
-| | Greptile | Compart |
+| | Greptile | Sheepdog |
 |---|---|---|
 | AI understands | Codebase + PR | Codebase + system change |
 | Starting event | PR / code change | Dependency / contract change |
@@ -226,10 +226,10 @@ cheaper, and more precise the longer it watches a repository.
 | Verification | Tests / validation | Tests + repair evidence |
 | End result | Safe code change | Working software after ecosystem change |
 
-Greptile gives an AI agent context about your code. Compart gives an AI agent context
+Greptile gives an AI agent context about your code. Sheepdog gives an AI agent context
 about how your software changes.
 
 ## License
 
-Apache-2.0. Copyright 2026 Compart Authors.
+Apache-2.0. Copyright 2026 Sheepdog Authors.
 

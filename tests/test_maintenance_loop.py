@@ -1,5 +1,6 @@
+import json
 import shutil
-from compart.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
+from sheepdog.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
 
 
 def test_detect_drift_in_fixture():
@@ -31,9 +32,23 @@ def test_run_maintenance_cycle_taxonomy(tmp_path):
     assert report.unintended_files_modified == 0
     assert "Autonomous Maintenance" in report.trust_pr_body
     assert "Blast Radius Containment" in report.trust_pr_body
+    assert report.repair_path == "verified-pattern"
 
     history = get_migration_history(target_dir)
     assert len(history) > 0
     latest = history[-1]
     assert latest["provider_name"].lower() == "stripe"
     assert latest["blast_radius_zero"] is True
+
+
+def test_quarantine_reports_no_path(tmp_path, monkeypatch):
+    repo = tmp_path / "r"
+    repo.mkdir()
+    (repo / "package.json").write_text(json.dumps({"dependencies": {"twilio": "^1.0.0"}}))
+    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY"):
+        monkeypatch.delenv(k, raising=False)
+    report = run_maintenance_cycle(str(repo), "twilio", from_version="1.0", to_version="2.0")
+    assert not report.success
+    assert report.repair_path == "none"
+    assert report.error

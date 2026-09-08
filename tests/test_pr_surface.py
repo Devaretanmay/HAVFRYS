@@ -1,14 +1,14 @@
-# Copyright 2026 Compart Authors
+# Copyright 2026 Sheepdog Authors
 # SPDX-License-Identifier: Apache-2.0
 """PR surface parity: summary, badges, diagrams, footer, assembly order."""
 
-from compart.github.pr_render import (
+from sheepdog.github.pr_render import (
     render_flow_diagram,
     render_pr_footer,
     render_pr_summary,
     severity_of,
 )
-from compart.pipeline import AnalysisResult, DriftFinding, TriggerContext
+from sheepdog.pipeline import AnalysisResult, DriftFinding, TriggerContext
 
 
 def _ctx(**kwargs):
@@ -70,15 +70,15 @@ def test_flow_diagram_fenced_and_named():
 def test_footer_names_commit_and_rerun():
     body = render_pr_footer(_ctx())
     assert "abc123" in body
-    assert "@compart" in body
+    assert "@sheepdog" in body
 
 
 def test_surface_assembly_order():
     from unittest.mock import MagicMock
-    from compart.pipeline import surface_result
-    from compart.config import PipelinePolicy
+    from sheepdog.pipeline import surface_result
+    from sheepdog.config import PipelinePolicy
     result = surface_result(_ctx(), _analysis(), PipelinePolicy(), MagicMock())
     body = result.comment_body
-    assert body.index("## Compart review") < body.index("COMPART FOUND A MAINTENANCE ISSUE")
-    assert body.index("```mermaid") > body.index("COMPART FOUND A MAINTENANCE ISSUE")
-    assert body.rstrip().endswith("Comment `@compart` to re-run this review.")
+    assert body.index("## Sheepdog review") < body.index("SHEEPDOG FOUND A MAINTENANCE ISSUE")
+    assert body.index("```mermaid") > body.index("SHEEPDOG FOUND A MAINTENANCE ISSUE")
+    assert body.rstrip().endswith("Comment `@sheepdog` to re-run this review.")

@@ -1,15 +1,15 @@
-# Copyright 2026 Compart Authors
+# Copyright 2026 Sheepdog Authors
 # SPDX-License-Identifier: Apache-2.0
 """AI-first reasoning: deep context assembly and hybrid escalation."""
 
 import os
 from unittest.mock import MagicMock
 
-from compart.ai_planner import (
+from sheepdog.ai_planner import (
     AIPatchPlanner, MAX_PROMPT_FILE_CHARS, bound_file_content, build_reasoning_context,
 )
-from compart.knowledge import upsert_learned, record_failure
-from compart.llm import LLMClient, LLMResponse
+from sheepdog.knowledge import upsert_learned, record_failure
+from sheepdog.llm import LLMClient, LLMResponse
 
 
 def _seed_repo(dst: str):
@@ -91,7 +91,7 @@ def test_prompt_carries_reasoning_and_memory(tmp_path):
 
 def test_hybrid_completion_for_untouched_files(tmp_path, monkeypatch):
     """Registry rewrites miss unusual.ts (version bump still fires elsewhere); AI must complete it."""
-    import compart.maintenance as mnt
+    import sheepdog.maintenance as mnt
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     target = os.path.join(dst, "src", "unusual.ts")
@@ -112,9 +112,9 @@ def test_hybrid_completion_for_untouched_files(tmp_path, monkeypatch):
         model="m")
     monkeypatch.setattr(mnt.AIPatchPlanner, "from_env",
                         classmethod(lambda cls, **k: AIPatchPlanner(client=mock_client)))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "COMPART_LLM_KEY"):
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
-    monkeypatch.setenv("COMPART_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "none.json"))
 
     report = mnt.run_maintenance_cycle(dst, "stripe", from_version="11.18.0", to_version="13.0.0")
     assert report.success
@@ -122,3 +122,4 @@ def test_hybrid_completion_for_untouched_files(tmp_path, monkeypatch):
     assert '"stripe": "^13.0.0"' in open(os.path.join(dst, "package.json")).read()
     history = mnt.get_migration_history(dst)
     assert history and history[-1]["strategy"] == "HYBRID"
+    assert report.repair_path == "hybrid"

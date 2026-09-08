@@ -3,9 +3,9 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "compart"
+name = "sheepdog"
 version = "1.1.0"
-description = "Compart: autonomous software maintenance for systems that change. Detect contract drift, repair, verify, and deliver PRs."
+description = "Sheepdog: autonomous software maintenance for systems that change. Detect contract drift, repair, verify, and deliver PRs."
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 keywords = ["ai-agents", "developer-tools", "provenance", "audit", "sandbox", "isolation"]
@@ -27,20 +27,20 @@ dependencies = [
 ]
 
 [project.scripts]
-compart = "compart.cli.main:cli"
+sheepdog = "sheepdog.cli.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/Devaretanmay/Compart"
-Repository = "https://github.com/Devaretanmay/Compart"
-Issues = "https://github.com/Devaretanmay/Compart/issues"
+Homepage = "https://github.com/Devaretanmay/Sheepdog"
+Repository = "https://github.com/Devaretanmay/Sheepdog"
+Issues = "https://github.com/Devaretanmay/Sheepdog/issues"
 
 [tool.maturin]
 features = ["pyo3-binding"]
 python-source = "python"
-module-name = "compart._core"
+module-name = "sheepdog._core"
 
 [tool.pytest.ini_options]
-# Tests import the installed compart package, not the source tree.
+# Tests import the installed sheepdog package, not the source tree.
 # (The source tree intentionally contains no compiled _core.*.so; the native
 # module ships inside the wheel, so importing source here would silently lose
 # the sandbox/compression core.)

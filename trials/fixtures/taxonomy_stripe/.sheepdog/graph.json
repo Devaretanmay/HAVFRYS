@@ -1,0 +1,665 @@
+{
+  "providers": [
+    {
+      "id": "provider:stripe",
+      "name": "Stripe",
+      "base_urls": [
+        "api.stripe.com"
+      ],
+      "sdk_packages": [
+        "stripe",
+        "@stripe/stripe-node"
+      ],
+      "method_patterns": [
+        "charges.create",
+        "paymentIntents.create",
+        "customers.create",
+        "refunds.create"
+      ],
+      "latest_version": "2026-02-15",
+      "deprecation_deadline": "",
+      "migration_guide_url": "https://docs.stripe.com/upgrades"
+    },
+    {
+      "id": "provider:openai",
+      "name": "OpenAI",
+      "base_urls": [
+        "api.openai.com"
+      ],
+      "sdk_packages": [
+        "openai",
+        "@openai/openai"
+      ],
+      "method_patterns": [
+        "chat.completions.create",
+        "responses.create",
+        "completions.create",
+        "embeddings.create"
+      ],
+      "latest_version": "v2",
+      "deprecation_deadline": "",
+      "migration_guide_url": "https://platform.openai.com/docs/deprecations"
+    },
+    {
+      "id": "provider:anthropic",
+      "name": "Anthropic",
+      "base_urls": [
+        "api.anthropic.com"
+      ],
+      "sdk_packages": [
+        "anthropic",
+        "@anthropic-ai/sdk"
+      ],
+      "method_patterns": [
+        "messages.create",
+        "completions.create"
+      ],
+      "latest_version": "2024-10-22",
+      "deprecation_deadline": "",
+      "migration_guide_url": "https://docs.anthropic.com/en/docs/about-claude/model-deprecations"
+    },
+    {
+      "id": "provider:twilio",
+      "name": "Twilio",
+      "base_urls": [
+        "api.twilio.com"
+      ],
+      "sdk_packages": [
+        "twilio"
+      ],
+      "method_patterns": [
+        "messages.create",
+        "calls.create"
+      ],
+      "latest_version": "5.x",
+      "deprecation_deadline": "2026-04-28",
+      "migration_guide_url": "https://www.twilio.com/docs/global-infrastructure/api-domain-migration-guide"
+    },
+    {
+      "id": "provider:github",
+      "name": "GitHub",
+      "base_urls": [
+        "api.github.com"
+      ],
+      "sdk_packages": [
+        "@octokit/rest",
+        "octokit",
+        "PyGithub"
+      ],
+      "method_patterns": [],
+      "latest_version": "2022-11-28",
+      "deprecation_deadline": "",
+      "migration_guide_url": "https://docs.github.com/en/rest/overview/api-versions"
+    }
+  ],
+  "versions": [
+    {
+      "id": "version:stripe:latest",
+      "provider_id": "provider:stripe",
+      "version": "2026-02-15",
+      "release_date": "",
+      "deprecation_deadline": "",
+      "is_deprecated": false
+    },
+    {
+      "id": "version:openai:latest",
+      "provider_id": "provider:openai",
+      "version": "v2",
+      "release_date": "",
+      "deprecation_deadline": "",
+      "is_deprecated": false
+    },
+    {
+      "id": "version:anthropic:latest",
+      "provider_id": "provider:anthropic",
+      "version": "2024-10-22",
+      "release_date": "",
+      "deprecation_deadline": "",
+      "is_deprecated": false
+    },
+    {
+      "id": "version:twilio:latest",
+      "provider_id": "provider:twilio",
+      "version": "5.x",
+      "release_date": "",
+      "deprecation_deadline": "2026-04-28",
+      "is_deprecated": true
+    },
+    {
+      "id": "version:github:latest",
+      "provider_id": "provider:github",
+      "version": "2022-11-28",
+      "release_date": "",
+      "deprecation_deadline": "",
+      "is_deprecated": false
+    }
+  ],
+  "contracts": [
+    {
+      "id": "contract:stripe:charges.create",
+      "provider_id": "provider:stripe",
+      "version_id": "version:stripe:latest",
+      "method_pattern": "charges.create",
+      "http_method": "POST",
+      "path": "/charges/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard charges.create contract"
+    },
+    {
+      "id": "contract:stripe:paymentIntents.create",
+      "provider_id": "provider:stripe",
+      "version_id": "version:stripe:latest",
+      "method_pattern": "paymentIntents.create",
+      "http_method": "POST",
+      "path": "/paymentIntents/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard paymentIntents.create contract"
+    },
+    {
+      "id": "contract:stripe:customers.create",
+      "provider_id": "provider:stripe",
+      "version_id": "version:stripe:latest",
+      "method_pattern": "customers.create",
+      "http_method": "POST",
+      "path": "/customers/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard customers.create contract"
+    },
+    {
+      "id": "contract:stripe:refunds.create",
+      "provider_id": "provider:stripe",
+      "version_id": "version:stripe:latest",
+      "method_pattern": "refunds.create",
+      "http_method": "POST",
+      "path": "/refunds/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard refunds.create contract"
+    },
+    {
+      "id": "contract:openai:chat.completions.create",
+      "provider_id": "provider:openai",
+      "version_id": "version:openai:latest",
+      "method_pattern": "chat.completions.create",
+      "http_method": "POST",
+      "path": "/chat/completions/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard chat.completions.create contract"
+    },
+    {
+      "id": "contract:openai:responses.create",
+      "provider_id": "provider:openai",
+      "version_id": "version:openai:latest",
+      "method_pattern": "responses.create",
+      "http_method": "POST",
+      "path": "/responses/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard responses.create contract"
+    },
+    {
+      "id": "contract:openai:completions.create",
+      "provider_id": "provider:openai",
+      "version_id": "version:openai:latest",
+      "method_pattern": "completions.create",
+      "http_method": "POST",
+      "path": "/completions/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard completions.create contract"
+    },
+    {
+      "id": "contract:openai:embeddings.create",
+      "provider_id": "provider:openai",
+      "version_id": "version:openai:latest",
+      "method_pattern": "embeddings.create",
+      "http_method": "POST",
+      "path": "/embeddings/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard embeddings.create contract"
+    },
+    {
+      "id": "contract:anthropic:messages.create",
+      "provider_id": "provider:anthropic",
+      "version_id": "version:anthropic:latest",
+      "method_pattern": "messages.create",
+      "http_method": "POST",
+      "path": "/messages/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard messages.create contract"
+    },
+    {
+      "id": "contract:anthropic:completions.create",
+      "provider_id": "provider:anthropic",
+      "version_id": "version:anthropic:latest",
+      "method_pattern": "completions.create",
+      "http_method": "POST",
+      "path": "/completions/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard completions.create contract"
+    },
+    {
+      "id": "contract:twilio:messages.create",
+      "provider_id": "provider:twilio",
+      "version_id": "version:twilio:latest",
+      "method_pattern": "messages.create",
+      "http_method": "POST",
+      "path": "/messages/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard messages.create contract"
+    },
+    {
+      "id": "contract:twilio:calls.create",
+      "provider_id": "provider:twilio",
+      "version_id": "version:twilio:latest",
+      "method_pattern": "calls.create",
+      "http_method": "POST",
+      "path": "/calls/create",
+      "required_params": [],
+      "is_breaking_change": false,
+      "change_description": "Standard calls.create contract"
+    }
+  ],
+  "manifest_deps": [
+    {
+      "id": "manifest_dep:npm:stripe",
+      "manifest_path": "package.json",
+      "package_name": "stripe",
+      "declared_version": "^11.18.0",
+      "resolved_version": "11.18.0",
+      "package_manager": "npm"
+    }
+  ],
+  "wrappers": [],
+  "callsites": [
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js",
+      "line_number": 11,
+      "column": 49,
+      "line_content": "    console.log('PASS: processCharge adheres to Stripe v22 string contract');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js",
+      "line_number": 11,
+      "column": 49,
+      "line_content": "    console.log('PASS: processCharge adheres to Stripe v22 string contract');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js",
+      "line_number": 14,
+      "column": 26,
+      "line_content": "    console.error('FAIL: Stripe v22 drift error: processCharge amount must be string, found raw number');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js",
+      "line_number": 14,
+      "column": 26,
+      "line_content": "    console.error('FAIL: Stripe v22 drift error: processCharge amount must be string, found raw number');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js",
+      "line_number": 18,
+      "column": 61,
+      "line_content": "  console.log('PASS: processCharge baseline tests pass with Stripe v11');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js",
+      "line_number": 18,
+      "column": 61,
+      "line_content": "  console.log('PASS: processCharge baseline tests pass with Stripe v11');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:21",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts",
+      "line_number": 1,
+      "column": 21,
+      "line_content": "import Stripe from 'stripe';",
+      "matched_pattern": "stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:8",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts",
+      "line_number": 1,
+      "column": 8,
+      "line_content": "import Stripe from 'stripe';",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts",
+      "line_number": 3,
+      "column": 20,
+      "line_content": "const stripe = new Stripe(process.env.STRIPE_API_KEY || '');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts",
+      "line_number": 3,
+      "column": 20,
+      "line_content": "const stripe = new Stripe(process.env.STRIPE_API_KEY || '');",
+      "matched_pattern": "Stripe",
+      "is_quarantined": false,
+      "target_contract_id": null
+    },
+    {
+      "id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:6:23",
+      "file_path": "/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts",
+      "line_number": 6,
+      "column": 23,
+      "line_content": "  return await stripe.charges.create({",
+      "matched_pattern": "charges.create",
+      "is_quarantined": false,
+      "target_contract_id": "contract:stripe:charges.create"
+    }
+  ],
+  "migrations": [
+    {
+      "id": "migration:stripe:upgrade",
+      "provider_name": "Stripe",
+      "from_version": "v0",
+      "to_version": "2026-02-15",
+      "description": "Convert integer charge amounts to string coercion for Stripe v13+/v22+ compatibility",
+      "affected_callsites": [
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:21",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:8",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+        "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:6:23"
+      ],
+      "is_merge_ready": true
+    }
+  ],
+  "edges": [
+    {
+      "from_id": "provider:stripe",
+      "to_id": "version:stripe:latest",
+      "kind": "Exposes",
+      "metadata": "latest_release"
+    },
+    {
+      "from_id": "version:stripe:latest",
+      "to_id": "contract:stripe:charges.create",
+      "kind": "Exposes",
+      "metadata": "charges.create"
+    },
+    {
+      "from_id": "version:stripe:latest",
+      "to_id": "contract:stripe:paymentIntents.create",
+      "kind": "Exposes",
+      "metadata": "paymentIntents.create"
+    },
+    {
+      "from_id": "version:stripe:latest",
+      "to_id": "contract:stripe:customers.create",
+      "kind": "Exposes",
+      "metadata": "customers.create"
+    },
+    {
+      "from_id": "version:stripe:latest",
+      "to_id": "contract:stripe:refunds.create",
+      "kind": "Exposes",
+      "metadata": "refunds.create"
+    },
+    {
+      "from_id": "provider:openai",
+      "to_id": "version:openai:latest",
+      "kind": "Exposes",
+      "metadata": "latest_release"
+    },
+    {
+      "from_id": "version:openai:latest",
+      "to_id": "contract:openai:chat.completions.create",
+      "kind": "Exposes",
+      "metadata": "chat.completions.create"
+    },
+    {
+      "from_id": "version:openai:latest",
+      "to_id": "contract:openai:responses.create",
+      "kind": "Exposes",
+      "metadata": "responses.create"
+    },
+    {
+      "from_id": "version:openai:latest",
+      "to_id": "contract:openai:completions.create",
+      "kind": "Exposes",
+      "metadata": "completions.create"
+    },
+    {
+      "from_id": "version:openai:latest",
+      "to_id": "contract:openai:embeddings.create",
+      "kind": "Exposes",
+      "metadata": "embeddings.create"
+    },
+    {
+      "from_id": "provider:anthropic",
+      "to_id": "version:anthropic:latest",
+      "kind": "Exposes",
+      "metadata": "latest_release"
+    },
+    {
+      "from_id": "version:anthropic:latest",
+      "to_id": "contract:anthropic:messages.create",
+      "kind": "Exposes",
+      "metadata": "messages.create"
+    },
+    {
+      "from_id": "version:anthropic:latest",
+      "to_id": "contract:anthropic:completions.create",
+      "kind": "Exposes",
+      "metadata": "completions.create"
+    },
+    {
+      "from_id": "provider:twilio",
+      "to_id": "version:twilio:latest",
+      "kind": "Exposes",
+      "metadata": "latest_release"
+    },
+    {
+      "from_id": "version:twilio:latest",
+      "to_id": "contract:twilio:messages.create",
+      "kind": "Exposes",
+      "metadata": "messages.create"
+    },
+    {
+      "from_id": "version:twilio:latest",
+      "to_id": "contract:twilio:calls.create",
+      "kind": "Exposes",
+      "metadata": "calls.create"
+    },
+    {
+      "from_id": "provider:github",
+      "to_id": "version:github:latest",
+      "kind": "Exposes",
+      "metadata": "latest_release"
+    },
+    {
+      "from_id": "manifest_dep:npm:stripe",
+      "to_id": "provider:stripe",
+      "kind": "Declares",
+      "metadata": "v11.18.0"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:21",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:8",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "Stripe"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:6:23",
+      "to_id": "provider:stripe",
+      "kind": "Invokes",
+      "metadata": "charges.create"
+    },
+    {
+      "from_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:6:23",
+      "to_id": "contract:stripe:charges.create",
+      "kind": "Invokes",
+      "metadata": "exact_contract_match"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:11:49",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:14:26",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/test/run.js:18:61",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:21",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:1:8",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:3:20",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    },
+    {
+      "from_id": "migration:stripe:upgrade",
+      "to_id": "callsite:/Users/tanmaydevare/Tanmay/Agent/compart/trials/fixtures/taxonomy_stripe/src/billing.ts:6:23",
+      "kind": "Repairs",
+      "metadata": "ast_transform_ready"
+    }
+  ]
+}

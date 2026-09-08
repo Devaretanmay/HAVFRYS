@@ -1,17 +1,17 @@
 [package]
-name = "compart-core"
+name = "sheepdog-core"
 version = "1.1.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Compart - autonomous software maintenance for systems that change (Rust core)"
-repository = "https://github.com/Devaretanmay/Compart"
-homepage = "https://github.com/Devaretanmay/Compart"
-documentation = "https://docs.rs/crate/compart-core"
+description = "Sheepdog - autonomous software maintenance for systems that change (Rust core)"
+repository = "https://github.com/Devaretanmay/Sheepdog"
+homepage = "https://github.com/Devaretanmay/Sheepdog"
+documentation = "https://docs.rs/crate/sheepdog-core"
 keywords = ["ai", "mcp", "compression", "execution", "sandbox"]
 categories = ["development-tools", "command-line-utilities"]
 
 [lib]
-name = "compart_core"
+name = "sheepdog_core"
 crate-type = ["cdylib", "lib"]
 
 [features]

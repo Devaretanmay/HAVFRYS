@@ -1,7 +1,7 @@
 {
-  "name": "@compart/sdk",
+  "name": "@sheepdog/sdk",
   "version": "1.0.4",
-  "description": "Compart TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
+  "description": "Sheepdog TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
@@ -17,21 +17,21 @@
     "prepack": "npm run build:target"
   },
   "napi": {
-    "name": "compart-native",
+    "name": "sheepdog-native",
     "triples": {
       "defaults": true
     },
-    "binaryName": "compart-native"
+    "binaryName": "sheepdog-native"
   },
   "optionalDependencies": {
-    "@compart/sdk-darwin-arm64": "1.0.4",
-    "@compart/sdk-darwin-x64": "1.0.4"
+    "@sheepdog/sdk-darwin-arm64": "1.0.4",
+    "@sheepdog/sdk-darwin-x64": "1.0.4"
   },
   "engines": {
     "node": ">= 16.0.0"
   },
   "keywords": [
-    "compart",
+    "sheepdog",
     "sandbox",
     "kernel",
     "isolation",
@@ -44,14 +44,14 @@
     "compartment"
   ],
   "license": "Apache-2.0",
-  "author": "Compart Labs (Devaretanmay) <tanmaydevare@gmail.com>",
+  "author": "Sheepdog Labs (Devaretanmay) <tanmaydevare@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Devaretanmay/Compart.git"
+    "url": "https://github.com/Devaretanmay/Sheepdog.git"
   },
-  "homepage": "https://github.com/Devaretanmay/Compart#readme",
+  "homepage": "https://github.com/Devaretanmay/Sheepdog#readme",
   "bugs": {
-    "url": "https://github.com/Devaretanmay/Compart/issues"
+    "url": "https://github.com/Devaretanmay/Sheepdog/issues"
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"

@@ -1,11 +1,11 @@
-# Copyright 2026 Compart Authors
+# Copyright 2026 Sheepdog Authors
 # SPDX-License-Identifier: Apache-2.0
 """Repository Knowledge Base: namespaced entries, legacy fallback, failure quarantine."""
 
 import json
 import os
 
-from compart.knowledge import (
+from sheepdog.knowledge import (
     direct_rewrites_for, ensure_test_recipe, lookup,
     record_failure, upsert_learned,
 )
@@ -19,13 +19,13 @@ def _rewrite(pattern="a(", replacement="b(", exts=(".ts",), desc="d"):
 def test_upsert_writes_namespaced_path(tmp_path):
     e = upsert_learned(str(tmp_path), "stripe", "11.18.0", "13.0.0",
                        applied_rules=[], test_command="npm test", rewrites=[_rewrite()])
-    assert os.path.isfile(tmp_path / ".compart" / "knowledge" / "sdk" / "stripe" / "11.18.0__13.0.0.json")
+    assert os.path.isfile(tmp_path / ".sheepdog" / "knowledge" / "sdk" / "stripe" / "11.18.0__13.0.0.json")
     assert e.kind == "sdk"
     assert len(direct_rewrites_for(str(tmp_path), "stripe", "11.18.0", "13.0.0")) == 1
 
 
 def test_legacy_provider_path_still_readable(tmp_path):
-    legacy = tmp_path / ".compart" / "knowledge" / "stripe"
+    legacy = tmp_path / ".sheepdog" / "knowledge" / "stripe"
     legacy.mkdir(parents=True)
     (legacy / "1__2.json").write_text(json.dumps({
         "migration_id": "m", "provider": "stripe", "from_version": "1", "to_version": "2",
@@ -49,7 +49,7 @@ def test_record_failure_never_creates_trusted_patterns(tmp_path):
 
 def test_failed_verification_records_avoidance_note(tmp_path):
     import json
-    from compart.maintenance import run_maintenance_cycle
+    from sheepdog.maintenance import run_maintenance_cycle
     repo = tmp_path / "r"
     (repo / "src").mkdir(parents=True)
     (repo / "package.json").write_text(json.dumps({

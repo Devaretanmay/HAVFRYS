@@ -1,14 +1,14 @@
-# Compart SDKs
+# Sheepdog SDKs
 
 **One Rust core, two thin language wrappers.**
 
-Compart implements kernel sandboxing, output compression, and the
+Sheepdog implements kernel sandboxing, output compression, and the
 compartment runtime once in Rust. The Python and TypeScript SDKs expose the
 supported native bindings directly:
 
 ```
-compart-core (Rust)
- |-- pyo3 module  (compart._core)     -> Python SDK (published on PyPI)
+sheepdog-core (Rust)
+ |-- pyo3 module  (sheepdog._core)     -> Python SDK (published on PyPI)
  `-- napi crate   (sdk/typescript/native) -> TypeScript SDK (Node addon)
 ```
 
@@ -20,7 +20,7 @@ All SDKs require the Rust core built once (from the repository root):
 cargo build --release
 ```
 
-This produces `target/release/libcompart_core.dylib`/`.so`, and the
+This produces `target/release/libsheepdog_core.dylib`/`.so`, and the
 rlib used by the napi crate.
 
 ## TypeScript SDK: `sdk/typescript/`
@@ -31,37 +31,37 @@ packages have been built and uploaded at the same version:
 ```bash
 cd sdk/typescript
 npm install
-npm run build   # compiles the napi addon (compart-native.<platform>-<arch>.node)
+npm run build   # compiles the napi addon (sheepdog-native.<platform>-<arch>.node)
 npm test
 ```
 
 ```ts
-import * as compart from '@compart/sdk'
+import * as sheepdog from '@sheepdog/sdk'
 
-compart.version()                    // "1.1.0"
-compart.sandboxSupported()           // true
-const out = compart.compress(text)
+sheepdog.version()                    // "1.1.0"
+sheepdog.sandboxSupported()           // true
+const out = sheepdog.compress(text)
 
 // Compartment runtime handle (parse once, route many).
 // configs: { configs: [{ name: 'a', allow_outbound_to: ['b'] }, { name: 'b' }] }
 // edgesJSON: '[['a','b']]'
-const rt = new compart.Runtime(configs, edgesJSON)
+const rt = new sheepdog.Runtime(configs, edgesJSON)
 rt.canRoute('a', 'b')        // true
 rt.runOrder()                // ['a', 'b', ...]
 rt.names()                   // ['a', 'b', ...]
 ```
 
-## Python SDK: `python/compart/`
+## Python SDK: `python/sheepdog/`
 
-Published on PyPI as `compart` : the same kernel-enforced isolation,
+Published on PyPI as `sheepdog` : the same kernel-enforced isolation,
 compartments, snapshots, and credential proxy, callable from Python 3.10+:
 
 ```bash
-pip install compart
+pip install sheepdog
 ```
 
 ```python
-from compart import Compart
+from sheepdog import Sheepdog
 ```
 
 ## Notes

@@ -1,6 +1,6 @@
-# Compart Agent Execution & Terminal TUI Supervision
+# Sheepdog Agent Execution & Terminal TUI Supervision
 
-Compart enables developers to run interactive terminal coding agents (Claude Code, OpenCode, Codex, Cursor, Aider) inside an OS kernel sandbox with zero configuration.
+Sheepdog enables developers to run interactive terminal coding agents (Claude Code, OpenCode, Codex, Cursor, Aider) inside an OS kernel sandbox with zero configuration.
 
 ---
 
@@ -9,14 +9,14 @@ Compart enables developers to run interactive terminal coding agents (Claude Cod
 Launch your agent directly inside an isolated sandbox:
 
 ```bash
-compart claude
-compart opencode
-compart codex
-compart cursor
-compart aider
+sheepdog claude
+sheepdog opencode
+sheepdog codex
+sheepdog cursor
+sheepdog aider
 ```
 
-Compart automatically:
+Sheepdog automatically:
 1. Detects the genuine binary on system `PATH`.
 2. Allocates a pseudo-terminal master/slave pair (`PtySupervisor`).
 3. Takes a pre-execution BLAKE3 workspace snapshot.
@@ -34,7 +34,7 @@ Interactive agents rely on advanced terminal features that standard process pipe
 - **Signal Forwarding** (Ctrl+C for cancellation, Ctrl+D for EOF)
 - **Raw Input Mode** (instant keystroke response without enter buffering)
 
-Compart's `PtySupervisor` bridges these capabilities seamlessly so the agent runs identically to a bare-metal session.
+Sheepdog's `PtySupervisor` bridges these capabilities seamlessly so the agent runs identically to a bare-metal session.
 
 ---
 
@@ -58,14 +58,14 @@ After the agent completes its task:
 
 ```bash
 # 1. Review file changes attributed by execution
-compart diff
+sheepdog diff
 
 # 2. Promote changes to workspace baseline
-compart apply
+sheepdog apply
 
 # 3. Commit with provenance trailers
-compart commit -m "feat(auth): add OAuth provider"
+sheepdog commit -m "feat(auth): add OAuth provider"
 
 # 4. If the agent made a mistake, rollback instantly
-compart undo
+sheepdog undo
 ```

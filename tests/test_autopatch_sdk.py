@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 
-from compart import autopatch
+from sheepdog import autopatch
 
 OLD_SPEC = json.dumps({
     "openapi": "3.0.0",

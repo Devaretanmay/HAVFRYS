@@ -1,8 +1,8 @@
-# Copyright 2026 Compart Authors
+# Copyright 2026 Sheepdog Authors
 # SPDX-License-Identifier: Apache-2.0
 
-from compart.graph import build_dependency_graph, audit_dependency_graph
-from compart.audit import render_audit_cli, render_audit_github_issue, run_audit
+from sheepdog.graph import build_dependency_graph, audit_dependency_graph
+from sheepdog.audit import render_audit_cli, render_audit_github_issue, run_audit
 
 
 def test_build_dependency_graph_taxonomy():
@@ -29,11 +29,11 @@ def test_audit_dependency_graph_taxonomy():
 def test_render_audit_formats():
     summary = audit_dependency_graph("trials/fixtures/taxonomy_stripe")
     cli_out = render_audit_cli(summary)
-    assert "COMPART: EXTERNAL-CHANGE DEPENDENCY AUDIT" in cli_out
+    assert "SHEEPDOG: EXTERNAL-CHANGE DEPENDENCY AUDIT" in cli_out
     assert "Stripe" in cli_out
     
     issue_out = render_audit_github_issue(summary)
-    assert "Compart: External Dependency Map & Risk Register" in issue_out
+    assert "Sheepdog: External Dependency Map & Risk Register" in issue_out
     assert "| **Stripe** |" in issue_out
 
 

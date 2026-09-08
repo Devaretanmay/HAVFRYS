@@ -3,8 +3,8 @@
 Covers:
 - Execution.git_trailers() RFC-5322 format
 - Security status in git trailers (clean vs blocked actions)
-- `compart diff --trailers` output
-- `compart commit` and `compart apply --commit`
+- `sheepdog diff --trailers` output
+- `sheepdog commit` and `sheepdog apply --commit`
 """
 
 import io
@@ -16,8 +16,8 @@ import tempfile
 from contextlib import redirect_stdout
 
 
-from compart.cli.main import _git_commit_execution, cmd_diff
-from compart.engine.execution import Execution, ExecutionKind, ExecutionManager
+from sheepdog.cli.main import _git_commit_execution, cmd_diff
+from sheepdog.engine.execution import Execution, ExecutionKind, ExecutionManager
 
 
 def test_execution_git_trailers_format():
@@ -62,13 +62,13 @@ def test_execution_git_trailers_with_security_violations():
 
 
 def test_git_commit_execution_staging_and_trailers():
-    """_git_commit_execution stages files and creates a commit with Compart trailers."""
+    """_git_commit_execution stages files and creates a commit with Sheepdog trailers."""
     tmp = tempfile.mkdtemp()
     try:
         # Initialize a real Git repository in tmp
         subprocess.run(["git", "init", "-b", "main"], cwd=tmp, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "Compart Bot"], cwd=tmp, check=True)
-        subprocess.run(["git", "config", "user.email", "bot@compart.dev"], cwd=tmp, check=True)
+        subprocess.run(["git", "config", "user.name", "Sheepdog Bot"], cwd=tmp, check=True)
+        subprocess.run(["git", "config", "user.email", "bot@sheepdog.dev"], cwd=tmp, check=True)
 
         # Create an initial commit
         readme = os.path.join(tmp, "README.md")
@@ -116,10 +116,10 @@ def test_git_commit_execution_staging_and_trailers():
 
 
 def test_diff_with_trailers_in_json(monkeypatch):
-    """`compart diff --json` includes git_trailers in every execution dictionary."""
+    """`sheepdog diff --json` includes git_trailers in every execution dictionary."""
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".compart"))
+        os.makedirs(os.path.join(tmp, ".sheepdog"))
         monkeypatch.chdir(tmp)
         mgr = ExecutionManager(workdir=tmp)
         ex = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"], compartment_id="coding")

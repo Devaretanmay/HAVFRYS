@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import pytest
 
-from compart.engine.pty_supervisor import PtySupervisor
+from sheepdog.engine.pty_supervisor import PtySupervisor
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")
@@ -31,8 +31,8 @@ def test_capture_exit_code():
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")
 def test_capture_with_extra_env():
     """Extra environment variables reach the child process."""
-    sup = PtySupervisor(workdir=".", extra_env={"COMPART_TEST_VAR": "workspace_active"})
-    result = sup.capture(["sh", "-c", "echo $COMPART_TEST_VAR"])
+    sup = PtySupervisor(workdir=".", extra_env={"SHEEPDOG_TEST_VAR": "workspace_active"})
+    result = sup.capture(["sh", "-c", "echo $SHEEPDOG_TEST_VAR"])
     assert result.returncode == 0
     assert "workspace_active" in result.stdout
 
@@ -56,4 +56,4 @@ def test_resolve_missing_binary():
     """FileNotFoundError raised for unknown binary."""
     sup = PtySupervisor(workdir=".")
     with pytest.raises(FileNotFoundError):
-        sup.capture(["__compart_nonexistent_binary__"])
+        sup.capture(["__sheepdog_nonexistent_binary__"])
