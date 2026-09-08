@@ -1,5 +1,10 @@
 # Gates: Compart Frontier 1-3 Verification & Benchmark Engine
 
+> Frozen historical record (pre-rename milestones). CHECK lines below reference
+> the old `compart` CLI, since-removed `trials`/`reproduce` commands, and a
+> developer-local absolute path — they are evidence of what passed at the time,
+> not runnable instructions. Current verification is `scripts/run_all_tests.py`.
+
 Scope: Build Dynamic Spec-Driven Route Synthesizer (Frontier 1), Surgical AST Patcher (Frontier 2), and Compart Trials Benchmark Suite (Frontier 3) with precision metrics, Python CLI integration, and zero regressions.
 
 - [x] G1: Dynamic Spec-Driven Route Synthesizer compiles and passes tests
