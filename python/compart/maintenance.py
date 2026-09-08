@@ -8,7 +8,7 @@ import subprocess
 import time
 from typing import Any, Dict, List, Optional
 
-from compart.ai_planner import AIPatchPlanner
+from compart.ai_planner import AIPatchPlanner, ai_followup_for_missed, build_reasoning_context
 from compart.drift import detect_drift  # noqa: F401 — re-exported for CLI/SDK callers
 from compart.formatters import run_style_formatter
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
@@ -153,6 +153,9 @@ def run_maintenance_cycle(
             target_files = impact.affected_files
             if target_files:
                 migration_desc = migration.description if migration else f"Upgrade {provider_name} to {actual_to}"
+                reason_ctx = build_reasoning_context(
+                    repo_dir, provider_name, actual_from, actual_to,
+                    migration_desc, changelog_url)
                 ai_results = ai_planner.plan_and_apply(
                     repo_dir=repo_dir,
                     affected_files=target_files,
@@ -161,6 +164,8 @@ def run_maintenance_cycle(
                     to_version=actual_to,
                     migration_details=migration_desc,
                     dry_run=False,
+                    context=reason_ctx,
+                    changelog_url=changelog_url,
                 )
                 if ai_results:
                     patch_results.extend(ai_results)
@@ -169,6 +174,22 @@ def run_maintenance_cycle(
             f"No safe repair path for {provider_name} {actual_from}->{actual_to} ({decision.reason}). "
             "Run `compart auth` to enable AI repair, or add a verified migration to the registry."
         )
+
+    # Hybrid completion: affected files the rewrites didn't reach (unusual code)
+    # get AI reasoning when a provider is configured; otherwise the refusal stands.
+    if decision.strategy == "DIRECT":
+        touched = [os.path.abspath(r.file_path) for r in patch_results if r.success]
+        impact = ImpactAnalyst().analyze_impact(repo_dir, provider_name)
+        migration_desc = migration.description if migration else f"Upgrade {provider_name} to {actual_to}"
+        missed_results, missed_planner = ai_followup_for_missed(
+            repo_dir, provider_name, actual_from, actual_to, touched,
+            impact.affected_files, migration_desc, changelog_url)
+        if missed_results:
+            decision.strategy = "HYBRID"
+            decision.reason = "direct_noop_unusual_code" if not patch_results else "direct_partial_unusual_code"
+            decision.confidence = 0.6
+            ai_planner = missed_planner
+            patch_results.extend(missed_results)
 
     modified_paths = [os.path.abspath(r.file_path) for r in patch_results if r.success]
     files_modified = len(modified_paths)
@@ -234,6 +255,7 @@ def run_maintenance_cycle(
                 migration_details=migration.description if migration else "",
                 test_error=raw_output,
                 dry_run=False,
+                changelog_url=changelog_url,
             )
             if retry_results:
                 # Explicit hybrid: deterministic pre-pass + AI repair of the failure.

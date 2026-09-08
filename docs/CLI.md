@@ -282,10 +282,11 @@ compart graph . --json
 ---
 
 ### `compart fix [root_dir]` (alias: `maintain`, `update`)
-Executes an autonomous continuous maintenance cycle: detects the change source, Compart internally
-decides DIRECT (verified pattern, zero tokens) vs AI (provider generation) vs quarantine, applies the
-repair, formats with local tools (`prettier`/`ruff`), runs repository tests, verifies zero blast radius,
-and reports evidence. There is no `--ai` / `--direct` flag — routing is internal:
+Executes an autonomous continuous maintenance cycle: Compart's AI reasons over the repository,
+the change, and maintenance memory, then repairs with deterministic tools, formats with local tools
+(`prettier`/`ruff`), runs repository tests, verifies zero blast radius, and reports evidence.
+Verified patterns execute without model calls; novel work uses your provider; unsafe repairs are
+refused loudly with zero files touched. There is no engine flag — strategy is internal:
 
 ```bash
 compart fix .                       # Auto-detect provider from manifests

@@ -18,21 +18,30 @@ Stripe / OpenAI / AWS / MCP / APIs    Service A → API → Service B → SDK �
                ▼
       COMPART CHANGE RADAR (detect_changes: read-only, zero-token)
                ▼
-      REPOSITORY KNOWLEDGE (.compart/: graph, index_state, knowledge/)
-               ▼
-      IMPACT ANALYSIS (ChangeSource-aware callsites + wrappers)
-               ▼
-      DECISION ENGINE (CompartIntelligence — internal only)
-        ↙               ↘
-   DIRECT (0 tokens)   AI (customer BYOK provider)
-        ↘               ↙  (HYBRID: direct pre-pass + AI repair of failures)
+      ┌────────────────────────┴────────────────────────┐
+      ↓                                                 ↓
+CODEBASE CONTEXT                              CHANGE CONTEXT
+graph · callsites · wrappers · tests       ChangeSource · migration · changelog
+      │                                                 │
+      └────────────────────────┬────────────────────────┘
+                               ▼
+                    AI REASONING (customer BYOK provider)
+                    impact · scope · minimal repair plan
+                               ▼
+              DETERMINISTIC TOOLS (internal optimization)
+              verified rewrites · KB patterns · SEARCH/REPLACE apply
+                               ▼
               PATCH
-               ▼
+                               ▼
       SANDBOX / REAL TESTS (fail closed — no suite means never merge-ready)
-               ▼
+                               ▼
          GREEN → EVIDENCE (BLAKE3) → PR
-               ▼
+                               ▼
       KNOWLEDGE CAPTURE (verified patterns only; failures quarantined separately)
+
+Insufficient confidence at any stage → loud refusal, zero files touched.
+The engine never asks the user to choose a strategy; `Decision`
+(DIRECT / AI / HYBRID / QUARANTINE) is internal cost accounting, not product.
 ```
 
 ## 2. Core types

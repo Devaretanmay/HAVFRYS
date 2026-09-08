@@ -38,7 +38,7 @@ Install GitHub App → Select repo → Connect AI → Automatic index → READY
         ↓
 Check / background detection (free, zero-token, no AI key needed)
         ↓
-Compart internally decides: DIRECT (verified pattern, 0 tokens) or AI (your provider)
+AI reasons over codebase + change + maintenance memory; deterministic tools execute
         ↓
 Sandbox + real tests → Evidence → GitHub PR → Knowledge capture (next run is cheaper)
 ```
@@ -58,8 +58,8 @@ compart fix .             # Repair, verify, report (refuses loudly when unsafe)
 │ 1. Change Detection     │ 2. Dependency Graph     │ 3. Impact Analysis      │
 │    Contract drift       │    Source → Callsite    │    ChangeSource-aware   │
 ├─────────────────────────┼─────────────────────────┼─────────────────────────┤
-│ 4. Surgical Repair      │ 5. Controlled Execution │ 6. Developer Trust PR   │
-│    DIRECT or AI-routed  │    Sandboxed + Evidence │    Verified merge-ready │
+│ 4. AI-Guided Repair     │ 5. Controlled Execution │ 6. Developer Trust PR   │
+│    Reasoned, then applied │    Sandboxed + Evidence │    Verified merge-ready │
 └─────────────────────────┴─────────────────────────┴─────────────────────────┘
 ```
 
@@ -203,6 +203,26 @@ The core abstraction is `ChangeSource` (external API, SDK, OpenAPI, GraphQL, pro
 MCP server, internal service): Compart keeps software working when the systems around it change.
 Vendor SDK migrations are the working wedge; other contract kinds are representable types with no
 connectors yet — they fail closed to quarantine instead of guessing.
+
+Under the hood, Compart is an AI maintenance agent with deterministic tools: a code graph,
+repository memory, verified rewrite patterns, sandbox execution, and a fail-closed verifier.
+Repeated work reuses verified knowledge instead of re-reasoning, so the system gets faster,
+cheaper, and more precise the longer it watches a repository.
+
+## Compart vs Greptile
+
+| | Greptile | Compart |
+|---|---|---|
+| AI understands | Codebase + PR | Codebase + system change |
+| Starting event | PR / code change | Dependency / contract change |
+| AI asks | Is this change correct? | What does this change break? |
+| AI output | Review / fix | Repair |
+| Memory | Repository knowledge | Repository + maintenance history |
+| Verification | Tests / validation | Tests + repair evidence |
+| End result | Safe code change | Working software after ecosystem change |
+
+Greptile gives an AI agent context about your code. Compart gives an AI agent context
+about how your software changes.
 
 ## License
 

@@ -57,7 +57,7 @@ TOOLS: List[Dict[str, Any]] = [
     },
     {
         "name": "compart_repair_and_verify",
-        "description": "Execute deterministic AST patch or AI repair, run native tests in sandbox, and generate BLAKE3 cryptographic receipts.",
+        "description": "AI-guided repair of breaking contract changes: reason over repo context, apply surgical edits, run native tests in sandbox, generate BLAKE3 receipts.",
         "inputSchema": {
             "type": "object",
             "properties": {

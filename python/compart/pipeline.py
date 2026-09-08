@@ -49,7 +49,7 @@ from compart.test_runner import (
 )
 from compart.intelligence import CompartIntelligence, resolve_migration
 from compart.knowledge import direct_rewrites_for, upsert_learned as kb_upsert
-from compart.ai_planner import AIPatchPlanner
+from compart.ai_planner import AIPatchPlanner, ai_followup_for_missed, build_reasoning_context
 from compart.maintenance_agents import ImpactAnalyst
 from compart.patch_writer import apply_rewrites, discover_aliases, instantiate_alias_rules
 from compart.sandbox.snapshot import SnapshotManager
@@ -615,6 +615,12 @@ def apply_fixes(
             if not combined:
                 continue
             results = apply_rewrites(ctx.workdir, combined, dry_run=False)
+            touched = [os.path.abspath(r.file_path) for r in results if r.success]
+            missed, _ = ai_followup_for_missed(
+                ctx.workdir, finding.provider_name, _from, _to, touched,
+                finding.affected_files, finding.breaking_change,
+                finding.migration_guide_url)
+            results.extend(missed)
             for r in results:
                 if r.success:
                     modified_files.append(r.file_path)
@@ -643,6 +649,10 @@ def apply_fixes(
                 to_version=_to,
                 migration_details=finding.breaking_change,
                 dry_run=False,
+                context=build_reasoning_context(
+                    ctx.workdir, finding.provider_name, _from, _to,
+                    finding.breaking_change, finding.migration_guide_url),
+                changelog_url=finding.migration_guide_url,
             )
             for r in ai_results:
                 if r.success:

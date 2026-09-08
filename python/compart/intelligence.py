@@ -14,7 +14,7 @@ from typing import List, Optional
 
 from compart.change_source import ChangeSource
 from compart.credentials import has_valid_credentials
-from compart.knowledge import direct_rewrites_for
+from compart.knowledge import _norm_version, direct_rewrites_for
 from compart.providers.registry import find_migration_for, get_default_registry
 
 
@@ -33,12 +33,22 @@ class Decision:
 
 
 def resolve_migration(provider: str, from_version: Optional[str] = None, to_version: Optional[str] = None):
-    """Pick the registry migration matching the requested versions, else first. Returns (from, to, migration|None)."""
+    """Pick the registry migration matching the requested versions, else first.
+
+    Returns (from, to, migration|None); matched versions come back canonical,
+    unmatched fall back to caller raw (legacy parity).
+    """
     migration = find_migration_for(ChangeSource.sdk(
         provider or "", version_from=from_version or "unknown", version_to=to_version or "unknown"))
     if migration is None:
         return (from_version or "unknown", to_version or "unknown", None)
-    return (from_version or migration.from_version, to_version or migration.to_version, migration)
+    actual_from = migration.from_version \
+        if from_version and _norm_version(from_version) == _norm_version(migration.from_version) \
+        else (from_version or migration.from_version)
+    actual_to = migration.to_version \
+        if to_version and _norm_version(to_version) == _norm_version(migration.to_version) \
+        else (to_version or migration.to_version)
+    return (actual_from, actual_to, migration)
 
 
 class CompartIntelligence:

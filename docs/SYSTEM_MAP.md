@@ -21,21 +21,20 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    DETECT["DETECT<br/>detect_changes · drift · AST scan<br/>zero-token, read-only"] --> KNOW["REPOSITORY KNOWLEDGE<br/>.compart: graph · index_state · knowledge · history"]
-    KNOW --> IMPACT["IMPACT<br/>ChangeSource-aware callsites + wrappers"]
-    IMPACT --> BRAIN["COMPART INTELLIGENCE<br/>invisible router — no user flag"]
-    BRAIN -->|verified pattern| DIRECT["DIRECT<br/>0 tokens"]
-    BRAIN -->|novel| AI["AI<br/>customer BYOK provider"]
-    BRAIN -->|no safe path| QUAR["QUARANTINE<br/>loud refusal, zero files"]
-    DIRECT --> PATCH["PATCH<br/>registry + KB + alias-scoped rewrites"]
-    AI --> PATCH
-    PATCH --> TEST["SANDBOX + REAL TESTS<br/>blast diff · restore on fail"]
-    TEST -->|green| EV["EVIDENCE<br/>BLAKE3 · Trust PR"]
-    TEST -->|red| FIXLOOP["HYBRID SELF-REPAIR<br/>one AI retry with failure context"]
-    FIXLOOP --> TEST
-    EV --> LEARN["LEARN<br/>verified patterns cached · guesses quarantined"]
-    LEARN --> KNOW
-    EV --> PR["GITHUB PR<br/>exact head SHA or disclosed fallback"]
+    DETECT["DETECT<br/>change + impact discovery<br/>zero-token, read-only"] --> CTX["CODEBASE CONTEXT<br/>graph · callsites · wrappers · tests"]
+    DETECT --> CHG["CHANGE CONTEXT<br/>ChangeSource · migration · changelog"]
+    CTX --> AI["AI REASONING<br/>understands change + repository<br/>customer BYOK provider"]
+    CHG --> AI
+    MEM["MAINTENANCE MEMORY<br/>verified patterns · known failures"] --> AI
+    AI --> PLAN["REPAIR PLAN<br/>impact analysis · minimal scope"]
+    PLAN --> TOOLS["DETERMINISTIC TOOLS<br/>verified rewrites · KB patterns · SEARCH/REPLACE apply"]
+    TOOLS --> TEST["NATIVE VERIFICATION<br/>sandbox · real tests · blast diff"]
+    TEST -->|green| EV["EVIDENCE + PR<br/>BLAKE3 · Trust PR · exact head SHA"]
+    TEST -->|red| FIXLOOP["SELF-REPAIR<br/>failure context back into reasoning"]
+    FIXLOOP --> AI
+    EV --> LEARN["LEARN<br/>verified cached · guesses quarantined"]
+    LEARN --> MEM
+    AI -->|insufficient confidence| QUAR["REFUSE<br/>loud, zero files touched"]
 ```
 
 ## 3. Module map (where it lives)

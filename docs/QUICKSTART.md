@@ -48,8 +48,8 @@ compart graph .
 ## 4. Autonomous Continuous Maintenance
 
 Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS).
-Compart internally decides DIRECT (verified pattern, zero tokens) vs AI (your provider) — there is
-no engine flag to choose. Unsafe repairs refuse loudly with zero files touched:
+Compart's AI reasons about the change against your repository and repairs with deterministic tools —
+there is no engine flag to choose. Unsafe repairs refuse loudly with zero files touched:
 
 ```bash
 # Auto-detect provider and repair:

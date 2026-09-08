@@ -4,7 +4,7 @@ import subprocess
 import time
 from typing import Any, Dict, List, Optional
 
-from compart.ai_planner import AIPatchPlanner
+from compart.ai_planner import AIPatchPlanner, ai_followup_for_missed, build_reasoning_context
 from compart.change_source import ChangeSource
 from compart.graph import build_dependency_graph
 from compart.sandbox.snapshot import SnapshotManager, _file_hash
@@ -166,6 +166,9 @@ class PatchPlanner:
                         to_version=change_analysis.to_version,
                         migration_details=desc,
                         dry_run=True,
+                        context=build_reasoning_context(
+                            repo_dir, change_analysis.provider,
+                            change_analysis.from_version, change_analysis.to_version, desc),
                     )
 
         targets = [
@@ -265,6 +268,12 @@ class AutonomousMaintenancePipeline:
                     seen.add(ar.pattern)
                     combined.append(ar)
             real_results = apply_rewrites(repo_dir, combined, dry_run=False)
+            touched = [os.path.abspath(r.file_path) for r in real_results if r.success]
+            missed, _ = ai_followup_for_missed(
+                repo_dir, provider_name, _from, _to, touched,
+                impact_info.affected_files,
+                change_info.mutations[0]["description"] if change_info.mutations else "")
+            real_results.extend(missed)
         elif dec.strategy == "AI":
             planner = self.ai_planner or AIPatchPlanner.from_env()
             if planner and impact_info.affected_files:
@@ -277,6 +286,9 @@ class AutonomousMaintenancePipeline:
                     to_version=change_info.to_version,
                     migration_details=desc,
                     dry_run=False,
+                    context=build_reasoning_context(
+                        repo_dir, provider_name,
+                        change_info.from_version, change_info.to_version, desc),
                 )
 
         unified_diff = "\n".join(r.unified_diff for r in real_results if r.unified_diff)

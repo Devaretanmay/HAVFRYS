@@ -1,12 +1,22 @@
-"""AI-powered patch generation and self-repair planner using BYOK LLMs."""
+"""AI maintenance reasoning: deep repository + change context, deterministic application.
+
+The model reasons over codebase context, change context, verified history, and
+known failures; Compart applies the resulting SEARCH/REPLACE edits, verifies
+them in the sandbox, and quarantines on failure. AI-first on top,
+deterministic underneath.
+"""
 
 import difflib
 import os
 import re
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from compart.graph import build_dependency_graph
+from compart.autopatch import ScanConfig, scan_callsites
+from compart.knowledge import lookup as kb_lookup
 from compart.llm import LLMClient, resolve_llm_config
 from compart.patch_writer import PatchResult
+from compart.test_runner import _detect_test_command
 
 
 _BLOCK_REGEX = re.compile(
@@ -19,6 +29,105 @@ def parse_search_replace_blocks(text: str) -> List[Tuple[str, str]]:
     """Extract search and replace pairs from model output."""
     matches = _BLOCK_REGEX.findall(text)
     return [(search, replace) for search, replace in matches]
+
+
+def ai_followup_for_missed(
+    repo_dir: str,
+    provider_name: str,
+    from_version: str,
+    to_version: str,
+    touched_abs_paths: List[str],
+    impact_files: List[str],
+    migration_details: str = "",
+    changelog_url: str = "",
+    dry_run: bool = False,
+) -> Tuple[List[PatchResult], Optional["AIPatchPlanner"]]:
+    """AI reasoning for affected files deterministic rewrites didn't reach.
+
+    Returns ([], None) when nothing is missed or no provider is configured —
+    callers keep their honest refusal path untouched.
+    """
+    touched = set(touched_abs_paths or [])
+    missed = [
+        f for f in (impact_files or [])
+        if os.path.isfile(os.path.join(repo_dir, f))
+        and os.path.abspath(os.path.join(repo_dir, f)) not in touched
+    ]
+    if not missed:
+        return ([], None)
+    planner = AIPatchPlanner.from_env()
+    if planner is None:
+        return ([], None)
+    context = build_reasoning_context(
+        repo_dir, provider_name, from_version, to_version,
+        migration_details, changelog_url)
+    results = planner.plan_and_apply(
+        repo_dir=repo_dir,
+        affected_files=missed,
+        provider_name=provider_name,
+        from_version=from_version,
+        to_version=to_version,
+        migration_details=migration_details,
+        dry_run=dry_run,
+        context=context,
+        changelog_url=changelog_url,
+    )
+    return (results, planner)
+
+
+def build_reasoning_context(
+    repo_dir: str,
+    provider_name: str,
+    from_version: str,
+    to_version: str,
+    migration_details: str = "",
+    changelog_url: str = "",
+    max_callsites: int = 40,
+) -> Dict[str, Any]:
+    """Assemble what the model needs to reason like a maintainer, not a rewriter.
+
+    Codebase context (wrappers, callsites, test command) + change context
+    (migration, changelog) + maintenance memory (verified patterns to reuse,
+    failed patterns to avoid). Best-effort throughout: missing pieces yield
+    empty strings, never exceptions. Zero tokens to build — all static.
+    """
+    ctx: Dict[str, Any] = {
+        "test_command": "", "wrappers": [], "callsites": [],
+        "verified_patterns": [], "failed_patterns": [],
+    }
+    try:
+        ctx["test_command"] = _detect_test_command(repo_dir) or ""
+    except Exception:
+        pass
+    try:
+        graph = build_dependency_graph(repo_dir) or {}
+        prov = provider_name.lower()
+        for w in graph.get("wrappers", []) or []:
+            hay = f"{w.get('wrapper_file', '')} {w.get('wraps_provider', '')}".lower()
+            if prov and prov in hay and w.get("wrapper_file"):
+                ctx["wrappers"].append(w["wrapper_file"])
+    except Exception:
+        pass
+    try:
+        res = scan_callsites(repo_dir, ScanConfig(sdk_names=[provider_name])) or {}
+        for c in (res.get("callsites", []) or [])[:max_callsites]:
+            line = str(c.get("line_content", "")).strip()[:200]
+            ctx["callsites"].append(
+                f"{c.get('file_path')}:{c.get('line_number')} [{c.get('kind')}] {line}")
+    except Exception:
+        pass
+    try:
+        entry = kb_lookup(repo_dir, provider_name, from_version, to_version)
+        if entry:
+            ctx["verified_patterns"] = [p.description for p in entry.patterns[:10] if p.description]
+            ctx["failed_patterns"] = [f.get("description", "") for f in (entry.failed_patterns or [])[:5]]
+            if not ctx["test_command"] and entry.test_recipe.get("test_command"):
+                ctx["test_command"] = entry.test_recipe["test_command"]
+    except Exception:
+        pass
+    ctx["migration_details"] = migration_details
+    ctx["changelog_url"] = changelog_url
+    return ctx
 
 
 class AIPatchPlanner:
@@ -49,10 +158,17 @@ class AIPatchPlanner:
         migration_details: str = "",
         test_error: Optional[str] = None,
         dry_run: bool = False,
+        context: Optional[Dict[str, Any]] = None,
+        changelog_url: str = "",
     ) -> List[PatchResult]:
-        """Generate and apply AI patches for affected files."""
+        """Reason over deep context, then generate and apply AI patches."""
         if not self.client:
             return []
+
+        if context is None:
+            context = build_reasoning_context(
+                repo_dir, provider_name, from_version, to_version,
+                migration_details, changelog_url)
 
         results = []
         for file_path in affected_files:
@@ -73,6 +189,7 @@ class AIPatchPlanner:
                 migration_details=migration_details,
                 test_error=test_error,
                 dry_run=dry_run,
+                context=context,
             )
             if patch_res:
                 results.append(patch_res)
@@ -90,29 +207,48 @@ class AIPatchPlanner:
         migration_details: str,
         test_error: Optional[str],
         dry_run: bool,
+        context: Optional[Dict[str, Any]] = None,
     ) -> Optional[PatchResult]:
+        context = context or {}
         system_prompt = (
-            "You are an expert autonomous software engineer performing external API migrations.\n"
-            "Generate surgical code updates to adapt to breaking upstream API changes.\n"
-            "Format your patch using search-and-replace blocks:\n"
+            "You are an autonomous software maintenance engineer. A system your "
+            "software depends on changed; determine what must change in this "
+            "repository and repair exactly that — nothing more.\n"
+            "Reason first about impact: which callsites are truly affected, which "
+            "abstractions or wrappers must change first, which occurrences inherit "
+            "the fix, and which unrelated code must not be touched.\n"
+            "Then emit surgical code updates as search-and-replace blocks:\n"
             "<<<<<<< SEARCH\n"
             "exact lines to replace\n"
             "=======\n"
             "replacement lines\n"
             ">>>>>>> REPLACE\n"
             "Rules:\n"
-            "1. Only modify lines directly affected by the API migration.\n"
+            "1. Only modify lines directly affected by the change.\n"
             "2. Preserve exact formatting, indentation, and unrelated logic.\n"
-            "3. Do not include markdown commentary outside the blocks."
+            "3. Never reference identifiers that do not exist in the file.\n"
+            "4. Do not include markdown commentary outside the blocks."
         )
 
-        user_content = (
-            f"File: {os.path.relpath(abs_path, repo_dir)}\n"
-            f"Provider: {provider_name}\n"
-            f"Migration: {from_version} -> {to_version}\n"
-            f"Migration Context: {migration_details}\n\n"
-            f"File Content:\n```\n{original_content}\n```\n"
-        )
+        sections = [
+            f"File: {os.path.relpath(abs_path, repo_dir)}",
+            f"System: {provider_name}",
+            f"Change: {from_version} -> {to_version}",
+            f"Change details: {migration_details or context.get('migration_details', '')}",
+        ]
+        if context.get("changelog_url"):
+            sections.append(f"Vendor guide: {context['changelog_url']}")
+        if context.get("test_command"):
+            sections.append(f"Repo verification: `{context['test_command']}` must keep passing")
+        if context.get("wrappers"):
+            sections.append("Wrappers to consider first:\n" + "\n".join(f"- {w}" for w in context["wrappers"][:10]))
+        if context.get("callsites"):
+            sections.append("Known usage across the repo:\n" + "\n".join(f"- {c}" for c in context["callsites"][:40]))
+        if context.get("verified_patterns"):
+            sections.append("Previously verified repairs (prefer these shapes):\n" + "\n".join(f"- {p}" for p in context["verified_patterns"][:10]))
+        if context.get("failed_patterns"):
+            sections.append("Known-bad approaches (do NOT repeat):\n" + "\n".join(f"- {p}" for p in context["failed_patterns"][:5] if p))
+        user_content = "\n".join(sections) + f"\n\nFile Content:\n```\n{original_content}\n```\n"
 
         if test_error:
             user_content += (
