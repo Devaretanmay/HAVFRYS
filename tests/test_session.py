@@ -3,7 +3,7 @@
 import shutil
 import tempfile
 
-from sheepdog.engine.session import AgentSession, SessionManager, SessionStatus
+from volf.engine.session import AgentSession, SessionManager, SessionStatus
 
 def test_agent_session_creation():
     session = AgentSession(
@@ -25,7 +25,7 @@ def test_agent_session_creation():
     assert len(session.diffs) == 1
 
     view = session.format_ascii_view()
-    assert "SHEEPDOG AGENT SESSION #sess_123" in view
+    assert "VOLF AGENT SESSION #sess_123" in view
 
 
 def test_session_manager_lifecycle():

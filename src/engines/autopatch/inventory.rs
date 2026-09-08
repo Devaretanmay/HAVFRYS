@@ -192,7 +192,7 @@ pub fn render_inventory(inv: &Inventory) -> String {
             "[ALERT] {} critical dependencies require immediate attention.\n",
             critical
         ));
-        out.push_str("   Run `sheepdog autopatch` to generate verified migration PRs.\n");
+        out.push_str("   Run `volf autopatch` to generate verified migration PRs.\n");
     }
 
     out
@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn inventory_scan_empty_dir() {
-        let dir = std::env::temp_dir().join("sheepdog_inv_empty_test");
+        let dir = std::env::temp_dir().join("volf_inv_empty_test");
         let _ = std::fs::create_dir_all(&dir);
         let inv = run_inventory(dir.to_str().unwrap());
         assert!(inv.dependencies.is_empty());
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn inventory_scan_finds_stripe() {
-        let dir = std::env::temp_dir().join("sheepdog_inv_stripe_test");
+        let dir = std::env::temp_dir().join("volf_inv_stripe_test");
         let _ = std::fs::create_dir_all(&dir);
         std::fs::write(
             dir.join("billing.ts"),
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn inventory_render_contains_providers() {
-        let dir = std::env::temp_dir().join("sheepdog_inv_render_test");
+        let dir = std::env::temp_dir().join("volf_inv_render_test");
         let _ = std::fs::create_dir_all(&dir);
         std::fs::write(
             dir.join("app.py"),
@@ -299,7 +299,7 @@ mod tests {
 
     #[test]
     fn inventory_scan_with_custom_providers() {
-        let dir = std::env::temp_dir().join("sheepdog_inv_custom_test");
+        let dir = std::env::temp_dir().join("volf_inv_custom_test");
         let _ = std::fs::create_dir_all(&dir);
         std::fs::write(
             dir.join("client.ts"),

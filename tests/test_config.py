@@ -3,9 +3,9 @@ import shutil
 import tempfile
 import textwrap
 
-from sheepdog.config import (
+from volf.config import (
     load_config,
-    is_sheepdog_workspace,
+    is_volf_workspace,
     find_workspace_root,
 )
 
@@ -75,12 +75,12 @@ def test_policy_for_agent():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def test_is_sheepdog_workspace():
+def test_is_volf_workspace():
     tmp = tempfile.mkdtemp()
     try:
-        assert not is_sheepdog_workspace(tmp)
-        os.makedirs(os.path.join(tmp, ".sheepdog"))
-        assert is_sheepdog_workspace(tmp)
+        assert not is_volf_workspace(tmp)
+        os.makedirs(os.path.join(tmp, ".volf"))
+        assert is_volf_workspace(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -88,7 +88,7 @@ def test_is_sheepdog_workspace():
 def test_find_workspace_root_traversal():
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".sheepdog"))
+        os.makedirs(os.path.join(tmp, ".volf"))
         nested = os.path.join(tmp, "src", "deep")
         os.makedirs(nested)
         root = find_workspace_root(nested)

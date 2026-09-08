@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from sheepdog.llm import LLMClient, LLMConfig, resolve_llm_config
+from volf.llm import LLMClient, LLMConfig, resolve_llm_config
 
 
 class TestLLMClient(unittest.TestCase):

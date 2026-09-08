@@ -2,13 +2,13 @@ import re
 import os
 
 files_to_clean = [
-    "python/sheepdog/change_source.py",
-    "python/sheepdog/audit.py",
-    "python/sheepdog/maintenance.py",
-    "python/sheepdog/intelligence.py",
-    "python/sheepdog/knowledge.py",
-    "python/sheepdog/github/trust_pr.py",
-    "python/sheepdog/github/provisioning.py",
+    "python/volf/change_source.py",
+    "python/volf/audit.py",
+    "python/volf/maintenance.py",
+    "python/volf/intelligence.py",
+    "python/volf/knowledge.py",
+    "python/volf/github/trust_pr.py",
+    "python/volf/github/provisioning.py",
     "tests/test_knowledge.py",
     "tests/test_doctor.py",
     "tests/test_credential_scoping.py",

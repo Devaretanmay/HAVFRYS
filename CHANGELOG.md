@@ -1,39 +1,43 @@
 # Changelog
 
-All notable changes to Compart are documented here.
+All notable changes to Volf are documented here.
 
 ## [Unreleased]
+
+### Changed
+- **Rename Sheepdog → Volf across product, code, and docs.** Package `volf` 1.1.0 (CLI, imports, crate `volf-core`, `VOLF_*` env, `.volf/` state dirs, MCP tools, `@volf` trigger, trailers, SDK names). Hard cut with no aliases. KB keeps pinned legacy read paths for `.sheepdog/` and `.compart/` trees.
+- **Howl, the hunt voice.** The watch loop and monitoring surface speak as Howl — `Howl hunting` in serve/doctor output. Shepherd advises, Shearer repairs, Howl hunts; one reasoning engine behind all three.
 
 ### Added
 - **Alias-aware callsite analysis and repair.** The AST locator resolves proven client bindings (`const s = new Stripe()`, `require('stripe')`, `import stripe as s`) and reports `alias`-tagged callsites. DIRECT rewrites instantiate exact-identifier variants with the receiver preserved — regexes are never loosened, exotic bindings fail closed.
 
 ### Added
-- **External-Change Dependency Graph (`sheepdog graph`).** Native Rust graph engine mapping external providers, versions, OpenAPI contracts, manifest dependencies, wrapper clients, and AST callsites.
-- **Day-0 Risk Register (`sheepdog audit`).** Instant audit command scanning codebases for at-risk, deprecated, and auto-repairable external API callsites with ANSI and GitHub Issue markdown exports.
-- **Autonomous Continuous Maintenance (`sheepdog maintain`).** Closed-loop maintenance engine detecting upstream breaking changes, synthesizing surgical AST patches, running local formatters (`prettier`, `ruff`), and opening verified Developer Trust PRs.
-- **Provider Contract Registry (`sheepdog providers`).** Pre-indexed breaking-change contract catalog for Stripe, OpenAI, Anthropic, Clerk, Sentry, Supabase, Twilio, Octokit, and AWS SDK.
-- **Time-Machine Replay Protocol (`sheepdog reproduce`).** Historical benchmark engine evaluating verified ground-truth migrations against real open-source repositories with zero blast radius.
-- **GitHub App & Webhook Server (`sheepdog app`).** Continuous webhook daemon for automated PR drift detection and verification.
-- **Change-source abstraction (`sheepdog.change_source`).** Thin `ChangeSource`/`Detection` types generalizing the pipeline beyond vendor SDKs (OpenAPI, GraphQL, protobuf, webhooks, MCP, internal services as representable, fail-closed kinds).
-- **Invisible decision engine (`SheepdogIntelligence`).** Internal DIRECT/AI/HYBRID/QUARANTINE routing with confidence, token estimates, and blast-radius metadata. No `--ai`/`--direct` user flags.
-- **Repository knowledge flywheel (`.sheepdog/knowledge/`).** Namespaced verified-pattern cache with legacy fallback reads, failure quarantine, and test-recipe seeding on index.
+- **External-Change Dependency Graph (`volf graph`).** Native Rust graph engine mapping external providers, versions, OpenAPI contracts, manifest dependencies, wrapper clients, and AST callsites.
+- **Day-0 Risk Register (`volf audit`).** Instant audit command scanning codebases for at-risk, deprecated, and auto-repairable external API callsites with ANSI and GitHub Issue markdown exports.
+- **Autonomous Continuous Maintenance (`volf maintain`).** Closed-loop maintenance engine detecting upstream breaking changes, synthesizing surgical AST patches, running local formatters (`prettier`, `ruff`), and opening verified Developer Trust PRs.
+- **Provider Contract Registry (`volf providers`).** Pre-indexed breaking-change contract catalog for Stripe, OpenAI, Anthropic, Clerk, Sentry, Supabase, Twilio, Octokit, and AWS SDK.
+- **Time-Machine Replay Protocol (`volf reproduce`).** Historical benchmark engine evaluating verified ground-truth migrations against real open-source repositories with zero blast radius.
+- **GitHub App & Webhook Server (`volf app`).** Continuous webhook daemon for automated PR drift detection and verification.
+- **Change-source abstraction (`volf.change_source`).** Thin `ChangeSource`/`Detection` types generalizing the pipeline beyond vendor SDKs (OpenAPI, GraphQL, protobuf, webhooks, MCP, internal services as representable, fail-closed kinds).
+- **Invisible decision engine (`VolfIntelligence`).** Internal DIRECT/AI/HYBRID/QUARANTINE routing with confidence, token estimates, and blast-radius metadata. No `--ai`/`--direct` user flags.
+- **Repository knowledge flywheel (`.volf/knowledge/`).** Namespaced verified-pattern cache with legacy fallback reads, failure quarantine, and test-recipe seeding on index.
 - **Incremental indexing (`index_state.json`).** Commit-SHA + mtime tracking; `changed_since_index()` reports freshness and discovery deltas.
-- **Installation persistence (`sheepdog.github.installations`).** Flat-JSON install records with PENDING → INDEXED → READY lifecycle and Day-0 indexing on install events.
+- **Installation persistence (`volf.github.installations`).** Flat-JSON install records with PENDING → INDEXED → READY lifecycle and Day-0 indexing on install events.
 - **Scoped BYOK credentials.** Env → per-installation → global resolution (0600); secrets never enter repo state, logs, or knowledge.
-- **`sheepdog doctor`.** Six-line product readiness: GitHub, AI provider, index, knowledge, test command, monitoring.
+- **`volf doctor`.** Six-line product readiness: GitHub, AI provider, index, knowledge, test command, monitoring.
 - **Fail-closed webhook serving.** Missing secret is a hard error (`--no-secret` is local-debug only).
-- **Rename Compart → Sheepdog.** Package, CLI, crate, env vars (`SHEEPDOG_*`), state dirs (`.sheepdog/`), and docs. Hard cut: no `compart` aliases. KB entries under old `.compart/` trees are still read via legacy fallback; re-run `sheepdog auth` once to recreate credentials.
+- **Rename Compart → Volf.** Package, CLI, crate, env vars (`VOLF_*`), state dirs (`.volf/`), and docs. Hard cut: no `compart` aliases. KB entries under old `.compart/` trees are still read via legacy fallback; re-run `volf auth` once to recreate credentials.
 
 ### Changed
 - **Relicensed Apache-2.0.** The project moves from Elastic License 2.0 to the
-  Apache License 2.0. The Sheepdog name and logo remain trademarks of Sheepdog
+  Apache License 2.0. The Volf name and logo remain trademarks of Volf
   Labs (see NOTICE). Contributors are covered by CLA.md.
-- **Agent Provenance Trailers (spec v0.1).** `sheepdog commit` now emits the
+- **Agent Provenance Trailers (spec v0.1).** `volf commit` now emits the
   open `Agent-*` trailer names defined in SPEC.md (`Agent-Origin`,
   `Agent-Agent`, `Agent-Execution`, `Agent-Compartment`, `Agent-Sandbox`),
   adding `Agent-Origin` classification and collapsing security detail to the
   spec's `clean`/`blocked` enum so trailers stay grep-queryable. Releases
-  prior to 1.1 wrote legacy `Sheepdog-*` names; readers should accept both.
+  prior to 1.1 wrote legacy `Volf-*` names; readers should accept both.
 - **SPEC.md.** Open specification for Agent Provenance Trailers - plain git,
   neutral naming, CC0 license text, legacy compatibility mapping.
 - **CLA.md.** Contributor license agreement keeping future dual-licensing open.

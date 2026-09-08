@@ -1,4 +1,4 @@
-# Sheepdog GitHub App: Bot Behavior
+# Volf GitHub App: Bot Behavior
 
 > One agent, two authorities. `Consult` explains and files Issues. `Work` repairs and opens PRs. The reasoning engine is identical; only what it may touch differs.
 
@@ -7,19 +7,19 @@
 | Event | Behavior |
 |---|---|
 | `pull_request.opened/synchronize/reopened` | Full pipeline on the exact PR head SHA (fetched via `pull/N/head`); falls back to the tracked branch with an explicit `[checkout: tracked branch, PR head unfetchable]` marker — never silently claimed |
-| `issue_comment.created` with `@sheepdog` | Re-runs the pipeline on the PR |
-| `issue_comment.created` with `@sheepdog explain` | Posts read-only impact reasoning; modifies nothing |
+| `issue_comment.created` with `@volf` | Re-runs the pipeline on the PR |
+| `issue_comment.created` with `@volf explain` | Posts read-only impact reasoning; modifies nothing |
 | Other comments, bot comments, non-PR comments | Ignored |
 | `installation.*` / `installation_repositories.*` | Persist record → clone → Day-0 index → `INDEXED`, then `READY` once surfaced |
 | `external.change.*` | Watch-loop findings enter the shared pipeline |
 
 ## 2. PR comment anatomy
 
-Every PR comment opens with a summary (what changed, who it affects, evidence-grounded confidence — `high` only when verified green), followed by the trust body or findings, a mermaid `change → files → verification` diagram when findings exist, and a footer with the reviewed commit SHA plus a `@sheepdog` re-run note.
+Every PR comment opens with a summary (what changed, who it affects, evidence-grounded confidence — `high` only when verified green), followed by the trust body or findings, a mermaid `change → files → verification` diagram when findings exist, and a footer with the reviewed commit SHA plus a `@volf` re-run note.
 
 Findings carry severity badges: **P0** needs a human (unrepairable/quarantined), **P1** is repairable. Verified repairs keep `[VERIFIED]` semantics: real command, real exit 0, zero unintended files — otherwise the badge never appears.
 
-## 3. Bot configuration (`.sheepdog/config.yaml`)
+## 3. Bot configuration (`.volf/config.yaml`)
 
 ```yaml
 bot:
@@ -42,11 +42,11 @@ New installations start in `consult`: accurate Issues build trust in the reasoni
 
 ## 5. Bot identities
 
-One engine, two voices. **Shepherd** is the Consult voice — every Consult Issue is signed `— Shepherd, Consult bot`. **Shearer** is the Work voice — every verified Trust PR is signed `— Shearer, Work bot`. The names mark authority, never intelligence: the reasoning behind both is identical.
+One engine, three voices. **Howl** is the hunt voice — the watch loop and PR detection surfaces. **Shepherd** is the Consult voice — every Consult Issue is signed `— Shepherd, Consult bot`. **Shearer** is the Work voice — every verified Trust PR is signed `— Shearer, Work bot`. The names mark authority, never intelligence: the reasoning behind all three is identical.
 
 ## 6. Anatomy of a review
 
-When a pull request opens against a monitored repository, Sheepdog:
+When a pull request opens against a monitored repository, Volf:
 
 1. **Checks out the exact PR head** (falls back to the tracked branch with a disclosed marker if the fetch fails).
 2. **Scans for contract impact** — dependency drift mapped to callsites, zero model calls.
@@ -57,7 +57,7 @@ When a pull request opens against a monitored repository, Sheepdog:
 ## 7. Troubleshooting
 
 - **No comment appeared**: check the webhook deliveries tab for failures, confirm the secret matches `COMPART_WEBHOOK_SECRET`, verify the repo reached READY (`compart doctor`), and confirm the PR isn't filtered by `ignore_paths` or `exclude_labels`.
-- **Stale results**: comment `@sheepdog` on the PR to re-run against the current head.
+- **Stale results**: comment `@volf` on the PR to re-run against the current head.
 - **REFUSED / NOT RUN**: the bot found impact it cannot safely repair (often missing AI credentials or no test suite). Run `compart doctor` for the exact missing piece.
 
 ## 8. Deployment

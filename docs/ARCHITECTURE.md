@@ -1,6 +1,6 @@
-# Sheepdog Architecture: Maintenance Layer for Systems That Change
+# Volf Architecture: Maintenance Layer for Systems That Change
 
-> **Sheepdog keeps software working when the systems around it change.**
+> **Volf keeps software working when the systems around it change.**
 
 The wedge is vendor SDK/API migrations. The architecture is a general contract-maintenance
 loop: any machine-readable interface a repository depends on is a `ChangeSource`, and every
@@ -16,7 +16,7 @@ Stripe / OpenAI / AWS / MCP / APIs    Service A → API → Service B → SDK �
 │                                     │
 └──────────────┬──────────────────────┘
                ▼
-      SHEEPDOG CHANGE RADAR (detect_changes: read-only, zero-token)
+      VOLF CHANGE RADAR (detect_changes: read-only, zero-token)
                ▼
       ┌────────────────────────┴────────────────────────┐
       ↓                                                 ↓
@@ -55,15 +55,15 @@ Adoption ladder: start in Consult, graduate to Work when the reasoning earns it.
 
 | Type | Module | Role |
 |---|---|---|
-| `ChangeSource` | `sheepdog.change_source` | Names the depended-upon system: `kind` (`sdk`, `external_api`, `openapi`, `graphql`, `protobuf`, `webhook`, `mcp_server`, `internal_service`), `identity`, versions or `contract_hash` |
-| `Detection` | `sheepdog.change_source` | Read-only outcome: `NO_IMPACT`, `IMPACT_DIRECT`, `IMPACT_AI`, `IMPACT_QUARANTINE` (+ `ai_dependent` flag for checks needing reasoning) |
-| `Decision` | `sheepdog.intelligence` | Internal routing: `DIRECT / AI / HYBRID / QUARANTINE` + `confidence`, `estimated_tokens` (`0` = verified zero-token, `None` = unknown), `expected_blast_radius`, `verification_required`. Never a CLI flag |
-| `KBEntry` | `sheepdog.knowledge` | Repository memory at `.sheepdog/knowledge/{kind}/{identity}/{contract}.json` (legacy provider paths still read). Executable patterns + test recipes + evidence + quarantined `failed_patterns` |
+| `ChangeSource` | `volf.change_source` | Names the depended-upon system: `kind` (`sdk`, `external_api`, `openapi`, `graphql`, `protobuf`, `webhook`, `mcp_server`, `internal_service`), `identity`, versions or `contract_hash` |
+| `Detection` | `volf.change_source` | Read-only outcome: `NO_IMPACT`, `IMPACT_DIRECT`, `IMPACT_AI`, `IMPACT_QUARANTINE` (+ `ai_dependent` flag for checks needing reasoning) |
+| `Decision` | `volf.intelligence` | Internal routing: `DIRECT / AI / HYBRID / QUARANTINE` + `confidence`, `estimated_tokens` (`0` = verified zero-token, `None` = unknown), `expected_blast_radius`, `verification_required`. Never a CLI flag |
+| `KBEntry` | `volf.knowledge` | Repository memory at `.volf/knowledge/{kind}/{identity}/{contract}.json` (legacy provider paths still read). Executable patterns + test recipes + evidence + quarantined `failed_patterns` |
 
 ## 3. State on disk (per repository)
 
 ```text
-.sheepdog/
+.volf/
   graph.json            Full dependency graph (Rust AST engine, zero-token)
   index_state.json      commit SHA + file mtimes + discovery counts (incremental re-index)
   knowledge/            Verified repair patterns + test recipes (the flywheel)
@@ -71,7 +71,7 @@ Adoption ladder: start in Consult, graduate to Work when the reasoning earns it.
   snapshots/            Pre-execution BLAKE3 snapshots for rollback
 ```
 
-Per installation (host side, `~/.sheepdog/installations/{id}.json`, 0600):
+Per installation (host side, `~/.volf/installations/{id}.json`, 0600):
 repositories with `PENDING → INDEXED → READY`, provider association, index timestamps.
 
 ## 4. Trust rules (non-negotiable)
@@ -82,8 +82,8 @@ repositories with `PENDING → INDEXED → READY`, provider association, index t
 - Unverified AI guesses never enter trusted knowledge.
 - Webhook serving without a secret is a hard error.
 - Secrets never enter repo state, logs, or knowledge.
-- Sheepdog never cries wolf: no alert, badge, or pass is ever issued without the execution behind it.
+- Volf never cries wolf: no alert, badge, or pass is ever issued without the execution behind it.
 
 ## 5. Deliberately not built yet
 
-Connectors for OpenAPI/GraphQL/protobuf/MCP/internal-service kinds (types exist, resolution returns `None` → quarantine/AI), multi-repository fan-out orchestration, hosted background monitoring daemon, web dashboard beyond `sheepdog doctor`. Seams are defined; products wait for users.
+Connectors for OpenAPI/GraphQL/protobuf/MCP/internal-service kinds (types exist, resolution returns `None` → quarantine/AI), multi-repository fan-out orchestration, hosted background monitoring daemon, web dashboard beyond `volf doctor`. Seams are defined; products wait for users.

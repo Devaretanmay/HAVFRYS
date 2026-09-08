@@ -1,6 +1,6 @@
 """Tests for the Git-like change commands (M7).
 
-Covers `sheepdog diff` / `apply` / `undo` / `restore` and the fixed
+Covers `volf diff` / `apply` / `undo` / `restore` and the fixed
 SessionManager.rollback_session (which restores from a snapshot checkpoint
 instead of being a silent no-op).
 """
@@ -11,10 +11,10 @@ import time
 
 import pytest
 
-from sheepdog.cli.main import cmd_apply, cmd_diff, cmd_restore, cmd_undo
-from sheepdog.engine.execution import Execution, ExecutionKind, ExecutionManager, ExecutionStatus
-from sheepdog.engine.session import SessionManager, SessionStatus
-from sheepdog.sandbox.snapshot import SnapshotManager
+from volf.cli.main import cmd_apply, cmd_diff, cmd_restore, cmd_undo
+from volf.engine.execution import Execution, ExecutionKind, ExecutionManager, ExecutionStatus
+from volf.engine.session import SessionManager, SessionStatus
+from volf.sandbox.snapshot import SnapshotManager
 
 
 class _DiffArgs:
@@ -42,8 +42,8 @@ class _RestoreArgs:
 
 @pytest.fixture
 def ws(tmp_path, monkeypatch):
-    """A Sheepdog workspace; cwd is moved inside it."""
-    (tmp_path / ".sheepdog").mkdir()
+    """A Volf workspace; cwd is moved inside it."""
+    (tmp_path / ".volf").mkdir()
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -77,7 +77,7 @@ def test_diff_shows_change_sets(ws, capsys):
     cmd_diff(_DiffArgs())
 
     out = capsys.readouterr().out
-    assert "SHEEPDOG DIFF" in out
+    assert "VOLF DIFF" in out
     assert "exec_a" in out and "exec_b" in out
     assert "MODIFIED" in out and "src/a.py" in out
     assert "ADDED" in out and "src/b.py" in out
@@ -211,7 +211,7 @@ def test_undo_not_applied_exits(ws, capsys):
 def _session_with_checkpoint(ws, snap_dir=None):
     sm = SessionManager(workdir=str(ws))
     sess = sm.create_session(agent_name="TestAgent", task="rollback me")
-    snap_dir = snap_dir or os.path.join(str(ws), ".sheepdog", "snapshots", sess.session_id)
+    snap_dir = snap_dir or os.path.join(str(ws), ".volf", "snapshots", sess.session_id)
     SnapshotManager(workdir=str(ws), snapshot_dir=snap_dir).snapshot()
     sess.create_checkpoint("pre-execution", snapshot_manifest=snap_dir)
     sm.save_session(sess)

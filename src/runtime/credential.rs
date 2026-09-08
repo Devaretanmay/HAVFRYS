@@ -41,7 +41,7 @@ mod tests {
         RouteConfig {
             prefix: "/openai".to_string(),
             upstream: "https://api.openai.com".to_string(),
-            credential_source: "env:TEST_SHEEPDOG_KEY".to_string(),
+            credential_source: "env:TEST_VOLF_KEY".to_string(),
         }
     }
 
@@ -64,9 +64,9 @@ mod tests {
 
     #[test]
     fn resolves_env_credential() {
-        std::env::set_var("TEST_SHEEPDOG_KEY", "sk-test-123");
+        std::env::set_var("TEST_VOLF_KEY", "sk-test-123");
         let r = route();
         assert_eq!(r.resolve_credential(), "sk-test-123");
-        std::env::remove_var("TEST_SHEEPDOG_KEY");
+        std::env::remove_var("TEST_VOLF_KEY");
     }
 }

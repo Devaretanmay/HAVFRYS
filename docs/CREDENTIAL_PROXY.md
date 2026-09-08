@@ -1,6 +1,6 @@
 # Zero-Trust Credential Proxy & Secret Masking Guide
 
-Sheepdog includes a built-in Credential Proxy that allows AI agents to make outbound API requests without ever exposing raw API keys or secrets to agent code or LLM context windows.
+Volf includes a built-in Credential Proxy that allows AI agents to make outbound API requests without ever exposing raw API keys or secrets to agent code or LLM context windows.
 
 ---
 
@@ -8,14 +8,14 @@ Sheepdog includes a built-in Credential Proxy that allows AI agents to make outb
 
 Agent applications often need to issue HTTP calls to LLM providers (e.g. OpenAI, Anthropic, Hugging Face) or external microservices. Storing raw API keys in environment variables inside an untrusted agent environment risks prompt injection leaks or secret theft.
 
-The Sheepdog Credential Proxy operates as a local HTTP proxy server that intercepts requests matching predefined route patterns and injects authentication headers in memory before forwarding requests upstream.
+The Volf Credential Proxy operates as a local HTTP proxy server that intercepts requests matching predefined route patterns and injects authentication headers in memory before forwarding requests upstream.
 
 ---
 
 ## 2. Configuring Proxy Routes (`RouteConfig`)
 
 ```python
-from sheepdog.sandbox.proxy import CredentialProxy, RouteConfig
+from volf.sandbox.proxy import CredentialProxy, RouteConfig
 
 proxy = CredentialProxy(routes=[
     RouteConfig(

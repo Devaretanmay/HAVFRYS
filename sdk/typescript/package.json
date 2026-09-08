@@ -1,7 +1,7 @@
 {
-  "name": "@sheepdog/sdk",
+  "name": "@volf/sdk",
   "version": "1.0.4",
-  "description": "Sheepdog TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
+  "description": "Volf TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
@@ -17,21 +17,21 @@
     "prepack": "npm run build:target"
   },
   "napi": {
-    "name": "sheepdog-native",
+    "name": "volf-native",
     "triples": {
       "defaults": true
     },
-    "binaryName": "sheepdog-native"
+    "binaryName": "volf-native"
   },
   "optionalDependencies": {
-    "@sheepdog/sdk-darwin-arm64": "1.0.4",
-    "@sheepdog/sdk-darwin-x64": "1.0.4"
+    "@volf/sdk-darwin-arm64": "1.0.4",
+    "@volf/sdk-darwin-x64": "1.0.4"
   },
   "engines": {
     "node": ">= 16.0.0"
   },
   "keywords": [
-    "sheepdog",
+    "volf",
     "sandbox",
     "kernel",
     "isolation",
@@ -44,14 +44,14 @@
     "compartment"
   ],
   "license": "Apache-2.0",
-  "author": "Sheepdog Labs (Devaretanmay) <tanmaydevare@gmail.com>",
+  "author": "Volf Labs (Devaretanmay) <tanmaydevare@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Devaretanmay/Sheepdog.git"
+    "url": "https://github.com/Devaretanmay/Volf.git"
   },
-  "homepage": "https://github.com/Devaretanmay/Sheepdog#readme",
+  "homepage": "https://github.com/Devaretanmay/Volf#readme",
   "bugs": {
-    "url": "https://github.com/Devaretanmay/Sheepdog/issues"
+    "url": "https://github.com/Devaretanmay/Volf/issues"
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"

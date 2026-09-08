@@ -1,1 +1,0 @@
-"""Sheepdog CLI implementation."""

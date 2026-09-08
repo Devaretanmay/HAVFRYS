@@ -1,12 +1,12 @@
-# Copyright 2026 Sheepdog Authors
+# Copyright 2026 Volf Authors
 # SPDX-License-Identifier: Apache-2.0
 """Detection-vs-repair split: detect_changes classifies without patching."""
 
 import os
 import shutil
 
-from sheepdog.change_source import IMPACT_DIRECT
-from sheepdog.drift import detect_changes
+from volf.change_source import IMPACT_DIRECT
+from volf.drift import detect_changes
 
 
 def test_stripe_fixture_detects_direct_impact():
@@ -27,11 +27,11 @@ def test_check_writes_nothing_outside_sheepdog(tmp_path):
     shutil.copytree("trials/fixtures/taxonomy_stripe", dst)
     before = {}
     for dirpath, dirnames, filenames in os.walk(dst):
-        dirnames[:] = [d for d in dirnames if d not in {".sheepdog"}]
+        dirnames[:] = [d for d in dirnames if d not in {".volf"}]
         for fn in filenames:
             fp = os.path.join(dirpath, fn)
             before[fp] = open(fp, "rb").read()
-    from sheepdog.audit import run_audit
+    from volf.audit import run_audit
     run_audit(dst, output_format="json", write_graph=True)
     for fp, content in before.items():
         assert open(fp, "rb").read() == content

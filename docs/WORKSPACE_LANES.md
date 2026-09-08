@@ -1,9 +1,9 @@
-# Sheepdog Virtual Agent Lanes & Integration Architecture
+# Volf Virtual Agent Lanes & Integration Architecture
 
-Sheepdog introduces **Virtual Agent Lanes**-the developer workspace abstraction for AI agents.
+Volf introduces **Virtual Agent Lanes**-the developer workspace abstraction for AI agents.
 
 ```text
-SHEEPDOG WORKSPACE
+VOLF WORKSPACE
    │
    ├── Agent Sessions & Virtual Lanes
    │   ├── Lane: auth-fix  (Claude Code)  -> Changes: [src/auth.py]
@@ -11,9 +11,9 @@ SHEEPDOG WORKSPACE
    │   └── Lane: tests     (Codex)        -> Changes: [tests/test_auth.py]
    │
    ├── Integration Engine
-   │   ├── sheepdog integrate create auth-fix logging
-   │   ├── sheepdog integrate preview
-   │   └── sheepdog integrate apply
+   │   ├── volf integrate create auth-fix logging
+   │   ├── volf integrate preview
+   │   └── volf integrate apply
    │
    └── Kernel Execution Isolation
        ├── Landlock (Linux) / Seatbelt (macOS) Process Sandboxing
@@ -41,28 +41,28 @@ SHEEPDOG WORKSPACE
 ### 1. Running Concurrent Agent Lanes
 ```bash
 # Agent 1 (Claude Code) in 'auth-fix' lane
-sheepdog wrap --agent "Claude Code" --task "Fix authentication bug" --lane auth-fix -- claude
+volf wrap --agent "Claude Code" --task "Fix authentication bug" --lane auth-fix -- claude
 
 # Agent 2 (OpenCode) in 'logging' lane concurrently
-sheepdog wrap --agent "OpenCode" --task "Add structured logging" --lane logging -- opencode
+volf wrap --agent "OpenCode" --task "Add structured logging" --lane logging -- opencode
 ```
 
 ### 2. Inspecting Workspace Lanes
 ```bash
-sheepdog lanes
-sheepdog lane inspect auth-fix
+volf lanes
+volf lane inspect auth-fix
 ```
 
 ### 3. Combining & Integrating Lanes
 ```bash
 # Create integration candidate combining auth-fix and logging
-sheepdog integrate create auth-fix logging
+volf integrate create auth-fix logging
 
 # Preview candidate diffs and conflict status
-sheepdog integrate preview
+volf integrate preview
 
 # Apply cleanly to workspace
-sheepdog integrate apply
+volf integrate apply
 ```
 
 ---
@@ -73,25 +73,25 @@ Every governed execution records a **change set** (BLAKE3 file diffs attributed 
 
 ```bash
 # Review what agents changed (filter by execution, or --unapplied for pending work)
-sheepdog diff
-sheepdog diff --execution exec_1723635840000
-sheepdog diff --unapplied
+volf diff
+volf diff --execution exec_1723635840000
+volf diff --unapplied
 
 # Promote a change set into the workspace baseline.
 # Overlapping changes from other un-applied executions surface as conflicts;
 # --force applies anyway.
-sheepdog apply
-sheepdog apply --execution exec_1723635840000
+volf apply
+volf apply --execution exec_1723635840000
 
 # Reverse the last apply operation (or a specific one)
-sheepdog undo
-sheepdog undo --execution exec_1723635840000
+volf undo
+volf undo --execution exec_1723635840000
 
 # Restore the workspace from a session's pre-execution snapshot checkpoint
-sheepdog restore sess_1723635840000
+volf restore sess_1723635840000
 
 # Roll back a session (restores its snapshot and marks it ROLLED_BACK)
-sheepdog session rollback sess_1723635840000
+volf session rollback sess_1723635840000
 ```
 
 **Semantics:**

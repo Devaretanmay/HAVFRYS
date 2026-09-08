@@ -3,9 +3,9 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "sheepdog"
+name = "volf"
 version = "1.1.0"
-description = "Sheepdog: autonomous software maintenance for systems that change. Detect contract drift, repair, verify, and deliver PRs."
+description = "Volf: autonomous software maintenance for systems that change. Detect contract drift, repair, verify, and deliver PRs."
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 keywords = ["ai-agents", "developer-tools", "provenance", "audit", "sandbox", "isolation"]
@@ -27,20 +27,20 @@ dependencies = [
 ]
 
 [project.scripts]
-sheepdog = "sheepdog.cli.main:cli"
+volf = "volf.cli.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/Devaretanmay/Sheepdog"
-Repository = "https://github.com/Devaretanmay/Sheepdog"
-Issues = "https://github.com/Devaretanmay/Sheepdog/issues"
+Homepage = "https://github.com/Devaretanmay/Volf"
+Repository = "https://github.com/Devaretanmay/Volf"
+Issues = "https://github.com/Devaretanmay/Volf/issues"
 
 [tool.maturin]
 features = ["pyo3-binding"]
 python-source = "python"
-module-name = "sheepdog._core"
+module-name = "volf._core"
 
 [tool.pytest.ini_options]
-# Tests import the installed sheepdog package, not the source tree.
+# Tests import the installed volf package, not the source tree.
 # (The source tree intentionally contains no compiled _core.*.so; the native
 # module ships inside the wheel, so importing source here would silently lose
 # the sandbox/compression core.)

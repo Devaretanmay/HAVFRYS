@@ -1,6 +1,6 @@
-# Sheepdog Framework Integration Hooks
+# Volf Framework Integration Hooks
 
-Run AI agent code inside kernel-enforced compartments from any major agent framework. Sheepdog provides lightweight, drop-in tool wrappers for popular Python agent frameworks.
+Run AI agent code inside kernel-enforced compartments from any major agent framework. Volf provides lightweight, drop-in tool wrappers for popular Python agent frameworks.
 
 ---
 
@@ -9,7 +9,7 @@ Run AI agent code inside kernel-enforced compartments from any major agent frame
 Wrap any LangGraph node execution inside an isolated compartment:
 
 ```python
-from sheepdog.hooks import SheepdogGraphNode
+from volf.hooks import VolfGraphNode
 from langgraph.graph import StateGraph, START, END
 
 def data_processing_node(state, ctx):
@@ -18,7 +18,7 @@ def data_processing_node(state, ctx):
         f.write(state["value"].upper())
     return {"status": "complete"}
 
-node = SheepdogGraphNode(data_processing_node, workdir=".")
+node = VolfGraphNode(data_processing_node, workdir=".")
 
 builder = StateGraph(dict)
 builder.add_node("process", node.attach(builder))
@@ -33,10 +33,10 @@ builder.add_edge("process", END)
 Replace standard Python REPL tools with a kernel-enforced sandboxed version:
 
 ```python
-from sheepdog.hooks import SheepdogPythonREPLTool
+from volf.hooks import VolfPythonREPLTool
 
 # Create a sandboxed Python REPL tool
-tool = SheepdogPythonREPLTool(permissions=["fs_read", "fs_write"])
+tool = VolfPythonREPLTool(permissions=["fs_read", "fs_write"])
 
 # Execute agent-generated code safely
 result = tool.invoke("print(21 * 2)")
@@ -47,17 +47,17 @@ print(result)
 
 ## 3. CrewAI Integration
 
-Replace Docker-based code execution in CrewAI with native sub-millisecond Sheepdog sandboxing:
+Replace Docker-based code execution in CrewAI with native sub-millisecond Volf sandboxing:
 
 ```python
 from crewai import Agent
-from sheepdog.hooks import SheepdogCodeInterpreterTool
+from volf.hooks import VolfCodeInterpreterTool
 
-# Initialize agent with Sheepdog code interpreter
+# Initialize agent with Volf code interpreter
 agent = Agent(
     role="Data Analyst",
     goal="Analyze logs safely",
-    tools=[SheepdogCodeInterpreterTool(permissions=["fs_read"])]
+    tools=[VolfCodeInterpreterTool(permissions=["fs_read"])]
 )
 ```
 
@@ -68,11 +68,11 @@ agent = Agent(
 Sandbox multi-turn code block execution in AutoGen conversations:
 
 ```python
-from sheepdog.hooks import SheepdogCodeExecutor, CodeBlock
+from volf.hooks import VolfCodeExecutor, CodeBlock
 
-executor = SheepdogCodeExecutor(permissions=["fs_read", "fs_write", "fs_exec"])
+executor = VolfCodeExecutor(permissions=["fs_read", "fs_write", "fs_exec"])
 result = executor.execute_code_blocks([
-    CodeBlock("python", "print('Hello from AutoGen inside Sheepdog')")
+    CodeBlock("python", "print('Hello from AutoGen inside Volf')")
 ])
 
 print(f"Exit code: {result.exit_code}")
@@ -86,7 +86,7 @@ print(f"Output: {result.output}")
 Mount read-only datasets, enforce default-deny network rules to prevent data exfiltration, and track pandas file diffs:
 
 ```python
-from sheepdog.hooks import DataScienceSandboxHook
+from volf.hooks import DataScienceSandboxHook
 
 hook = DataScienceSandboxHook(workdir=".")
 hook.mount_dataset("sales_data.csv")

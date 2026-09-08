@@ -1,4 +1,4 @@
-from sheepdog.providers.registry import get_default_registry, ProviderSpec
+from volf.providers.registry import get_default_registry, ProviderSpec
 
 
 def test_default_provider_registry_contains_core_apis():

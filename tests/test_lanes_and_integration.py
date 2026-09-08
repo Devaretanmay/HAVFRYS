@@ -3,8 +3,8 @@
 import shutil
 import tempfile
 
-from sheepdog.engine.lane import LaneManager, LaneStatus
-from sheepdog.engine.integration import IntegrationEngine
+from volf.engine.lane import LaneManager, LaneStatus
+from volf.engine.integration import IntegrationEngine
 
 def test_lane_manager_lifecycle():
     tmp_dir = tempfile.mkdtemp()

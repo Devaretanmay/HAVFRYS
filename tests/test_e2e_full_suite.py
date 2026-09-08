@@ -1,4 +1,4 @@
-"""Full E2E test suite for compartment-centric Sheepdog."""
+"""Full E2E test suite for compartment-centric Volf."""
 
 import os
 import shutil
@@ -7,17 +7,17 @@ import tempfile
 import unittest
 import uuid
 
-from sheepdog import Sheepdog
-from sheepdog.compartments import Compartment, CompartmentConfig
-from sheepdog.sandbox.task_profile import classify
-from sheepdog.engine.tracer import Tracer
+from volf import Volf
+from volf.compartments import Compartment, CompartmentConfig
+from volf.sandbox.task_profile import classify
+from volf.engine.tracer import Tracer
 
 def _make_repo(path: str):
     os.makedirs(path, exist_ok=True)
     subprocess.run(["git", "init"], cwd=path, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@sheepdog.test"],
+    subprocess.run(["git", "config", "user.email", "test@volf.test"],
                    cwd=path, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Sheepdog Test"],
+    subprocess.run(["git", "config", "user.name", "Volf Test"],
                    cwd=path, capture_output=True)
     readme = os.path.join(path, "README.md")
     with open(readme, "w") as f:
@@ -50,7 +50,7 @@ class TestSingleCompartment(unittest.TestCase):
     """Test 1 - The simplest possible execution. Verify every lifecycle phase."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test1_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test1_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
 
     def tearDown(self):
@@ -58,7 +58,7 @@ class TestSingleCompartment(unittest.TestCase):
 
     def test_basic_lifecycle_executes(self):
         """Outer compartment, Compartment, Cleanup, Destroy."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         self.assertEqual(box._box.state, "created")
 
         box._box.enter(block_network=False, sandbox=False)
@@ -78,7 +78,7 @@ class TestSingleCompartment(unittest.TestCase):
 
     def test_single_compartment_runs(self):
         """A single compartment should run and return its result."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(_comp("greeter", {"message": "Hello, World!"}))
         result = box.run()
         self.assertEqual(result.status, "success")
@@ -88,7 +88,7 @@ class TestSingleCompartment(unittest.TestCase):
     def test_tracer_outputs_lifecycle(self):
         """Execution trace should record every phase."""
         tracer = Tracer("test_tracer", verbose=True)
-        box = Sheepdog(workdir=self.tmpdir, verbose=True)
+        box = Volf(workdir=self.tmpdir, verbose=True)
 
         tracer.emit("box.created", box_id=box.box_id)
         box._box.enter(block_network=False, sandbox=False)
@@ -107,7 +107,7 @@ class TestPolicyIsolation(unittest.TestCase):
     """Test 2 - Each compartment has its own permission set."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test2_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test2_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
 
     def tearDown(self):
@@ -115,7 +115,7 @@ class TestPolicyIsolation(unittest.TestCase):
 
     def test_different_permissions_per_compartment(self):
         """Two compartments in the same Box should have different policies."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(Compartment(
             name="reader",
             fn=lambda ctx: {"policy": ctx.config.permissions},
@@ -138,7 +138,7 @@ class TestPolicyIsolation(unittest.TestCase):
 
     def test_policy_applied_to_box_before_run(self):
         """Box.apply_policy should be called before each compartment runs."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         tracked = []
 
         def tracker_fn(ctx):
@@ -171,7 +171,7 @@ class TestMultiCompartmentPipeline(unittest.TestCase):
     """Test 3 - Compartments compose into pipelines via message passing."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test3_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test3_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
 
     def tearDown(self):
@@ -191,7 +191,7 @@ class TestMultiCompartmentPipeline(unittest.TestCase):
         def c(ctx):
             return {"step": "c_done", "received": ctx.messages[0].data if ctx.messages else None}
 
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(_stateful_comp("a", a))
         box.add(_stateful_comp("b", b))
         box.add(_stateful_comp("c", c))
@@ -213,7 +213,7 @@ class TestMultiCompartmentPipeline(unittest.TestCase):
                 return {"order": len(order)}
             return fn
 
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(_stateful_comp("alpha", tracker("alpha")))
         box.add(_stateful_comp("beta", tracker("beta")))
         box.add(_stateful_comp("gamma", tracker("gamma")))
@@ -225,7 +225,7 @@ class TestLongWorkflow(unittest.TestCase):
     """Test 4 - Box stability, insulation adaptation over time."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test4_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test4_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
 
     def tearDown(self):
@@ -234,7 +234,7 @@ class TestLongWorkflow(unittest.TestCase):
     def test_box_stable_over_multiple_runs(self):
         """Box should handle multiple sequential runs without degradation."""
         for i in range(5):
-            box = Sheepdog(workdir=self.tmpdir)
+            box = Volf(workdir=self.tmpdir)
             box._box.enter(block_network=False, sandbox=False)
             self.assertTrue(box._box.is_active)
             self.assertGreaterEqual(box._box.elapsed_s, 0)
@@ -245,7 +245,7 @@ class TestLongWorkflow(unittest.TestCase):
         """The box should load different profiles for different tasks."""
         profiles_seen = []
         for request in ["Refactor X", "Fix Y", "Explore Z"]:
-            box = Sheepdog(workdir=self.tmpdir)
+            box = Volf(workdir=self.tmpdir)
             box._box.enter(block_network=False, sandbox=False)
             box._box.insulate(request)
             profiles_seen.append(box._box._ctx.task_profile)
@@ -256,9 +256,9 @@ class TestLongWorkflow(unittest.TestCase):
         self.assertIn("research", profiles_seen)
 
     def test_multiple_runs_via_sheepdog(self):
-        """Using Sheepdog.run() multiple times with different compartments."""
+        """Using Volf.run() multiple times with different compartments."""
         for name in ["build", "test", "deploy"]:
-            box = Sheepdog(workdir=self.tmpdir)
+            box = Volf(workdir=self.tmpdir)
             box.add(_comp(name, {"task": name}))
             result = box.run()
             self.assertEqual(result.status, "success")
@@ -268,7 +268,7 @@ class TestFailureRecovery(unittest.TestCase):
     """Test 5 - Compartment errors, box health after failure, cleanup."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test5_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test5_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
 
     def tearDown(self):
@@ -276,13 +276,13 @@ class TestFailureRecovery(unittest.TestCase):
 
     def test_missing_compartment_raises(self):
         """Running without compartments should raise."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         with self.assertRaises(RuntimeError):
             box.run()
 
     def test_failing_compartment_does_not_break_box(self):
         """A compartment that raises should be caught, not crash the runtime."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(Compartment(
             name="failing",
             fn=lambda ctx: (_ for _ in ()).throw(ValueError("boom")),
@@ -294,7 +294,7 @@ class TestFailureRecovery(unittest.TestCase):
 
     def test_box_healthy_after_error(self):
         """Box must be properly destroyed even when a compartment fails."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(Compartment(
             name="crash",
             fn=lambda ctx: 1 / 0,
@@ -306,7 +306,7 @@ class TestFailureRecovery(unittest.TestCase):
 
     def test_cleanup_always_runs(self):
         """Cleanup (box.release + box.exit) must run even with mid-execution errors."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         try:
             box._box.enter(block_network=False, sandbox=False)
             box._box.insulate("test")
@@ -323,7 +323,7 @@ class TestNoAgentBehavior(unittest.TestCase):
     """Test 6 - The runtime works identically without any AI agent."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test6_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test6_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
 
     def tearDown(self):
@@ -331,7 +331,7 @@ class TestNoAgentBehavior(unittest.TestCase):
 
     def test_runtime_works_without_agent(self):
         """Without an agent, compartments just run their functions."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(_comp("analyze", {"findings": "no issues"}))
         result = box.run()
         self.assertEqual(result.status, "success")
@@ -342,33 +342,33 @@ class TestNoAgentBehavior(unittest.TestCase):
             box.add(_comp("step", {"value": 42}))
             return box.run()
 
-        a = build_result(Sheepdog(workdir=self.tmpdir))
-        b = build_result(Sheepdog(workdir=self.tmpdir))
+        a = build_result(Volf(workdir=self.tmpdir))
+        b = build_result(Volf(workdir=self.tmpdir))
 
         self.assertEqual(type(a), type(b))
         self.assertEqual(a.status, b.status)
 
 class TestParallelSessions(unittest.TestCase):
-    """Test 7 - Multiple independent Sheepdoges should coexist."""
+    """Test 7 - Multiple independent Volfes should coexist."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test7_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test7_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_two_boxes_are_independent(self):
-        """Two Sheepdog instances must have different IDs and directories."""
-        a = Sheepdog(workdir=self.tmpdir)
-        b = Sheepdog(workdir=self.tmpdir)
+        """Two Volf instances must have different IDs and directories."""
+        a = Volf(workdir=self.tmpdir)
+        b = Volf(workdir=self.tmpdir)
         self.assertNotEqual(a.box_id, b.box_id)
         self.assertNotEqual(a.box_dir, b.box_dir)
 
     def test_concurrent_boxes_dont_interfere(self):
         """Simultaneous boxes should maintain separate state."""
-        a = Sheepdog(workdir=self.tmpdir)
-        b = Sheepdog(workdir=self.tmpdir)
+        a = Volf(workdir=self.tmpdir)
+        b = Volf(workdir=self.tmpdir)
 
         a._box.enter(block_network=False, sandbox=False)
         b._box.enter(block_network=False, sandbox=False)
@@ -392,8 +392,8 @@ class TestParallelSessions(unittest.TestCase):
 
     def test_three_boxes_branch_like_structure(self):
         """Branching structure: Main, then sessions A, B, C."""
-        main = Sheepdog(workdir=self.tmpdir)
-        branches = [Sheepdog(workdir=self.tmpdir) for _ in range(3)]
+        main = Volf(workdir=self.tmpdir)
+        branches = [Volf(workdir=self.tmpdir) for _ in range(3)]
 
         ids = [b.box_id for b in branches]
         self.assertEqual(len(ids), len(set(ids)), "All branch IDs must be unique")
@@ -409,13 +409,13 @@ class TestParallelSessions(unittest.TestCase):
             self.assertEqual(bx._box.state, "destroyed")
 
 class TestSelfDogfooding(unittest.TestCase):
-    """Test 8 - Sheepdog can analyze and improve its own codebase."""
+    """Test 8 - Volf can analyze and improve its own codebase."""
 
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"sheepdog_test8_{uuid.uuid4().hex[:8]}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_test8_{uuid.uuid4().hex[:8]}")
         _make_repo(self.tmpdir)
         src = os.path.join(os.path.dirname(__file__), "..", "python",
-                           "sheepdog", "engine", "tracer.py")
+                           "volf", "engine", "tracer.py")
         dst = os.path.join(self.tmpdir, "tracer.py")
         if os.path.exists(src):
             shutil.copy2(src, dst)
@@ -431,7 +431,7 @@ class TestSelfDogfooding(unittest.TestCase):
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_can_analyze_own_codebase(self):
-        """Sheepdog should be able to analyze files in its workdir."""
+        """Volf should be able to analyze files in its workdir."""
         # Write a known file so the test doesn't depend on setUp file copies
         known_path = os.path.join(self.tmpdir, "sample.py")
         with open(known_path, "w") as f:
@@ -445,7 +445,7 @@ class TestSelfDogfooding(unittest.TestCase):
                 return {"analyzed": True, "lines": len(content.splitlines())}
             return {"analyzed": False}
 
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         box.add(Compartment(
             name="analyzer", fn=analysis,
             config=CompartmentConfig(permissions=["fs_read"]),
@@ -456,12 +456,12 @@ class TestSelfDogfooding(unittest.TestCase):
         self.assertEqual(result.output.get("analyzer", {}).get("lines"), 2)
 
     def test_can_use_runtime_programmatically(self):
-        """Sheepdog API should be usable in a programmatic loop."""
+        """Volf API should be usable in a programmatic loop."""
         improvements = []
         for i in range(3):
             def builder(i=i):
                 return {"iteration": i, "improvement": f"improvement_{i}"}
-            box = Sheepdog(workdir=self.tmpdir)
+            box = Volf(workdir=self.tmpdir)
             box.add(_comp(f"improve_{i}", builder()))
             result = box.run()
             if result.status == "success":
@@ -471,7 +471,7 @@ class TestSelfDogfooding(unittest.TestCase):
 
     def test_runtime_can_self_reflect(self):
         """Runtime should be able to report its own state and configuration."""
-        box = Sheepdog(workdir=self.tmpdir)
+        box = Volf(workdir=self.tmpdir)
         self.assertEqual(box.workdir, os.path.abspath(self.tmpdir))
         self.assertEqual(box._box.state, "created")
         box.add(_comp("reflect", {"workdir": box.workdir}))

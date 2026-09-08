@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock
 
-from sheepdog.ai_planner import AIPatchPlanner, parse_search_replace_blocks
-from sheepdog.llm import LLMClient, LLMResponse
+from volf.ai_planner import AIPatchPlanner, parse_search_replace_blocks
+from volf.llm import LLMClient, LLMResponse
 
 
 class TestAIPatchPlanner(unittest.TestCase):

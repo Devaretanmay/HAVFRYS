@@ -1,14 +1,14 @@
-# Sheepdog SDKs
+# Volf SDKs
 
 **One Rust core, two thin language wrappers.**
 
-Sheepdog implements kernel sandboxing, output compression, and the
+Volf implements kernel sandboxing, output compression, and the
 compartment runtime once in Rust. The Python and TypeScript SDKs expose the
 supported native bindings directly:
 
 ```
-sheepdog-core (Rust)
- |-- pyo3 module  (sheepdog._core)     -> Python SDK (published on PyPI)
+volf-core (Rust)
+ |-- pyo3 module  (volf._core)     -> Python SDK (published on PyPI)
  `-- napi crate   (sdk/typescript/native) -> TypeScript SDK (Node addon)
 ```
 
@@ -20,7 +20,7 @@ All SDKs require the Rust core built once (from the repository root):
 cargo build --release
 ```
 
-This produces `target/release/libsheepdog_core.dylib`/`.so`, and the
+This produces `target/release/libvolf_core.dylib`/`.so`, and the
 rlib used by the napi crate.
 
 ## TypeScript SDK: `sdk/typescript/`
@@ -31,37 +31,37 @@ packages have been built and uploaded at the same version:
 ```bash
 cd sdk/typescript
 npm install
-npm run build   # compiles the napi addon (sheepdog-native.<platform>-<arch>.node)
+npm run build   # compiles the napi addon (volf-native.<platform>-<arch>.node)
 npm test
 ```
 
 ```ts
-import * as sheepdog from '@sheepdog/sdk'
+import * as volf from '@volf/sdk'
 
-sheepdog.version()                    // "1.1.0"
-sheepdog.sandboxSupported()           // true
-const out = sheepdog.compress(text)
+volf.version()                    // "1.1.0"
+volf.sandboxSupported()           // true
+const out = volf.compress(text)
 
 // Compartment runtime handle (parse once, route many).
 // configs: { configs: [{ name: 'a', allow_outbound_to: ['b'] }, { name: 'b' }] }
 // edgesJSON: '[['a','b']]'
-const rt = new sheepdog.Runtime(configs, edgesJSON)
+const rt = new volf.Runtime(configs, edgesJSON)
 rt.canRoute('a', 'b')        // true
 rt.runOrder()                // ['a', 'b', ...]
 rt.names()                   // ['a', 'b', ...]
 ```
 
-## Python SDK: `python/sheepdog/`
+## Python SDK: `python/volf/`
 
-Published on PyPI as `sheepdog` : the same kernel-enforced isolation,
+Published on PyPI as `volf` : the same kernel-enforced isolation,
 compartments, snapshots, and credential proxy, callable from Python 3.10+:
 
 ```bash
-pip install sheepdog
+pip install volf
 ```
 
 ```python
-from sheepdog import Sheepdog
+from volf import Volf
 ```
 
 ## Notes

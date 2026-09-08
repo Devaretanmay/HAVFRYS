@@ -1,10 +1,10 @@
-# Copyright 2026 Sheepdog Authors
+# Copyright 2026 Volf Authors
 # SPDX-License-Identifier: Apache-2.0
 """ChangeSource abstraction: kinds constructible, provider adapter round-trips."""
 
 import pytest
 
-from sheepdog.change_source import (
+from volf.change_source import (
     ChangeSource, Detection, KINDS,
     NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE,
 )

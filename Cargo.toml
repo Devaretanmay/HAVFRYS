@@ -1,17 +1,17 @@
 [package]
-name = "sheepdog-core"
+name = "volf-core"
 version = "1.1.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Sheepdog - autonomous software maintenance for systems that change (Rust core)"
-repository = "https://github.com/Devaretanmay/Sheepdog"
-homepage = "https://github.com/Devaretanmay/Sheepdog"
-documentation = "https://docs.rs/crate/sheepdog-core"
+description = "Volf - autonomous software maintenance for systems that change (Rust core)"
+repository = "https://github.com/Devaretanmay/Volf"
+homepage = "https://github.com/Devaretanmay/Volf"
+documentation = "https://docs.rs/crate/volf-core"
 keywords = ["ai", "mcp", "compression", "execution", "sandbox"]
 categories = ["development-tools", "command-line-utilities"]
 
 [lib]
-name = "sheepdog_core"
+name = "volf_core"
 crate-type = ["cdylib", "lib"]
 
 [features]

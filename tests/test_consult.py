@@ -1,4 +1,4 @@
-# Copyright 2026 Sheepdog Authors
+# Copyright 2026 Volf Authors
 # SPDX-License-Identifier: Apache-2.0
 """Consult vs Work: one reasoning engine, mode controls authority only."""
 
@@ -7,10 +7,10 @@ import subprocess
 import sys
 from unittest.mock import MagicMock
 
-from sheepdog.ai_planner import AIPatchPlanner
-from sheepdog.config import BotConfig, PipelinePolicy, load_config
-from sheepdog.github.pr_render import render_consult_issue
-from sheepdog.llm import LLMClient, LLMResponse
+from volf.ai_planner import AIPatchPlanner
+from volf.config import BotConfig, PipelinePolicy, load_config
+from volf.github.pr_render import render_consult_issue
+from volf.llm import LLMClient, LLMResponse
 
 
 ASSESS_BODY = (
@@ -37,14 +37,14 @@ def _mock_assess_client():
 def _cli_env(tmp_path):
     env = dict(os.environ)
     env["PYTHONPATH"] = "python"
-    env["SHEEPDOG_CREDENTIALS_FILE"] = str(tmp_path / "creds.json")
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY"):
+    env["VOLF_CREDENTIALS_FILE"] = str(tmp_path / "creds.json")
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY"):
         env.pop(k, None)
     return env
 
 
 def test_assess_shares_context_with_repair(tmp_path):
-    from sheepdog.ai_planner import build_reasoning_context
+    from volf.ai_planner import build_reasoning_context
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     ctx = build_reasoning_context(dst, "stripe", "11.18.0", "13.0.0", "d")
@@ -93,17 +93,17 @@ def test_render_consult_issue_declares_no_modification():
 
 def test_consult_refuses_without_credentials(tmp_path):
     res = subprocess.run(
-        [sys.executable, "-m", "sheepdog.cli.main", "consult", "."],
+        [sys.executable, "-m", "volf.cli.main", "consult", "."],
         capture_output=True, text=True, env=_cli_env(tmp_path))
     assert res.returncode == 1
     assert "AUTHENTICATION REQUIRED" in res.stdout
 
 
 def test_consult_opens_issue_without_modifying(tmp_path, monkeypatch):
-    from sheepdog.cli import main as cli_main
+    from volf.cli import main as cli_main
     dst = str(tmp_path / "r")
     _seed_repo(dst)
-    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
+    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-testkey1234567890")
     monkeypatch.setattr(cli_main.AIPatchPlanner, "from_env",
                         classmethod(lambda cls, **k: AIPatchPlanner(client=_mock_assess_client())))
@@ -123,10 +123,10 @@ def test_consult_opens_issue_without_modifying(tmp_path, monkeypatch):
 
 
 def test_consult_requires_repo(tmp_path, monkeypatch):
-    from sheepdog.cli import main as cli_main
+    from volf.cli import main as cli_main
     dst = str(tmp_path / "r")
     _seed_repo(dst)
-    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
+    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-testkey1234567890")
     args = MagicMock()
     args.path = dst
@@ -153,11 +153,11 @@ def test_mode_defaults_to_work_and_parses_consult(tmp_path):
 
 
 def test_pipeline_consult_branch_reports_without_patching(tmp_path, monkeypatch):
-    from sheepdog.pipeline import MaintenancePipeline, TriggerContext
+    from volf.pipeline import MaintenancePipeline, TriggerContext
     dst = str(tmp_path / "r")
     _seed_repo(dst)
-    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY"):
+    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
     policy = PipelinePolicy(mode="consult")
     ctx = TriggerContext(event_id="e", event_type="external.change.stripe",
@@ -170,12 +170,12 @@ def test_pipeline_consult_branch_reports_without_patching(tmp_path, monkeypatch)
 
 
 def test_pipeline_consult_assesses_with_mock_planner(tmp_path, monkeypatch):
-    from sheepdog.pipeline import MaintenancePipeline, TriggerContext
+    from volf.pipeline import MaintenancePipeline, TriggerContext
     dst = str(tmp_path / "r")
     _seed_repo(dst)
-    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
+    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-testkey1234567890")
-    import sheepdog.pipeline as pipe_mod
+    import volf.pipeline as pipe_mod
     monkeypatch.setattr(pipe_mod.AIPatchPlanner, "from_env",
                         classmethod(lambda cls, **k: AIPatchPlanner(client=_mock_assess_client())))
     policy = PipelinePolicy(mode="consult")

@@ -1,4 +1,4 @@
-"""Tests for `sheepdog exec --compartment X <agent>` (M4).
+"""Tests for `volf exec --compartment X <agent>` (M4).
 
 Covers compartment resolution (explicit override > agent default > default),
 Execution recording for both the PROCESS and INTERACTIVE paths, and the
@@ -13,9 +13,9 @@ import textwrap
 
 import pytest
 
-from sheepdog.cli.main import _launch_agent, _resolve_compartment, cmd_exec
-from sheepdog.config import load_config
-from sheepdog.hooks.base import ExecutionResult
+from volf.cli.main import _launch_agent, _resolve_compartment, cmd_exec
+from volf.config import load_config
+from volf.hooks.base import ExecutionResult
 
 REPO_PYTHON_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "python"
@@ -46,9 +46,9 @@ class _Args:
 
 @pytest.fixture
 def workspace(tmp_path):
-    """A Sheepdog workspace with default/research/coding compartments."""
-    (tmp_path / ".sheepdog").mkdir()
-    (tmp_path / ".sheepdog" / "config.yaml").write_text(CONFIG_YAML, encoding="utf-8")
+    """A Volf workspace with default/research/coding compartments."""
+    (tmp_path / ".volf").mkdir()
+    (tmp_path / ".volf" / "config.yaml").write_text(CONFIG_YAML, encoding="utf-8")
     return tmp_path
 
 
@@ -61,7 +61,7 @@ def _write_executable(path: str, content: str) -> str:
 
 
 def _load_executions(workspace) -> list[dict]:
-    exec_dir = os.path.join(str(workspace), ".sheepdog", "executions")
+    exec_dir = os.path.join(str(workspace), ".volf", "executions")
     records = []
     if os.path.isdir(exec_dir):
         for fname in sorted(os.listdir(exec_dir)):
@@ -74,18 +74,18 @@ def _load_executions(workspace) -> list[dict]:
 
 
 def test_resolve_compartment_explicit_override_wins(workspace):
-    cfg = load_config(os.path.join(str(workspace), ".sheepdog", "config.yaml"))
+    cfg = load_config(os.path.join(str(workspace), ".volf", "config.yaml"))
     assert _resolve_compartment(cfg, "claude", "research").name == "research"
 
 
 def test_resolve_compartment_agent_default(workspace):
-    cfg = load_config(os.path.join(str(workspace), ".sheepdog", "config.yaml"))
+    cfg = load_config(os.path.join(str(workspace), ".volf", "config.yaml"))
     assert _resolve_compartment(cfg, "claude", None).name == "coding"
     assert _resolve_compartment(cfg, "unknown-agent", None).name == "default"
 
 
 def test_resolve_compartment_unknown_override_exits(workspace, capsys):
-    cfg = load_config(os.path.join(str(workspace), ".sheepdog", "config.yaml"))
+    cfg = load_config(os.path.join(str(workspace), ".volf", "config.yaml"))
     with pytest.raises(SystemExit) as exc:
         _resolve_compartment(cfg, "claude", "nope")
     assert exc.value.code == 1
@@ -112,7 +112,7 @@ class _FakeRunner:
 @pytest.fixture
 def fake_runner(monkeypatch):
     _FakeRunner.instances = []
-    monkeypatch.setattr("sheepdog.cli.main.SandboxRunner", _FakeRunner)
+    monkeypatch.setattr("volf.cli.main.SandboxRunner", _FakeRunner)
     return _FakeRunner
 
 
@@ -155,7 +155,7 @@ def test_cmd_exec_process_sets_execution_marker_env(workspace, fake_runner, monk
 
     env = _FakeRunner.instances[0].called_with["env"]
     exec_id = _load_executions(workspace)[0]["execution_id"]
-    assert env["SHEEPDOG_EXECUTION_ID"] == exec_id
+    assert env["VOLF_EXECUTION_ID"] == exec_id
 
 
 def test_cmd_exec_unknown_compartment_exits(workspace, fake_runner, monkeypatch, capsys):
@@ -181,14 +181,14 @@ def test_launch_agent_records_execution_and_session(workspace, monkeypatch):
     """Launching an agent creates an INTERACTIVE Execution + Session."""
     realbin = workspace / "realbin"
     _write_executable(
-        str(realbin / "sheepdog_test_agent"),
+        str(realbin / "volf_test_agent"),
         "#!/usr/bin/env bash\nexec /bin/echo \"$@\"\n",
     )
     monkeypatch.setenv("PATH", f"{realbin}:{os.environ.get('PATH', '')}")
     monkeypatch.chdir(workspace)
 
     returncode = _launch_agent(
-        "sheepdog_test_agent", str(workspace), user_argv=["hello-exec"]
+        "volf_test_agent", str(workspace), user_argv=["hello-exec"]
     )
     assert returncode == 0
 
@@ -196,16 +196,16 @@ def test_launch_agent_records_execution_and_session(workspace, monkeypatch):
     assert len(records) == 1
     rec = records[0]
     assert rec["kind"] == "INTERACTIVE"
-    assert rec["command"] == ["sheepdog_test_agent", "hello-exec"]
+    assert rec["command"] == ["volf_test_agent", "hello-exec"]
     assert rec["compartment_id"] == "default"
     assert rec["returncode"] == 0
     assert rec["status"] == "COMPLETED"
 
-    session_dir = workspace / ".sheepdog" / "sessions"
+    session_dir = workspace / ".volf" / "sessions"
     sessions = list(session_dir.glob("*.json"))
     assert len(sessions) == 1
     session = json.loads(sessions[0].read_text(encoding="utf-8"))
-    assert session["agent"] == "sheepdog_test_agent"
+    assert session["agent"] == "volf_test_agent"
     assert session["status"] == "COMPLETED"
 
 
@@ -214,14 +214,14 @@ def test_launch_agent_respects_compartment_override(workspace, monkeypatch):
     """Two launches of the same agent can carry different policies."""
     realbin = workspace / "realbin"
     _write_executable(
-        str(realbin / "sheepdog_test_agent"),
+        str(realbin / "volf_test_agent"),
         "#!/usr/bin/env bash\nexec /bin/echo \"$@\"\n",
     )
     monkeypatch.setenv("PATH", f"{realbin}:{os.environ.get('PATH', '')}")
     monkeypatch.chdir(workspace)
 
-    _launch_agent("sheepdog_test_agent", str(workspace), user_argv=["a"], compartment_name="default")
-    _launch_agent("sheepdog_test_agent", str(workspace), user_argv=["b"], compartment_name="research")
+    _launch_agent("volf_test_agent", str(workspace), user_argv=["a"], compartment_name="default")
+    _launch_agent("volf_test_agent", str(workspace), user_argv=["b"], compartment_name="research")
 
     records = _load_executions(workspace)
     assert len(records) == 2
@@ -234,7 +234,7 @@ def test_launch_agent_respects_compartment_override(workspace, monkeypatch):
 def test_launch_agent_missing_binary_exits_127(workspace, monkeypatch):
     monkeypatch.chdir(workspace)
     with pytest.raises(SystemExit) as exc:
-        _launch_agent("sheepdog_no_such_agent_xyz", str(workspace))
+        _launch_agent("volf_no_such_agent_xyz", str(workspace))
     assert exc.value.code == 127
     assert _load_executions(workspace) == []
 
@@ -243,10 +243,10 @@ def test_launch_agent_missing_binary_exits_127(workspace, monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")
 def test_cli_exec_end_to_end(workspace):
-    """`sheepdog exec --compartment research -- echo hi` records an Execution."""
+    """`volf exec --compartment research -- echo hi` records an Execution."""
     result = subprocess.run(
         [
-            sys.executable, "-m", "sheepdog.cli.main",
+            sys.executable, "-m", "volf.cli.main",
             "exec", "--compartment", "research", "--", "echo", "hello-exec",
         ],
         cwd=str(workspace),

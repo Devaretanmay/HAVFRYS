@@ -2,7 +2,7 @@
 
 Version: 0.1 (draft)
 Status: open for comment
-Maintainer: Sheepdog Labs
+Maintainer: Volf Labs
 
 ## Why this exists
 
@@ -90,17 +90,18 @@ git log --grep "Agent-Sandbox: none"
 
 ## Compatibility
 
-Sheepdog v1.x emits legacy `Sheepdog-*` trailers (`Sheepdog-Execution`,
-`Sheepdog-Agent`, `Sheepdog-Compartment`, `Sheepdog-Security`). These map 1:1 onto
-the `Agent-*` fields above (earlier Compart v1.x releases emitted the same
-fields under `Compart-*` names; readers should accept all three):
+Volf v1.x emits legacy `Volf-*` trailers (`Volf-Execution`,
+`Volf-Agent`, `Volf-Compartment`, `Volf-Security`). These map 1:1 onto
+the `Agent-*` fields above (earlier Sheepdog v1.x releases emitted the same
+fields under `Sheepdog-*` names, and Compart v1.x under `Compart-*`;
+readers should accept all variants):
 
 | Legacy | Spec |
 | :--- | :--- |
-| `Sheepdog-Agent` | `Agent-Agent` |
-| `Sheepdog-Execution` | `Agent-Execution` |
-| `Compartment` → `Sheepdog-Compartment` | `Agent-Compartment` |
-| `Sheepdog-Security` | `Agent-Sandbox` |
+| `Volf-Agent` | `Agent-Agent` |
+| `Volf-Execution` | `Agent-Execution` |
+| `Compartment` → `Volf-Compartment` | `Agent-Compartment` |
+| `Volf-Security` | `Agent-Sandbox` |
 
 Writers SHOULD emit spec names going forward. Readers SHOULD accept both.
 
@@ -122,7 +123,7 @@ build an agent harness and start emitting these, open a PR against this file's
 
 ### Implementations
 
-- [Sheepdog](https://github.com/Devaretanmay/Sheepdog) - CLI + Python SDK, emits trailers automatically via `sheepdog commit`
+- [Volf](https://github.com/Devaretanmay/Volf) - CLI + Python SDK, emits trailers automatically via `volf commit`
 
 ## License
 

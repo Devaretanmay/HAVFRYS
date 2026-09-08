@@ -15,10 +15,10 @@ import tempfile
 import textwrap
 import pytest
 
-from sheepdog.cli.main import _topo_sort
-from sheepdog.config import load_config
-from sheepdog.engine.execution import ExecutionKind, ExecutionManager
-from sheepdog.engine.pty_supervisor import PtySupervisor
+from volf.cli.main import _topo_sort
+from volf.config import load_config
+from volf.engine.execution import ExecutionKind, ExecutionManager
+from volf.engine.pty_supervisor import PtySupervisor
 
 
 def test_config_null_compartments_section():
@@ -119,21 +119,21 @@ def test_snapshot_dir_persists():
     try:
         mgr = ExecutionManager(workdir=tmp)
         ex = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"])
-        ex.snapshot_dir = "/tmp/sheepdog_test_snap"
+        ex.snapshot_dir = "/tmp/volf_test_snap"
         mgr.save(ex)
         loaded = mgr.get(ex.execution_id)
         assert loaded is not None
-        assert loaded.snapshot_dir == "/tmp/sheepdog_test_snap"
+        assert loaded.snapshot_dir == "/tmp/volf_test_snap"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
 def test_status_started_at_none_safe(capsys):
     """Duration calculation in cmd_status must not crash when started_at is None."""
-    from sheepdog.cli.main import cmd_status
+    from volf.cli.main import cmd_status
     import argparse
     from unittest.mock import patch
-    from sheepdog.engine.session import SessionStatus, AgentSession
+    from volf.engine.session import SessionStatus, AgentSession
 
     args = argparse.Namespace()
     
@@ -147,10 +147,10 @@ def test_status_started_at_none_safe(capsys):
     mock_session.started_at = None
     mock_session.finished_at = 1000.0
 
-    with patch("sheepdog.cli.main.find_workspace_root", return_value="/tmp/test_ws"), \
-         patch("sheepdog.cli.main.ExecutionManager"), \
-         patch("sheepdog.cli.main.LaneManager"), \
-         patch("sheepdog.cli.main.SessionManager") as mock_sess_mgr:
+    with patch("volf.cli.main.find_workspace_root", return_value="/tmp/test_ws"), \
+         patch("volf.cli.main.ExecutionManager"), \
+         patch("volf.cli.main.LaneManager"), \
+         patch("volf.cli.main.SessionManager") as mock_sess_mgr:
         
         mock_sess_mgr.return_value.list_sessions.return_value = [mock_session]
         

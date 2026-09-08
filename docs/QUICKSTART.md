@@ -1,17 +1,17 @@
-# Sheepdog Quickstart Guide
+# Volf Quickstart Guide
 
-Get up and running with Sheepdog in under 2 minutes.
+Get up and running with Volf in under 2 minutes.
 
-> **“Sheepdog understands the changes the outside world makes to software — and repairs them.”**
+> **“Volf understands the changes the outside world makes to software — and repairs them.”**
 
 ---
 
 ## 1. Installation
 
-Install Sheepdog via PyPI:
+Install Volf via PyPI:
 
 ```bash
-pip install --upgrade sheepdog
+pip install --upgrade volf
 ```
 
 ---
@@ -21,9 +21,9 @@ pip install --upgrade sheepdog
 ```bash
 cd my-project
 
-sheepdog auth              # Connect AI provider — only needed when AI repair is required
-sheepdog doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Tests, Monitoring
-sheepdog index .           # Zero-token static index of contracts & callsites
+volf auth              # Connect AI provider — only needed when AI repair is required
+volf doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Tests, Monitoring
+volf index .           # Zero-token static index of contracts & callsites
 ```
 
 ---
@@ -34,13 +34,13 @@ Immediately scan your codebase for breaking upstream changes, deprecated callsit
 
 ```bash
 # Run terminal risk register:
-sheepdog check .
+volf check .
 
 # Export as GitHub Issue markdown:
-sheepdog check . --format=github-issue
+volf check . --format=github-issue
 
 # Inspect the External-Change Dependency Graph:
-sheepdog graph .
+volf graph .
 ```
 
 ---
@@ -51,8 +51,8 @@ New teams start in Consult: same AI reasoning, zero code changes, findings filed
 as a GitHub Issue. Graduate to Work when the reasoning earns it.
 
 ```bash
-sheepdog consult . --repo owner/repo   # Assess only, files an Issue
-sheepdog fix .                         # Repair, verify, report
+volf consult . --repo owner/repo   # Assess only, files an Issue
+volf fix .                         # Repair, verify, report
 ```
 
 See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
@@ -60,16 +60,16 @@ See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
 ## 5. Autonomous Continuous Maintenance
 
 Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS).
-Sheepdog's AI reasons about the change against your repository and repairs with deterministic tools —
+Volf's AI reasons about the change against your repository and repairs with deterministic tools —
 there is no engine flag to choose. Unsafe repairs refuse loudly with zero files touched:
 
 ```bash
 # Auto-detect provider and repair:
-sheepdog fix .
+volf fix .
 
 # Targeted migration and open PR:
-sheepdog fix . --provider stripe
-sheepdog fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
+volf fix . --provider stripe
+volf fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
 ```
 
 ---
@@ -80,12 +80,12 @@ Run terminal coding agents inside a kernel-enforced sandbox with full native TUI
 
 ```bash
 # Launch Claude Code, OpenCode, Codex, Cursor, or Aider directly:
-sheepdog claude
+volf claude
 
 # When the agent finishes:
-sheepdog diff    # Review what the agent changed
-sheepdog undo    # Instantly restore files if the agent made a mistake
-sheepdog commit  # Commit to Git with verified provenance trailers
+volf diff    # Review what the agent changed
+volf undo    # Instantly restore files if the agent made a mistake
+volf commit  # Commit to Git with verified provenance trailers
 ```
 
 ---

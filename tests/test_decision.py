@@ -1,17 +1,17 @@
-# Copyright 2026 Sheepdog Authors
+# Copyright 2026 Volf Authors
 # SPDX-License-Identifier: Apache-2.0
 """Decision engine: automatic strategy selection, hidden from users (no CLI flag)."""
 
 import subprocess
 import sys
 
-from sheepdog.change_source import ChangeSource
-from sheepdog.intelligence import SheepdogIntelligence, Decision
-from sheepdog.providers.registry import find_migration_for
+from volf.change_source import ChangeSource
+from volf.intelligence import VolfIntelligence, Decision
+from volf.providers.registry import find_migration_for
 
 
 def test_direct_for_known_sdk_rewrite():
-    d = SheepdogIntelligence().decide("/tmp", "stripe", "11.18.0", "13.0.0", has_rewrites=True)
+    d = VolfIntelligence().decide("/tmp", "stripe", "11.18.0", "13.0.0", has_rewrites=True)
     assert d.strategy == "DIRECT"
     assert d.estimated_tokens == 0
     assert d.confidence > 0.9
@@ -19,17 +19,17 @@ def test_direct_for_known_sdk_rewrite():
 
 
 def test_quarantine_without_creds_or_rewrites(tmp_path, monkeypatch):
-    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "none.json"))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY"):
+    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
-    d = SheepdogIntelligence().decide(str(tmp_path), "twilio", "1.0", "2.0", has_rewrites=False)
+    d = VolfIntelligence().decide(str(tmp_path), "twilio", "1.0", "2.0", has_rewrites=False)
     assert d.strategy == "QUARANTINE"
     assert d.confidence == 0.0
 
 
 def test_no_direct_or_ai_cli_flag():
     res = subprocess.run(
-        [sys.executable, "-m", "sheepdog.cli.main", "fix", "--help"],
+        [sys.executable, "-m", "volf.cli.main", "fix", "--help"],
         capture_output=True, text=True, env={"PYTHONPATH": "python", "PATH": "/usr/bin:/bin"},
     )
     assert "--direct" not in res.stdout
@@ -47,10 +47,10 @@ def test_find_migration_for_future_kinds_returns_none():
 
 
 def test_decide_for_source_future_kind_quarantines_without_creds(tmp_path, monkeypatch):
-    monkeypatch.setenv("SHEEPDOG_CREDENTIALS_FILE", str(tmp_path / "none.json"))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "SHEEPDOG_LLM_KEY"):
+    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
-    d = SheepdogIntelligence().decide_for_source(
+    d = VolfIntelligence().decide_for_source(
         str(tmp_path), ChangeSource(kind="mcp_server", identity="internal-tools"))
     assert d.strategy == "QUARANTINE"
     assert "mcp_server" in d.reason

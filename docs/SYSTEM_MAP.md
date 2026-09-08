@@ -1,4 +1,4 @@
-# Sheepdog System Map: Everything We Have
+# Volf System Map: Everything We Have
 
 > One page that shows the whole machine. Code is the authority; this map tracks it.
 
@@ -10,7 +10,7 @@ flowchart LR
     B --> C["Connect AI provider"]
     C --> D["Auto-index"]
     D --> E["READY"]
-    E --> F["Sheepdog watches"]
+    E --> F["Volf watches"]
     F --> G["Change detected"]
     G --> H["Repair"]
     H --> I["Verify"]
@@ -49,7 +49,7 @@ flowchart TD
     subgraph CORE["Core engine"]
         CS["change_source.py<br/>ChangeSource · Detection"]
         DRIFT["drift.py<br/>detect_drift · detect_changes"]
-        INTEL["intelligence.py<br/>SheepdogIntelligence · Decision"]
+        INTEL["intelligence.py<br/>VolfIntelligence · Decision"]
         REG["providers/registry.py<br/>8 providers · rewrite migrations"]
         AST["Rust ast · graph · autopatch<br/>callsites · aliases · rewrites"]
         PLAN["maintenance.py · pipeline.py<br/>run_maintenance_cycle · MaintenancePipeline"]
@@ -62,7 +62,7 @@ flowchart TD
         KB["knowledge.py<br/>namespaced flywheel · failure quarantine"]
     end
     subgraph GH["GitHub surface"]
-        BOT["pr_bot.py<br/>PR · @sheepdog comments · install handlers"]
+        BOT["pr_bot.py<br/>PR · @volf comments · install handlers"]
         PROV["provisioning.py<br/>clone/pull cache · exact PR heads"]
         INST["installations.py<br/>PENDING→INDEXED→READY records"]
         WATCH["watch.py<br/>poll READY repos · fire on new drift"]
@@ -73,14 +73,14 @@ flowchart TD
 ## 4. State on disk
 
 ```text
-<repo>/.sheepdog/
+<repo>/.volf/
   graph.json            dependency graph (Rust AST, zero-token)
   index_state.json      commit SHA + mtimes (incremental re-index)
   knowledge/            verified patterns (sdk/stripe/11.18.0__13.0.0.json…)
   history.json          auditable migration ledger
   snapshots/            pre-execution BLAKE3 rollback
 
-~/.sheepdog/
+~/.volf/
   credentials.json            global BYOK (0600)
   installations/{id}.json     repos + READY states (0600)
   installations/{id}/{repo}   scoped BYOK credentials (0600)
