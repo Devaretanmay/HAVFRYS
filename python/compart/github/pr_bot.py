@@ -14,16 +14,22 @@ MaintenancePipeline.
 
 from __future__ import annotations
 
+import fnmatch
 import logging
 import os
 import subprocess
 from typing import Any, Callable, Dict, List, Optional
 
+from compart.ai_planner import AIPatchPlanner, build_reasoning_context
+from compart.credentials import has_valid_credentials
 from compart.github.client import GitHubAppClient
+from compart.github.pr_render import render_consult_issue
+from compart.intelligence import CompartIntelligence, resolve_migration
 from compart.pipeline import (
     MaintenancePipeline,
     PipelinePolicy,
     TriggerContext,
+    analyze_trigger_context,
 )
 from compart.audit import run_audit
 from compart.github.installations import (
@@ -76,6 +82,17 @@ def handle_pull_request_event(
         return {"success": False, "error": "Missing PR head info"}
 
     changed_files = _extract_changed_files(payload)
+    pr_labels = [str(lb.get("name", "")) for lb in (ppr.get("labels") or []) if isinstance(lb, dict)]
+    excluded = [lb for lb in pr_labels if lb.lower() in {e.lower() for e in (policy.exclude_labels or [])}]
+    if excluded:
+        return {"success": True, "event_type": full_event, "repository": repo,
+                "pr_number": number, "skipped": True,
+                "reason": f"excluded label(s): {', '.join(excluded)}"}
+    if changed_files and policy.ignore_paths and all(
+            any(fnmatch.fnmatch(f, pat) for pat in policy.ignore_paths) for f in changed_files):
+        return {"success": True, "event_type": full_event, "repository": repo,
+                "pr_number": number, "skipped": True,
+                "reason": "all changed files match ignore_paths"}
     ctx = TriggerContext.from_pull_request_event(payload, workdir=workdir, changed_files=changed_files)
     ctx.metadata["exact_head"] = exact_head
 
@@ -329,6 +346,102 @@ def handle_installation_event(
     }
 
 
+def handle_issue_comment_event(
+    payload: Dict[str, Any],
+    event_type: str,
+    client: GitHubAppClient,
+    policy: Optional[PipelinePolicy] = None,
+    workdir: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Handle issue_comment.* events mentioning @compart.
+
+    `@compart` alone re-runs the pipeline on the PR; `@compart explain`
+    posts impact reasoning without touching code. Anything else is ignored.
+    """
+    policy = policy or PipelinePolicy()
+    repo = payload.get("repository", {}).get("full_name", "")
+    comment = payload.get("comment", {}) or {}
+    body = str(comment.get("body", "") or "")
+    sender = ((payload.get("sender") or {}).get("type", "") or "").lower()
+
+    issue = payload.get("issue", {}) or {}
+    number = issue.get("number")
+    if not repo or not number or not body or "@compart" not in body.lower():
+        return {"success": True, "event": event_type, "handled": False}
+    if sender == "bot" or not issue.get("pull_request"):
+        return {"success": True, "event": event_type, "handled": False,
+                "note": "not a human comment on a PR"}
+
+    try:
+        pr = client.get_pull_request(repo, number)
+    except Exception as e:
+        return {"success": False, "error": f"could not fetch PR #{number}: {e}"}
+
+    head = pr.get("head", {}) or {}
+    payload_pr = {
+        "action": "synchronize",
+        "pull_request": {
+            "number": number,
+            "title": pr.get("title", ""),
+            "body": pr.get("body", ""),
+            "head": {"ref": (head.get("ref") or ""), "sha": (head.get("sha") or "")},
+            "base": {"ref": ((pr.get("base") or {}).get("ref") or "")},
+        },
+        "repository": {"full_name": repo},
+    }
+
+    if "@compart explain" in body.lower():
+        if not has_valid_credentials():
+            return {"success": False, "error": "explain needs AI reasoning: no provider configured"}
+        files = [f.get("filename", "") for f in client.get_pull_request_files(repo, number)
+                 if f.get("filename")]
+        ctx = TriggerContext.from_pull_request_event(
+            payload_pr, workdir=workdir, changed_files=files)
+        analysis = analyze_trigger_context(ctx)
+        planner = AIPatchPlanner.from_env()
+        if planner is None:
+            return {"success": False, "error": "explain needs AI reasoning: no provider configured"}
+        intel = CompartIntelligence()
+        items = []
+        for finding in analysis.findings:
+            _from, _to, migration = resolve_migration(
+                finding.provider_name, finding.current_version, finding.target_version)
+            decision = intel.decide(ctx.workdir, finding.provider_name, _from, _to,
+                                    has_rewrites=bool(migration and migration.rewrites))
+            context = build_reasoning_context(
+                ctx.workdir, finding.provider_name, _from, _to,
+                finding.breaking_change, finding.migration_guide_url)
+            assessment = planner.assess(
+                repo_dir=ctx.workdir, provider_name=finding.provider_name,
+                from_version=_from, to_version=_to,
+                migration_details=finding.breaking_change,
+                changelog_url=finding.migration_guide_url,
+                affected_files=finding.affected_files, context=context)
+            items.append({
+                "display": finding.display_name,
+                "version_from": _from, "version_to": _to,
+                "breaking_change": finding.breaking_change,
+                "guide_url": finding.migration_guide_url,
+                "affected_files": finding.affected_files,
+                "assessment_body": assessment.get("body", ""),
+                "auto_repairable": decision.strategy in ("DIRECT", "AI"),
+                "confidence": assessment.get("confidence", "unknown"),
+            })
+        reply = render_consult_issue(items) if items else (
+            "Compart checked this PR's external API touchpoints. "
+            "No contract impact to explain. No changes made.")
+        try:
+            client.post_pr_comment(repo, number, reply)
+        except Exception as e:
+            _logger.warning("failed to post explain reply: %s", e)
+        return {"success": True, "event_type": "issue_comment.explain",
+                "repository": repo, "pr_number": number, "comment_posted": True}
+
+    pr_payload = dict(payload, **{"action": "synchronize", "pull_request": payload_pr["pull_request"]})
+    return handle_pull_request_event(pr_payload, "pull_request.synchronize",
+                                     client, policy, workdir=workdir)
+
+
 def make_pr_bot_handler(
     client: Optional[GitHubAppClient] = None,
     policy: Optional[PipelinePolicy] = None,
@@ -359,6 +472,15 @@ def make_pr_bot_handler(
         if event_type.startswith("external.change"):
             return handle_external_change_event(
                 payload,
+                client,
+                policy,
+                workdir=workdir,
+            )
+
+        if event_type.startswith("issue_comment"):
+            return handle_issue_comment_event(
+                payload,
+                event_type,
                 client,
                 policy,
                 workdir=workdir,

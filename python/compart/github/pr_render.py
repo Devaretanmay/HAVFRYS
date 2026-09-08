@@ -44,8 +44,12 @@ def _render_single_finding(
     ctx: "TriggerContext",
     inline: bool = True,
 ) -> List[str]:
+    badge = severity_of(finding)
+    badge_note = "needs human review" if badge == "P0" else "repairable"
     lines: List[str] = [
         f"### {finding.display_name} {finding.current_version} -> {finding.target_version}",
+        "",
+        f"**Severity:** {badge} — {badge_note}",
         "",
         f"**Breaking change:** {finding.breaking_change}",
         "",
@@ -79,6 +83,71 @@ def _inline_comment_sections(
 ) -> List[str]:
     """Render inline review comment invitations for affected callsites."""
     return []
+
+
+def render_pr_summary(analysis: "AnalysisResult", ctx: "TriggerContext") -> str:
+    """PR summary header: what changed, who it affects, evidence-grounded confidence."""
+    if not analysis.has_findings:
+        touchpoints = analysis.callsites_total or len(analysis.providers_detected) or 1
+        return (f"## Compart review: no contract impact\n\n"
+                f"Checked {touchpoints} external API touchpoint(s). No contract violations detected.\n\n"
+                f"Confidence: high (full scan, nothing to repair)")
+    parts = [f"## Compart review: {len(analysis.findings)} maintenance issue(s)", ""]
+    for finding in analysis.findings:
+        files = len(finding.affected_files)
+        parts.append(f"- **{finding.display_name}** {finding.current_version} -> {finding.target_version}: "
+                     f"{len(finding.callsites_in_context)} callsite(s) across {files} file(s)")
+    parts.append("")
+    if analysis.verified and analysis.modified_files:
+        parts.append("Confidence: high (verified against repository test suite)")
+    else:
+        parts.append("Confidence: pending verification")
+    return "\n".join(parts)
+
+
+def render_pr_footer(ctx: "TriggerContext") -> str:
+    """Review footer: reviewed commit + re-trigger note."""
+    lines = ["", "---"]
+    if ctx.sha:
+        lines.append(f"Reviewed commit: `{ctx.sha}`")
+    lines.append("Comment `@compart` to re-run this review.")
+    return "\n".join(lines)
+
+
+def _node_id(text: str, prefix: str, seen: dict) -> str:
+    """Mermaid-safe node id, deduplicated."""
+    base = prefix + "".join(c if c.isalnum() else "_" for c in text)[:40]
+    key = base.lower()
+    seen[key] = seen.get(key, 0) + 1
+    return base if seen[key] == 1 else f"{base}_{seen[key]}"
+
+
+def render_flow_diagram(analysis: "AnalysisResult") -> str:
+    """Mermaid flow diagram: change -> affected files -> verification state."""
+    if not analysis.has_findings:
+        return ""
+    seen: dict = {}
+    lines = ["```mermaid", "flowchart LR"]
+    for finding in analysis.findings:
+        change = _node_id(finding.display_name + finding.current_version + finding.target_version, "c", seen)
+        lines.append(f'    {change}["{finding.display_name} {finding.current_version} → {finding.target_version}"]')
+        files = finding.affected_files[:8]
+        if not files:
+            files = ["unscoped"]
+        for path in files:
+            node = _node_id(path, "f", seen)
+            lines.append(f'    {change} --> {node}["{path}"]')
+    state = "verified" if analysis.verified else "unverified"
+    lines.append(f'    v["verification: {state}"]')
+    lines.append("```")
+    return "\n".join(lines)
+
+
+def severity_of(finding: "DriftFinding") -> str:
+    """P0 needs a human (unrepairable/quarantined); everything else is P1."""
+    if not finding.is_auto_repairable:
+        return "P0"
+    return "P1"
 
 
 def render_consult_issue(items: List[dict]) -> str:

@@ -12,6 +12,7 @@ import sys
 import textwrap
 import threading
 import time
+import urllib.request
 from typing import List, Optional
 import yaml
 
@@ -38,7 +39,7 @@ from compart.github.installations import list_ready_repos, store_dir as installa
 from compart.github.webhook_server import WebhookServer
 from compart.intelligence import resolve_migration
 from compart.knowledge import ensure_test_recipe
-from compart.maintenance import run_maintenance_cycle
+from compart.maintenance import get_migration_history, run_maintenance_cycle
 from compart.providers.registry import get_default_registry
 from compart.test_runner import _detect_test_command
 import getpass
@@ -1847,6 +1848,56 @@ def _print_auth_warning():
     print("================================================================================")
 
 
+def _github_identity() -> Optional[str]:
+    """Best-effort GitHub login for whoami output. None when unavailable."""
+    try:
+        client = GitHubAppClient()
+        if not client.token:
+            return None
+        req = urllib.request.Request(
+            "https://api.github.com/user",
+            headers={"Accept": "application/vnd.github+json",
+                     "Authorization": f"Bearer {client.token}"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8")).get("login")
+    except Exception:
+        return None
+
+
+def cmd_reviews(args):
+    """List past Compart maintenance runs from the repository ledger."""
+    root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    history = get_migration_history(root_path)
+    if not history:
+        print("No Compart maintenance runs recorded for this repository yet.")
+        print("Run `compart fix` to create the first entry.")
+        return
+    print(f"Compart maintenance runs ({len(history)}):")
+    for record in history[-20:]:
+        outcome = "GREEN" if record.get("test_exit_code") == 0 and record.get("blast_radius_zero") else "OTHER"
+        print(f"  - {record.get('timestamp_utc', '?')}  {record.get('provider_name', '?')} "
+              f"{record.get('from_version', '?')} -> {record.get('to_version', '?')}  [{outcome}]")
+
+
+def cmd_onboard(args):
+    """Guided onboarding: connect provider, index, report readiness."""
+    print("Step 1/3: Connect your AI provider (needed only for AI repair).")
+    cmd_auth(args)
+    print("\nStep 2/3: Index repository contracts (free, zero-token).")
+    cmd_check(argparse.Namespace(path=getattr(args, "path", ".") or ".",
+                                 format="cli", write_graph=True))
+    print("\nStep 3/3: Readiness.")
+    cmd_doctor(args)
+
+
+def cmd_logout(args):
+    """Remove stored AI provider credentials (alias for auth --clear)."""
+    cmd_auth(argparse.Namespace(
+        status=False, clear=True, provider=None, api_key=None,
+        model=None, base_url=None, path=".", installation=None, repo=None))
+
+
 def cmd_auth(args):
     """Authenticate and configure BYOK AI provider with automatic repository indexing."""
     if getattr(args, "status", False):
@@ -1862,6 +1913,8 @@ def cmd_auth(args):
             if summary.get("masked_key"):
                 print(f"API Key:      {summary.get('masked_key')}")
             print(f"Source:       {summary.get('source')}")
+            gh_user = _github_identity()
+            print(f"GitHub:       {gh_user}" if gh_user else "GitHub:       NOT CONFIGURED")
         else:
             print("Status:       NOT CONFIGURED [REQUIRED]")
             print("Action:       Run 'compart auth' to connect an AI provider.")
@@ -2342,6 +2395,8 @@ def main():
           compart check [path]             Detect contract changes & impact (read-only, alias: scan, audit)
           compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
           compart consult [path]         Assess with AI reasoning, file GitHub Issue, change nothing
+          compart reviews [path]         List past maintenance runs from the ledger
+          compart onboard [path]         Guided setup: auth → index → doctor
           compart providers                List monitored contract sources & migrations
           compart app serve                Run GitHub App webhook listener
           compart pr                       Review a pull request with contract guard
@@ -2592,6 +2647,14 @@ def main():
     consult_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
     consult_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for the Issue")
 
+    reviews_p = subparsers.add_parser("reviews", help="List past Compart maintenance runs")
+    reviews_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+
+    onboard_p = subparsers.add_parser("onboard", help="Guided setup: connect provider, index, report readiness")
+    onboard_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+
+    subparsers.add_parser("logout", help="Remove stored AI provider credentials (alias for auth --clear)")
+
     app_p = subparsers.add_parser("app", help="Manage Compart GitHub App and Webhook server")
     app_p.add_argument("app_action", nargs="?", default="serve", choices=["serve", "status"], help="App action")
     app_p.add_argument("--port", type=int, default=8080, help="Webhook server port (default: 8080)")
@@ -2678,6 +2741,9 @@ def main():
         "maintain": cmd_fix,
         "update": cmd_fix,
         "consult": cmd_consult,
+        "reviews": cmd_reviews,
+        "onboard": cmd_onboard,
+        "logout": cmd_logout,
         "providers": cmd_providers,
         "pr": cmd_pr,
         "graph": cmd_graph,

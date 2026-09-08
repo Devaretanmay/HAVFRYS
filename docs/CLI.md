@@ -16,6 +16,9 @@ Maintenance product (normal flow: auth → doctor → index → check → fix)
   compart check [path]             Detect contract changes & impact (read-only; needs no AI key)
           compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
           compart consult [path]         Assess with AI reasoning, file GitHub Issue, change nothing
+          compart reviews [path]         List past maintenance runs from the ledger
+          compart onboard [path]         Guided setup: auth → index → doctor
+          compart logout                 Remove stored credentials (alias for auth --clear)
   compart providers                List monitored contract sources & migrations
   compart app serve                Run GitHub App webhook listener (secret required)
   compart pr                       Review a pull request with the contract guard
@@ -308,6 +311,11 @@ to file the Issue. Start here to build trust before enabling Work:
 ```bash
 compart consult . --repo owner/repo
 ```
+
+### `compart reviews [path]` / `compart onboard [path]` / `compart logout`
+- `reviews` lists past maintenance runs (provider, versions, outcome) from `.compart/history.json`.
+- `onboard` chains `auth → index → doctor` as one guided setup.
+- `logout` clears stored credentials. `auth --status` also reports GitHub identity when a token is present.
 
 On refusal (no safe path, no AI credentials): `Repository Tests: NOT RUN`, zero files modified,
 `REFUSED / INCOMPLETE`. Tests are never reported PASSED unless they actually ran and exited 0.

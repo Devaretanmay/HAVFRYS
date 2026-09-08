@@ -32,7 +32,10 @@ from compart.github.client import GitHubAppClient
 from compart.credentials import has_valid_credentials
 from compart.github.pr_render import (
     render_consult_issue,
+    render_flow_diagram,
     render_maintenance_issue_comment,
+    render_pr_footer,
+    render_pr_summary,
     render_verification_comment,
 )
 from compart.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
@@ -897,6 +900,11 @@ def surface_result(
     # exact PR head (fetch unavailable). Confirm findings on the PR itself.
     if ctx.metadata.get("exact_head") is False:
         status_desc += " [checkout: tracked branch, PR head unfetchable]"
+
+    comment = render_pr_summary(analysis, ctx) + "\n\n" + comment
+    if analysis.has_findings:
+        comment += "\n\n" + render_flow_diagram(analysis)
+    comment += render_pr_footer(ctx)
 
     if ctx.pr_number is not None:
         try:
