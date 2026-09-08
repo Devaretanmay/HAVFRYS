@@ -128,12 +128,38 @@ def test_snapshot_dir_persists():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def test_status_started_at_none_safe():
+def test_status_started_at_none_safe(capsys):
     """Duration calculation in cmd_status must not crash when started_at is None."""
-    started_at = None
-    finished_at = 1000.0
-    dur = round(((finished_at or 0) - (started_at or 0)), 1)
-    assert dur == 1000.0
+    from sheepdog.cli.main import cmd_status
+    import argparse
+    from unittest.mock import patch
+    from sheepdog.engine.session import SessionStatus, AgentSession
+
+    args = argparse.Namespace()
+    
+    mock_session = AgentSession(
+        session_id="test",
+        agent="test",
+        compartment_id="test",
+        lane_id="test",
+        status=SessionStatus.COMPLETED
+    )
+    mock_session.started_at = None
+    mock_session.finished_at = 1000.0
+
+    with patch("sheepdog.cli.main.find_workspace_root", return_value="/tmp/test_ws"), \
+         patch("sheepdog.cli.main.ExecutionManager"), \
+         patch("sheepdog.cli.main.LaneManager"), \
+         patch("sheepdog.cli.main.SessionManager") as mock_sess_mgr:
+        
+        mock_sess_mgr.return_value.list_sessions.return_value = [mock_session]
+        
+        # Should not crash
+        cmd_status(args)
+        
+        captured = capsys.readouterr()
+        assert "RECENT SESSIONS" in captured.out
+        assert "1000.0s" in captured.out
 
 
 def test_topo_sort_empty_nodes():

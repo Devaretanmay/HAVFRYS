@@ -9,7 +9,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from sheepdog.ai_planner import AIPatchPlanner, ai_followup_for_missed, build_reasoning_context
-from sheepdog.drift import detect_drift  # noqa: F401 — re-exported for CLI/SDK callers
+from sheepdog.drift import detect_drift  # noqa: F401
 from sheepdog.formatters import run_style_formatter
 from sheepdog.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 from sheepdog.git_ops import git_commit_and_push, gh_create_pr
@@ -129,8 +129,6 @@ def run_maintenance_cycle(
     applied_rewrites = list(rewrites)
 
     if decision.strategy == "DIRECT":
-        # Executable flywheel — registry + KB-cached rewrites, deduped by pattern,
-        # plus exact-identifier variants for proven client aliases (never loosened).
         kb_rules = direct_rewrites_for(repo_dir, provider_name, actual_from, actual_to)
         seen_patterns = {r.pattern for r in applied_rewrites}
         extra = [r for r in kb_rules if r.pattern not in seen_patterns]
@@ -176,8 +174,6 @@ def run_maintenance_cycle(
             "Run `sheepdog auth` to enable AI repair, or add a verified migration to the registry."
         )
 
-    # Hybrid completion: affected files the rewrites didn't reach (unusual code)
-    # get AI reasoning when a provider is configured; otherwise the refusal stands.
     if decision.strategy == "DIRECT":
         touched = [os.path.abspath(r.file_path) for r in patch_results if r.success]
         impact = ImpactAnalyst().analyze_impact(repo_dir, provider_name)
@@ -198,7 +194,6 @@ def run_maintenance_cycle(
 
     run_style_formatter(repo_dir, modified_paths)
 
-    # Blast radius: files changed that were NOT targeted by the patch plan
     all_changed: set[str] = set()
     targeted: set[str] = set(modified_paths)
     for dirpath, dirnames, filenames in os.walk(repo_dir, topdown=True):
@@ -219,7 +214,6 @@ def run_maintenance_cycle(
     unintended_count = len(unintended)
     blast_radius_verified = unintended_count == 0
 
-    # Install dependencies then run tests. -1 means NOT RUN (no repair applied, no execution to verify).
     test_cmd = _detect_test_command(repo_dir)
     test_exit_code = -1
     test_duration_ms = 0
@@ -232,20 +226,19 @@ def run_maintenance_cycle(
             except Exception:
                 pass
 
-        test_start = time.time()
-        try:
-            proc = _run_tests(repo_dir, test_cmd, timeout=120)
-            test_exit_code = proc.returncode
-            raw_output = f"{proc.stdout or ''}\n{proc.stderr or ''}"
-        except subprocess.TimeoutExpired:
-            test_exit_code = 1
-            raw_output = "Test run timed out after 120s"
-        except Exception as exc:
-            test_exit_code = 1
-            raw_output = str(exc)
-        test_duration_ms = max(1, int((time.time() - test_start) * 1000))
+            test_start = time.time()
+            try:
+                proc = _run_tests(repo_dir, test_cmd, timeout=120)
+                test_exit_code = proc.returncode
+                raw_output = f"{proc.stdout or ''}\n{proc.stderr or ''}"
+            except subprocess.TimeoutExpired:
+                test_exit_code = 1
+                raw_output = "Test run timed out after 120s"
+            except Exception as exc:
+                test_exit_code = 1
+                raw_output = str(exc)
+            test_duration_ms = max(1, int((time.time() - test_start) * 1000))
 
-        # AI Self-Repair Loop: if tests failed and AI planner is available, retry once with test error
         if test_exit_code != 0 and ai_planner and modified_paths:
             retry_results = ai_planner.plan_and_apply(
                 repo_dir=repo_dir,
@@ -259,7 +252,6 @@ def run_maintenance_cycle(
                 changelog_url=changelog_url,
             )
             if retry_results:
-                # Explicit hybrid: deterministic pre-pass + AI repair of the failure.
                 decision.strategy = "HYBRID"
                 decision.reason = "direct_then_ai_repair"
                 decision.confidence = 0.7
@@ -270,8 +262,6 @@ def run_maintenance_cycle(
                     patch_results = retry_results
                     unified_diff = "\n".join(r.unified_diff for r in patch_results if r.unified_diff)
 
-    # Roll back if tests failed, recording the failed attempt so future
-    # reasoning avoids the same shape (failures quarantine, never promote).
     if test_exit_code != 0:
         snapshotter.restore()
         if patch_results:
@@ -338,7 +328,6 @@ def run_maintenance_cycle(
             rewrites=applied_rewrites,
         )
     elif quarantine_error and not patch_results:
-        # G5: loud quarantine — never silent
         pr_body = (
             f"## Sheepdog: repair quarantined\n\n{quarantine_error}\n\n"
             f"Provider: {p_spec.display_name} {actual_from} -> {actual_to}\n"

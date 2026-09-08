@@ -149,13 +149,16 @@ pub(super) fn apply(worktree_path: &str, block_network: bool) -> Result<(), Stri
         CString::new(profile.as_str()).map_err(|_| "Profile contains null byte".to_string())?;
 
     let mut error_ptr: *mut std::ffi::c_char = std::ptr::null_mut();
+    // SAFETY: FFI call to macOS seatbelt API. The profile string is a valid CString and error_ptr is a valid pointer.
     let result = unsafe { sandbox_init(profile_cstr.as_ptr(), 0, &mut error_ptr) };
 
     if result != 0 {
         let err_msg = if !error_ptr.is_null() {
+            // SAFETY: sandbox_init populates error_ptr with a valid null-terminated C string on error.
             let msg = unsafe { std::ffi::CStr::from_ptr(error_ptr) }
                 .to_string_lossy()
                 .into_owned();
+            // SAFETY: error_ptr was allocated by sandbox_init and must be freed by sandbox_free_error.
             unsafe { sandbox_free_error(error_ptr) };
             msg
         } else {

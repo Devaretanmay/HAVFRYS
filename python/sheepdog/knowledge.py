@@ -47,15 +47,12 @@ def _entry_path(repo_dir: str, provider: str, from_version: str, to_version: str
 
 
 def _legacy_entry_path(repo_dir: str, provider: str, from_version: str, to_version: str) -> str:
-    # Pre-namespace layout (same product generation, no kind subdir).
     d = os.path.join(_kb_dir(repo_dir), provider.lower())
     fname = f"{_norm_version(from_version)}__{_norm_version(to_version)}.json"
     return os.path.join(d, fname)
 
 
 def _rename_legacy_entry_path(repo_dir: str, provider: str, from_version: str, to_version: str) -> str:
-    # Pre-rename (Compart-era) layout. Pinned to the old directory name so
-    # existing installs keep reading after the Sheepdog rename.
     d = os.path.join(os.path.abspath(repo_dir), ".compart", "knowledge", provider.lower())
     fname = f"{_norm_version(from_version)}__{_norm_version(to_version)}.json"
     return os.path.join(d, fname)
@@ -67,7 +64,7 @@ class KBPattern:
     replacement: str
     file_extensions: List[str] = field(default_factory=list)
     description: str = ""
-    source: str = "learned"  # registry | learned
+    source: str = "learned"
     pattern_hash: str = ""
     verified_count: int = 1
     last_verified_utc: str = ""
@@ -88,7 +85,6 @@ class KBEntry:
     evidence: Dict[str, Any] = field(default_factory=dict)
     created_utc: str = ""
     updated_utc: str = ""
-    # Generalized repository-memory fields (defaults keep legacy files readable).
     kind: str = "sdk"
     identity: str = ""
     repo_id: str = ""
@@ -290,7 +286,6 @@ def upsert_learned(
             updated_utc=now,
             kind=kind,
         )
-    # executable rewrites first — these are what DIRECT actually runs
     seen = {normalize_rule(p.pattern): p for p in entry.patterns if _is_executable(p)}
     for r in rewrites or []:
         key = normalize_rule(getattr(r, "pattern", ""))
@@ -311,18 +306,15 @@ def upsert_learned(
         else:
             seen[key].verified_count += 1
             seen[key].last_verified_utc = now
-            # refresh replacement/exts in case registry evolved
             if getattr(r, "replacement", None) is not None:
                 seen[key].replacement = getattr(r, "replacement", "")
             if getattr(r, "file_extensions", None):
                 seen[key].file_extensions = list(getattr(r, "file_extensions", []))
-    # description-only notes from AI patches are kept for audit but never count as executable
     if patch_results:
         for r in patch_results:
             for desc in getattr(r, "rules_applied", []) or []:
                 key = normalize_rule(desc)
                 if key not in seen and key not in {normalize_rule(p.pattern) for p in entry.patterns}:
-                    # only store if it looks like it could be a pattern; else skip to avoid KB bloat
                     continue
 
     if test_command:

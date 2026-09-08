@@ -48,7 +48,7 @@ def main():
                             if s.startswith("//") or s.startswith("///") or s.startswith("//!"):
                                 comm += 1
                         elif is_py:
-                            if s.startswith("#"):
+                            if s.startswith("#") or " #" in s:
                                 comm += 1
                     max_allowed = max(3, (tot * 3) // 100)
                     if comm > max_allowed:
@@ -64,17 +64,27 @@ def main():
         print("PASS: 100% of files satisfy <= 3 comments per 100 lines of code.")
 
     # 2. Check inline imports
+    import ast
     inline_py = []
     for root, dirs, files in os.walk("python"):
         for file in files:
             if file.endswith(".py"):
                 path = os.path.join(root, file)
-                with open(path) as f:
-                    lines = f.readlines()
-                for idx, line in enumerate(lines):
-                    stripped = line.strip()
-                    if (stripped.startswith("import ") or stripped.startswith("from ")) and line.startswith("    ") and idx > 35:
-                        inline_py.append((path, idx+1, stripped))
+                with open(path, "r", encoding="utf-8") as f:
+                    code = f.read()
+                try:
+                    tree = ast.parse(code, filename=path)
+                except SyntaxError:
+                    continue
+                for node in ast.walk(tree):
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                        # Look for imports inside the function/class body
+                        for stmt in node.body:
+                            for subnode in ast.walk(stmt):
+                                if isinstance(subnode, (ast.Import, ast.ImportFrom)):
+                                    # Basic heuristic to get a string representation
+                                    s = ast.unparse(subnode) if hasattr(ast, "unparse") else "import ..."
+                                    inline_py.append((path, getattr(subnode, 'lineno', 0), s))
 
     if inline_py:
         print(f"ERROR: Found {len(inline_py)} inline Python imports inside functions:")

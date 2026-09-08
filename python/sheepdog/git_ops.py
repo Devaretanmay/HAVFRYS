@@ -30,7 +30,7 @@ def git_commit_and_push(
         cwd=repo_dir, capture_output=True, text=True,
     )
     if result.returncode != 0:
-        pass
+        return False
 
     push = subprocess.run(
         ["git", "push", "-u", "origin", branch_name, "--force"],

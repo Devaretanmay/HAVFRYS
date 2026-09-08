@@ -10,7 +10,7 @@ from sheepdog.sandbox.box import Box
 
 class TestBoxLifecycle(unittest.TestCase):
     def setUp(self):
-        self.tmpdir = os.path.join(tempfile.gettempdir(), "sheepdog_test")
+        self.tmpdir = tempfile.mkdtemp()
         os.makedirs(self.tmpdir, exist_ok=True)
 
     def tearDown(self):

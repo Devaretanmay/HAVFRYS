@@ -133,7 +133,6 @@ def _changed_since(repo_root: str, state: Dict[str, Any]) -> List[str]:
             except OSError:
                 continue
             if rel not in old_mtimes:
-                # brand-new file since index (skip on first-ever index)
                 if old_mtimes:
                     changed.append(rel)
             elif old_mtimes[rel] != mt:
@@ -202,7 +201,6 @@ def run_audit(repo_root: str = ".", output_format: str = "cli", write_graph: boo
         with open(os.path.join(repo_root, ".sheepdog", "graph.json"), "w") as f:
             json.dump(graph, f, indent=2)
         write_index_state(repo_root, summary)
-        # discovery delta: what this re-index newly found (incremental understanding)
         if prev is not None:
             summary["_index_delta"] = {
                 "providers_before": prev.get("providers", 0),

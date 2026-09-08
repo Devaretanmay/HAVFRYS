@@ -45,16 +45,6 @@ def load_credentials(installation_id: Optional[str] = None, repo: Optional[str] 
         except Exception:
             continue
     return None
-    if not os.path.exists(creds_file):
-        return None
-    try:
-        with open(creds_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        if isinstance(data, dict) and data.get("api_key"):
-            return data
-    except Exception:
-        return None
-    return None
 
 
 def save_credentials(

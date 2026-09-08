@@ -79,7 +79,6 @@ def workdir_for_event(payload: Dict[str, Any], token: Optional[str] = None) -> O
 
 
 def _auth_args(token: Optional[str]) -> list:
-    # Token via -c flag: never persisted to .git/config, never logged.
     if token:
         return ["-c", f"http.extraHeader=Authorization: Bearer {token}"]
     return []

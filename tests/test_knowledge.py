@@ -46,7 +46,6 @@ def test_legacy_provider_path_still_readable(tmp_path):
     }))
     e = lookup(str(tmp_path), "stripe", "1", "2")
     assert e is not None and len(e.patterns) == 1
-    # new generalized fields default safely on legacy files
     assert e.failed_patterns == [] and e.confidence == 1.0
 
 
@@ -56,7 +55,7 @@ def test_record_failure_never_creates_trusted_patterns(tmp_path):
     f = record_failure(str(tmp_path), "stripe", "1", "2", "ai guess failed", ["x.ts"])
     assert len(f.failed_patterns) == 1
     assert f.failed_patterns[0]["affected_paths"] == ["x.ts"]
-    assert len(direct_rewrites_for(str(tmp_path), "stripe", "1", "2")) == 1  # unchanged
+    assert len(direct_rewrites_for(str(tmp_path), "stripe", "1", "2")) == 1
 
 
 def test_failed_verification_records_avoidance_note(tmp_path):
@@ -72,7 +71,7 @@ def test_failed_verification_records_avoidance_note(tmp_path):
     assert not report.success
     entry = lookup(str(repo), "stripe", "11.18.0", "13.0.0")
     assert entry is not None and len(entry.failed_patterns) == 1
-    assert entry.patterns == []  # nothing unverified promoted to trusted
+    assert entry.patterns == []
 
 
 def test_ensure_test_recipe_seeds_without_patterns(tmp_path):

@@ -227,6 +227,11 @@ Sheepdog is not a generic coding agent, a PR reviewer, a Dependabot clone, a
 codebase Q&A tool, or vulnerability-management software. It is autonomous
 maintenance for systems that change.
 
+The old fable got it backwards: the village stopped believing because the boy
+cried wolf over nothing. Most automation still does — vague green checks,
+unverified badges, silent passes. Sheepdog only howls when there's actually
+one in the fence: verified repairs, loud refusals, never a faked pass.
+
 ## License
 
 Apache-2.0. Copyright 2026 Sheepdog Authors.

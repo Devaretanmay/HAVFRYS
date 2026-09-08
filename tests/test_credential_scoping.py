@@ -20,11 +20,11 @@ def test_scoped_resolution_order(tmp_path, monkeypatch):
     _clean_env(monkeypatch, tmp_path)
     assert not has_valid_credentials("inst-1")
     save_credentials("openai", "sk-global-1234567890", installation_id=None)
-    assert has_valid_credentials("inst-1")  # global fallback
+    assert has_valid_credentials("inst-1")
     save_credentials("anthropic", "sk-ant-scoped-1234567890", installation_id="inst-1")
     creds = load_credentials("inst-1")
-    assert creds["provider"] == "anthropic"  # scoped wins
-    assert load_credentials("inst-2")["provider"] == "openai"  # other installs fall back
+    assert creds["provider"] == "anthropic"
+    assert load_credentials("inst-2")["provider"] == "openai"
     mode = os.stat(scoped_credentials_path("inst-1")) .st_mode & 0o777
     assert mode == 0o600
 

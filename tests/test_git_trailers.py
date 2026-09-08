@@ -65,19 +65,16 @@ def test_git_commit_execution_staging_and_trailers():
     """_git_commit_execution stages files and creates a commit with Sheepdog trailers."""
     tmp = tempfile.mkdtemp()
     try:
-        # Initialize a real Git repository in tmp
         subprocess.run(["git", "init", "-b", "main"], cwd=tmp, check=True, capture_output=True)
         subprocess.run(["git", "config", "user.name", "Sheepdog Bot"], cwd=tmp, check=True)
         subprocess.run(["git", "config", "user.email", "bot@sheepdog.dev"], cwd=tmp, check=True)
 
-        # Create an initial commit
         readme = os.path.join(tmp, "README.md")
         with open(readme, "w") as f:
             f.write("# Hello\n")
         subprocess.run(["git", "add", "README.md"], cwd=tmp, check=True)
         subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=tmp, check=True)
 
-        # Create a change as an execution
         src_file = os.path.join(tmp, "auth.py")
         with open(src_file, "w") as f:
             f.write("def login(): return True\n")
@@ -97,7 +94,6 @@ def test_git_commit_execution_staging_and_trailers():
         )
         assert ok is True
 
-        # Verify commit message with git log
         log_res = subprocess.run(
             ["git", "log", "-n", "1"],
             cwd=tmp,

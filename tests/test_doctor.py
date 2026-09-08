@@ -33,8 +33,8 @@ def test_doctor_all_states(tmp_path):
     for line in ("GitHub:", "AI provider:", "Indexed:", "Knowledge Base:",
                  "Test command:", "Monitoring:"):
         assert line in res.stdout
-    assert "NOT CONFIGURED" in res.stdout  # no creds anywhere
-    assert "MISSING" in res.stdout  # nothing indexed here
+    assert "NOT CONFIGURED" in res.stdout
+    assert "MISSING" in res.stdout
 
 
 def test_doctor_ready_after_index(tmp_path):

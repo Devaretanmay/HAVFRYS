@@ -20,14 +20,14 @@ from sheepdog.providers.registry import find_migration_for, get_default_registry
 
 @dataclass
 class Decision:
-    strategy: str  # DIRECT | AI | HYBRID | QUARANTINE (internal only, never a CLI flag)
+    strategy: str
     reason: str
     elapsed_ms: int = 0
     provider: str = ""
     from_version: str = ""
     to_version: str = ""
     confidence: float = 0.0
-    estimated_tokens: Optional[int] = None  # None = unknown; 0 = verified zero-token path
+    estimated_tokens: Optional[int] = None
     expected_blast_radius: List[str] = field(default_factory=list)
     verification_required: bool = True
 
@@ -95,7 +95,6 @@ class SheepdogIntelligence:
         t0 = time.time()
         migration = find_migration_for(source)
         if migration is None:
-            # No registry connector for this kind — AI if possible, else quarantine.
             if has_valid_credentials():
                 return Decision(strategy="AI", reason=f"no_connector_for_{source.kind}",
                                 elapsed_ms=int((time.time() - t0) * 1000),

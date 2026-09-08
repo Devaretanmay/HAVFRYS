@@ -50,7 +50,6 @@ def _real_binary_script(marker_path: str) -> str:
     )
 
 
-# ── Real-binary resolution ────────────────────────────────────────────────
 
 
 def test_resolve_real_binary_skips_workspace_shim_dir(tmp_path, monkeypatch):
@@ -88,7 +87,6 @@ def test_resolve_real_binary_ignores_other_workspace_shims(tmp_path, monkeypatch
     assert _resolve_real_binary("claude", str(tmp_path)) == other
 
 
-# ── Shim script behavior (real bash execution) ────────────────────────────
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="shims are bash scripts")
@@ -181,7 +179,6 @@ def test_shim_delegates_to_exec_shim_inside_workspace(tmp_path):
     assert not marker.exists(), "real binary must not run when _exec_shim governs"
 
 
-# ── Nested workspace rule ─────────────────────────────────────────────────
 
 
 def test_find_workspace_root_innermost_wins(tmp_path):
@@ -196,7 +193,6 @@ def test_find_workspace_root_innermost_wins(tmp_path):
     assert find_workspace_root(str(tmp_path)) == str(tmp_path)
 
 
-# ── PtySupervisor resolution ──────────────────────────────────────────────
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")

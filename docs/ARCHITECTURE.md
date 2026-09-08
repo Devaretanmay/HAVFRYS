@@ -82,6 +82,7 @@ repositories with `PENDING → INDEXED → READY`, provider association, index t
 - Unverified AI guesses never enter trusted knowledge.
 - Webhook serving without a secret is a hard error.
 - Secrets never enter repo state, logs, or knowledge.
+- Sheepdog never cries wolf: no alert, badge, or pass is ever issued without the execution behind it.
 
 ## 5. Deliberately not built yet
 

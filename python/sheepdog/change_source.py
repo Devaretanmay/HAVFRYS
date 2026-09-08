@@ -35,11 +35,11 @@ class ChangeSource:
     """A system/contract the repository depends upon, at a detected change."""
 
     kind: str
-    identity: str  # provider name for sdk/external_api, contract id otherwise
+    identity: str
     version_from: str = "unknown"
     version_to: str = "unknown"
-    contract_hash: str = ""  # content hash when versions don't exist (schemas, protos)
-    origin: str = "registry"  # registry | manifest | schema | mcp | internal
+    contract_hash: str = ""
+    origin: str = "registry"
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -75,11 +75,11 @@ class Detection:
     """Read-only outcome of understanding one change against one repository."""
 
     source: ChangeSource
-    outcome: str  # one of NO_IMPACT / IMPACT_DIRECT / IMPACT_AI / IMPACT_QUARANTINE
+    outcome: str
     reason: str = ""
     affected_files: List[str] = field(default_factory=list)
     callsite_count: int = 0
-    ai_dependent: bool = False  # True when full semantic reasoning needs a provider
+    ai_dependent: bool = False
     confidence: float = 0.0
 
     def __post_init__(self):
