@@ -14,7 +14,8 @@ Maintenance product (normal flow: auth → doctor → index → check → fix)
   compart doctor                   Product readiness: GitHub, AI, index, knowledge, tests
   compart index [path]             Index repository contracts & callsites (free, zero-token)
   compart check [path]             Detect contract changes & impact (read-only; needs no AI key)
-  compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
+          compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
+          compart consult [path]         Assess with AI reasoning, file GitHub Issue, change nothing
   compart providers                List monitored contract sources & migrations
   compart app serve                Run GitHub App webhook listener (secret required)
   compart pr                       Review a pull request with the contract guard
@@ -295,6 +296,17 @@ compart fix . --provider openai --from v3.28.0 --to v4.0.0
 compart fix . --detect              # Detect installed API providers
 compart fix . --show-pr             # Preview Developer Trust PR body
 compart fix . --create-pr --repo owner/repo
+```
+
+### `compart consult [path] [--repo owner/repo]`
+Same AI reasoning as `fix` — codebase context, change context, maintenance memory, impact
+analysis — but Consult authority: assess and report only. Files a GitHub Issue with findings,
+affected files, inheritance notes, recommendation, and confidence, then declares no code was
+modified. Requires AI credentials (refuses loudly without them); requires a resolvable repo
+to file the Issue. Start here to build trust before enabling Work:
+
+```bash
+compart consult . --repo owner/repo
 ```
 
 On refusal (no safe path, no AI credentials): `Repository Tests: NOT RUN`, zero files modified,

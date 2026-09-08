@@ -32,7 +32,7 @@ from compart.config import (
 )
 from compart import autopatch
 from compart.audit import changed_since_index, run_audit
-from compart.drift import detect_drift
+from compart.drift import detect_changes, detect_drift
 from compart.graph import build_dependency_graph
 from compart.github.installations import list_ready_repos, store_dir as installations_store_dir
 from compart.github.webhook_server import WebhookServer
@@ -42,12 +42,17 @@ from compart.maintenance import run_maintenance_cycle
 from compart.providers.registry import get_default_registry
 from compart.test_runner import _detect_test_command
 import getpass
+from compart.ai_planner import AIPatchPlanner, build_reasoning_context
+from compart.change_source import NO_IMPACT
 from compart.credentials import (
+    has_valid_credentials,
     save_credentials,
     get_active_provider_summary,
     verify_credentials,
     clear_credentials,
 )
+from compart.github.pr_render import render_consult_issue
+from compart.intelligence import CompartIntelligence
 from compart.github.client import GitHubAppClient
 from compart.github.pr_bot import make_pr_bot_handler, run_on_pr_locally
 from compart.github.provisioning import workdir_for_event
@@ -1961,6 +1966,92 @@ def cmd_fix(args):
     return cmd_maintain(args)
 
 
+def _github_repo_from_remote(workdir: str) -> Optional[str]:
+    """Extract owner/repo from the git origin URL. None when unavailable."""
+    try:
+        remote = subprocess.run(
+            ["git", "config", "--get", "remote.origin.url"],
+            cwd=workdir, capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+        if "github.com" in remote:
+            return remote.split("github.com")[-1].lstrip(":").lstrip("/").removesuffix(".git") or None
+    except Exception:
+        pass
+    return None
+
+
+def cmd_consult(args):
+    """Consult mode: assess with AI reasoning, file a GitHub Issue, modify nothing."""
+    root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    if not has_valid_credentials():
+        _print_auth_warning()
+        print("Consult reasons with AI — static `compart check` needs no key.")
+        sys.exit(1)
+
+    detections = [d for d in detect_changes(root_path) if d.outcome != NO_IMPACT]
+    if not detections:
+        print("Compart Consult: no maintenance problems found. No changes made.")
+        return
+
+    repo = getattr(args, "repo", None) or _github_repo_from_remote(root_path)
+    if not repo:
+        print("Error: Consult files a GitHub Issue — pass --repo owner/repo "
+              "or run inside a GitHub checkout.")
+        sys.exit(2)
+    client = GitHubAppClient()
+    if not client.token and not (client.app_id and client.private_key):
+        print("Error: Consult files a GitHub Issue — set GITHUB_TOKEN or "
+              "App credentials first.")
+        sys.exit(2)
+
+    planner = AIPatchPlanner.from_env()
+    if planner is None:  # Unreachable given the credential check; fail closed anyway.
+        _print_auth_warning()
+        sys.exit(1)
+
+    intel = CompartIntelligence()
+    items = []
+    for detection in detections:
+        source = detection.source
+        _from, _to, migration = resolve_migration(
+            source.provider, source.version_from, source.version_to)
+        decision = intel.decide(root_path, source.provider, _from, _to,
+                                has_rewrites=bool(migration and migration.rewrites))
+        context = build_reasoning_context(
+            root_path, source.provider, _from, _to,
+            source.metadata.get("breaking_change", ""),
+            source.metadata.get("migration_guide_url", ""))
+        assessment = planner.assess(
+            repo_dir=root_path, provider_name=source.provider,
+            from_version=_from, to_version=_to,
+            migration_details=source.metadata.get("breaking_change", ""),
+            changelog_url=source.metadata.get("migration_guide_url", ""),
+            affected_files=detection.affected_files, context=context)
+        items.append({
+            "display": source.provider,
+            "version_from": _from, "version_to": _to,
+            "breaking_change": source.metadata.get("breaking_change", ""),
+            "guide_url": source.metadata.get("migration_guide_url", ""),
+            "affected_files": detection.affected_files,
+            "assessment_body": assessment.get("body", ""),
+            "auto_repairable": decision.strategy in ("DIRECT", "AI"),
+            "confidence": assessment.get("confidence", "unknown"),
+        })
+
+    if not any(item["assessment_body"] for item in items):
+        print("Error: Consult assessment produced no reasoning — refusing to file an empty issue.")
+        sys.exit(1)
+
+    body = render_consult_issue(items)
+    title = f"[Compart Consult] {len(items)} maintenance issue(s) in {repo}"
+    resp = client.create_issue(repo=repo, title=title, body=body, labels=["compart", "consult"])
+    url = resp.get("html_url") if isinstance(resp, dict) else None
+    print(f"Consulted {len(items)} issue(s); no code was modified.")
+    print(f"[ISSUE OPENED] {url}" if url else "[ISSUE OPENED]")
+    print()
+    print(body)
+
+
 
 
 def cmd_app(args):
@@ -2250,6 +2341,7 @@ def main():
           compart index [path]             Index repository contracts & callsites (free, zero-token)
           compart check [path]             Detect contract changes & impact (read-only, alias: scan, audit)
           compart fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
+          compart consult [path]         Assess with AI reasoning, file GitHub Issue, change nothing
           compart providers                List monitored contract sources & migrations
           compart app serve                Run GitHub App webhook listener
           compart pr                       Review a pull request with contract guard
@@ -2496,6 +2588,10 @@ def main():
     maintain_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     maintain_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
 
+    consult_p = subparsers.add_parser("consult", help="Assess maintenance problems with AI reasoning, file a GitHub Issue, modify nothing")
+    consult_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    consult_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for the Issue")
+
     app_p = subparsers.add_parser("app", help="Manage Compart GitHub App and Webhook server")
     app_p.add_argument("app_action", nargs="?", default="serve", choices=["serve", "status"], help="App action")
     app_p.add_argument("--port", type=int, default=8080, help="Webhook server port (default: 8080)")
@@ -2581,6 +2677,7 @@ def main():
         "fix": cmd_fix,
         "maintain": cmd_fix,
         "update": cmd_fix,
+        "consult": cmd_consult,
         "providers": cmd_providers,
         "pr": cmd_pr,
         "graph": cmd_graph,

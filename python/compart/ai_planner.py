@@ -31,6 +31,15 @@ def parse_search_replace_blocks(text: str) -> List[Tuple[str, str]]:
     return [(search, replace) for search, replace in matches]
 
 
+_CONFIDENCE_REGEX = re.compile(r"confidence\s*:\s*(high|medium|low)", re.IGNORECASE)
+
+
+def parse_confidence(text: str) -> str:
+    """Extract a trailing Confidence: high|medium|low line. Unknown when absent."""
+    match = _CONFIDENCE_REGEX.search(text)
+    return match.group(1).lower() if match else "unknown"
+
+
 MAX_PROMPT_FILE_CHARS = 12000
 
 
@@ -206,6 +215,80 @@ class AIPatchPlanner:
 
         return results
 
+    def assess(
+        self,
+        repo_dir: str,
+        provider_name: str,
+        from_version: str,
+        to_version: str,
+        migration_details: str = "",
+        changelog_url: str = "",
+        affected_files: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Reason about impact without touching the worktree.
+
+        Returns {"body", "affected_files", "confidence"}. Read-only by
+        construction: the only tool used is the LLM completion call.
+        """
+        if not self.client:
+            return {"body": "", "affected_files": affected_files or [], "confidence": "unknown"}
+
+        if context is None:
+            context = build_reasoning_context(
+                repo_dir, provider_name, from_version, to_version,
+                migration_details, changelog_url)
+
+        prompt = (
+            "Assess, do not modify. Answer in markdown:\n"
+            "1. What changed upstream and why it matters here.\n"
+            "2. Affected callsites (file:line), and which inherit a wrapper fix.\n"
+            "3. What must NOT be touched.\n"
+            "4. Recommended migration and its test impact.\n"
+            'End with exactly one line: "Confidence: high|medium|low".'
+        )
+        messages = [{"role": "user", "content": prompt + "\n\n" + self._context_text(
+            repo_dir, provider_name, from_version, to_version, context)}]
+        try:
+            resp = self.client.complete(messages=messages, system_prompt=(
+                "You are an autonomous software maintenance engineer. "
+                "Diagnose the impact of a dependency/contract change. "
+                "Never output code patches; explain only."))
+        except Exception as exc:
+            return {"body": "", "affected_files": affected_files or [],
+                    "confidence": "unknown", "error": f"LLM call failed: {exc}"}
+        return {"body": resp.content, "affected_files": affected_files or [],
+                "confidence": parse_confidence(resp.content)}
+
+    def _context_text(
+        self,
+        repo_dir: str,
+        provider_name: str,
+        from_version: str,
+        to_version: str,
+        context: Dict[str, Any],
+    ) -> str:
+        """Render the shared reasoning context both assess and repair use."""
+        sections = [
+            f"System: {provider_name}",
+            f"Change: {from_version} -> {to_version}",
+        ]
+        if context.get("migration_details"):
+            sections.append(f"Change details: {context['migration_details']}")
+        if context.get("changelog_url"):
+            sections.append(f"Vendor guide: {context['changelog_url']}")
+        if context.get("test_command"):
+            sections.append(f"Repo verification: `{context['test_command']}` must keep passing")
+        if context.get("wrappers"):
+            sections.append("Wrappers to consider first:\n" + "\n".join(f"- {w}" for w in context["wrappers"][:10]))
+        if context.get("callsites"):
+            sections.append("Known usage across the repo:\n" + "\n".join(f"- {c}" for c in context["callsites"][:40]))
+        if context.get("verified_patterns"):
+            sections.append("Previously verified repairs (prefer these shapes):\n" + "\n".join(f"- {p}" for p in context["verified_patterns"][:10]))
+        if context.get("failed_patterns"):
+            sections.append("Known-bad approaches (do NOT repeat):\n" + "\n".join(f"- {p}" for p in context["failed_patterns"][:5] if p))
+        return "\n".join(sections)
+
     def _patch_file(
         self,
         abs_path: str,
@@ -240,24 +323,12 @@ class AIPatchPlanner:
             "4. Do not include markdown commentary outside the blocks."
         )
 
+        if migration_details and migration_details != context.get("migration_details"):
+            context = {**context, "migration_details": migration_details}
         sections = [
             f"File: {os.path.relpath(abs_path, repo_dir)}",
-            f"System: {provider_name}",
-            f"Change: {from_version} -> {to_version}",
-            f"Change details: {migration_details or context.get('migration_details', '')}",
+            self._context_text(repo_dir, provider_name, from_version, to_version, context),
         ]
-        if context.get("changelog_url"):
-            sections.append(f"Vendor guide: {context['changelog_url']}")
-        if context.get("test_command"):
-            sections.append(f"Repo verification: `{context['test_command']}` must keep passing")
-        if context.get("wrappers"):
-            sections.append("Wrappers to consider first:\n" + "\n".join(f"- {w}" for w in context["wrappers"][:10]))
-        if context.get("callsites"):
-            sections.append("Known usage across the repo:\n" + "\n".join(f"- {c}" for c in context["callsites"][:40]))
-        if context.get("verified_patterns"):
-            sections.append("Previously verified repairs (prefer these shapes):\n" + "\n".join(f"- {p}" for p in context["verified_patterns"][:10]))
-        if context.get("failed_patterns"):
-            sections.append("Known-bad approaches (do NOT repeat):\n" + "\n".join(f"- {p}" for p in context["failed_patterns"][:5] if p))
         shown_content, truncated = bound_file_content(original_content)
         if truncated:
             sections.append(

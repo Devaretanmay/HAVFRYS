@@ -29,6 +29,7 @@ class PipelinePolicy:
     auto_fix_providers: List[str] = field(default_factory=list)
     always_report_clean: bool = True
     inline_comments: bool = True
+    mode: str = "work"
 
     def auto_fix_enabled_for(self, ctx: Any) -> bool:
         event_type = getattr(ctx, "event_type", "")
@@ -65,6 +66,7 @@ class BotConfig:
     auto_fix_providers: List[str] = field(default_factory=list)
     always_report_clean: bool = True
     inline_comments: bool = True
+    mode: str = "work"
 
 
 _FILESYSTEM_TO_PERMISSIONS: Dict[str, List[str]] = {
@@ -150,6 +152,7 @@ class WorkspaceConfig:
             auto_fix_providers=b.auto_fix_providers,
             always_report_clean=b.always_report_clean,
             inline_comments=b.inline_comments,
+            mode=b.mode,
         )
 
 
@@ -226,6 +229,8 @@ def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
             auto_fix_providers=list(bot_cfg.get("auto_fix_providers", []) or []),
             always_report_clean=bool(bot_cfg.get("always_report_clean", True)),
             inline_comments=bool(bot_cfg.get("inline_comments", True)),
+            mode=str(bot_cfg.get("mode", "work")).lower()
+            if str(bot_cfg.get("mode", "work")).lower() in ("consult", "work") else "work",
         )
 
     agents: Dict[str, AgentConfig] = {}

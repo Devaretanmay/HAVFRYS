@@ -29,7 +29,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 from compart.config import PipelinePolicy
 from compart.github.client import GitHubAppClient
+from compart.credentials import has_valid_credentials
 from compart.github.pr_render import (
+    render_consult_issue,
     render_maintenance_issue_comment,
     render_verification_comment,
 )
@@ -300,6 +302,10 @@ class MaintenancePipeline:
                 status_description="Compart: no external contract impact detected",
             )
 
+        # Consult mode: same analysis, assess + report only. Never patches.
+        if getattr(self.policy, "mode", "work") == "consult":
+            return self._run_consult(ctx, analysis)
+
         # Plan/apply/verify only when auto-fix is enabled for this context.
         if self.policy.auto_fix_enabled_for(ctx):
             analysis = self._run_stage("plan", ctx)
@@ -341,6 +347,67 @@ class MaintenancePipeline:
             raise ValueError(f"Unknown pipeline stage: {name}")
         _logger.info("pipeline.stage stage=%s event=%s", name, ctx.event_id)
         return stage.handler(ctx)
+
+    def _run_consult(self, ctx: TriggerContext, analysis: AnalysisResult) -> "PipelineResult":
+        """Consult authority: assess findings with AI reasoning, report only."""
+        if not has_valid_credentials():
+            return PipelineResult(
+                context=ctx,
+                analysis=analysis,
+                status="refused",
+                comment_body="Compart Consult requires AI reasoning — no provider configured. "
+                             "Run `compart auth` to connect one.",
+                status_description="Compart Consult refused: no AI provider configured",
+            )
+        planner = AIPatchPlanner.from_env()
+        if planner is None:
+            return PipelineResult(
+                context=ctx,
+                analysis=analysis,
+                status="refused",
+                comment_body="Compart Consult requires AI reasoning — no provider configured. "
+                             "Run `compart auth` to connect one.",
+                status_description="Compart Consult refused: no AI provider configured",
+            )
+        intel = CompartIntelligence()
+        items = []
+        for finding in analysis.findings:
+            _from, _to, migration = resolve_migration(
+                finding.provider_name, finding.current_version, finding.target_version)
+            decision = intel.decide(ctx.workdir, finding.provider_name, _from, _to,
+                                    has_rewrites=bool(migration and migration.rewrites))
+            context = build_reasoning_context(
+                ctx.workdir, finding.provider_name, _from, _to,
+                finding.breaking_change, finding.migration_guide_url)
+            assessment = planner.assess(
+                repo_dir=ctx.workdir, provider_name=finding.provider_name,
+                from_version=_from, to_version=_to,
+                migration_details=finding.breaking_change,
+                changelog_url=finding.migration_guide_url,
+                affected_files=finding.affected_files, context=context)
+            items.append({
+                "display": finding.display_name,
+                "version_from": _from, "version_to": _to,
+                "breaking_change": finding.breaking_change,
+                "guide_url": finding.migration_guide_url,
+                "affected_files": finding.affected_files,
+                "assessment_body": assessment.get("body", ""),
+                "auto_repairable": decision.strategy in ("DIRECT", "AI"),
+                "confidence": assessment.get("confidence", "unknown"),
+            })
+        body = render_consult_issue(items)
+        if ctx.pr_number is not None:
+            try:
+                self.client.post_pr_comment(ctx.repository, ctx.pr_number, body)
+            except Exception as e:
+                _logger.warning("failed to post consult comment: %s", e)
+        return PipelineResult(
+            context=ctx,
+            analysis=analysis,
+            status="consulted",
+            comment_body=body,
+            status_description=f"Compart Consult: assessed {len(items)} maintenance issue(s), no code modified",
+        )
 
     # ── Stages ─────────────────────────────────────────────────────────────
 

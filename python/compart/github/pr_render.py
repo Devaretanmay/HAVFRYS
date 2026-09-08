@@ -79,3 +79,47 @@ def _inline_comment_sections(
 ) -> List[str]:
     """Render inline review comment invitations for affected callsites."""
     return []
+
+
+def render_consult_issue(items: List[dict]) -> str:
+    """Render a Consult-mode GitHub Issue from assessed detections.
+
+    Each item: {display, version_from, version_to, breaking_change,
+    guide_url, affected_files, assessment_body, auto_repairable, confidence}.
+    States what is known, recommends, and declares no code was modified.
+    """
+    lines: List[str] = [
+        "-----------------------------------------",
+        "   COMPART CONSULT: MAINTENANCE ADVISORY ",
+        "-----------------------------------------",
+        "",
+    ]
+    for item in items:
+        lines.append(f"### {item.get('display', 'External change')} "
+                     f"{item.get('version_from', '')} -> {item.get('version_to', '')}".rstrip())
+        lines.append("")
+        if item.get("breaking_change"):
+            lines.append(f"**Breaking change:** {item['breaking_change']}")
+            lines.append("")
+        if item.get("guide_url"):
+            lines.append(f"[Vendor migration guide]({item['guide_url']})")
+            lines.append("")
+        files = item.get("affected_files") or []
+        if files:
+            lines.append(f"**Affected files ({len(files)}):**")
+            for path in files:
+                lines.append(f"  - `{path}`")
+            lines.append("")
+        if item.get("assessment_body"):
+            lines.append("**Assessment:**")
+            lines.append(str(item["assessment_body"]).strip())
+            lines.append("")
+        if item.get("auto_repairable"):
+            lines.append("Compart can repair this automatically (`compart fix`).")
+        else:
+            lines.append("Compart cannot repair this automatically — manual review advised.")
+        lines.append(f"Confidence: {item.get('confidence', 'unknown')}")
+        lines.append("")
+    lines.append("No code was modified.")
+    lines.append("-----------------------------------------")
+    return "\n".join(lines)

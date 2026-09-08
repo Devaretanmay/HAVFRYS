@@ -159,6 +159,9 @@ def detect_changes(repo_dir: str, provider_name: Optional[str] = None) -> List[D
             continue
         _from, _to, migration = resolve_migration(
             d["provider"], d.get("declared_version"), d.get("target_version"))
+        if migration is not None:
+            source.metadata["breaking_change"] = migration.description
+            source.metadata["migration_guide_url"] = migration.changelog_url
         decision = intel.decide(repo_dir, d["provider"], _from, _to,
                                 has_rewrites=bool(migration and migration.rewrites))
         mapping = {"DIRECT": (IMPACT_DIRECT, False, 0.9), "AI": (IMPACT_AI, True, 0.5),
