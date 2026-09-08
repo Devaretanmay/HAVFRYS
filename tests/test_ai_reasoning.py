@@ -5,7 +5,9 @@
 import os
 from unittest.mock import MagicMock
 
-from compart.ai_planner import AIPatchPlanner, build_reasoning_context
+from compart.ai_planner import (
+    AIPatchPlanner, MAX_PROMPT_FILE_CHARS, bound_file_content, build_reasoning_context,
+)
 from compart.knowledge import upsert_learned, record_failure
 from compart.llm import LLMClient, LLMResponse
 
@@ -37,6 +39,30 @@ def test_context_assembles_repo_change_and_memory(tmp_path):
 def test_context_needs_no_credentials_and_never_raises(tmp_path):
     ctx = build_reasoning_context(str(tmp_path / "missing"), "nope", "1", "2")
     assert ctx["callsites"] == [] and ctx["verified_patterns"] == []
+
+
+def test_file_content_bounded_with_notice():
+    text, truncated = bound_file_content("x" * (MAX_PROMPT_FILE_CHARS + 1))
+    assert truncated is True and len(text) == MAX_PROMPT_FILE_CHARS
+    text, truncated = bound_file_content("small")
+    assert truncated is False and text == "small"
+
+
+def test_huge_file_prompt_announces_window(tmp_path):
+    dst = str(tmp_path / "r")
+    _seed_repo(dst)
+    big = os.path.join(dst, "src", "big.ts")
+    with open(big, "w") as f:
+        f.write("// stripe usage\n" + ("const v = 1;\n" * 2000))
+    seen = {}
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.complete.side_effect = lambda messages, system_prompt=None: (
+        seen.update(user=messages[0]["content"]), LLMResponse(content="x", model="m"))[1]
+    AIPatchPlanner(client=mock_client).plan_and_apply(
+        repo_dir=dst, affected_files=["src/big.ts"], provider_name="stripe",
+        from_version="1", to_version="2", migration_details="d", dry_run=True)
+    assert "[File truncated to first" in seen["user"]
+    assert "reason only over shown lines" in seen["user"]
 
 
 def test_prompt_carries_reasoning_and_memory(tmp_path):

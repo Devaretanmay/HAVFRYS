@@ -31,6 +31,16 @@ def parse_search_replace_blocks(text: str) -> List[Tuple[str, str]]:
     return [(search, replace) for search, replace in matches]
 
 
+MAX_PROMPT_FILE_CHARS = 12000
+
+
+def bound_file_content(content: str, limit: int = MAX_PROMPT_FILE_CHARS) -> Tuple[str, bool]:
+    """Cap file text sent to the model. Returns (text, truncated)."""
+    if len(content) <= limit:
+        return (content, False)
+    return (content[:limit], True)
+
+
 def ai_followup_for_missed(
     repo_dir: str,
     provider_name: str,
@@ -248,7 +258,12 @@ class AIPatchPlanner:
             sections.append("Previously verified repairs (prefer these shapes):\n" + "\n".join(f"- {p}" for p in context["verified_patterns"][:10]))
         if context.get("failed_patterns"):
             sections.append("Known-bad approaches (do NOT repeat):\n" + "\n".join(f"- {p}" for p in context["failed_patterns"][:5] if p))
-        user_content = "\n".join(sections) + f"\n\nFile Content:\n```\n{original_content}\n```\n"
+        shown_content, truncated = bound_file_content(original_content)
+        if truncated:
+            sections.append(
+                f"[File truncated to first {MAX_PROMPT_FILE_CHARS} chars "
+                f"of {len(original_content)} — reason only over shown lines.]")
+        user_content = "\n".join(sections) + f"\n\nFile Content:\n```\n{shown_content}\n```\n"
 
         if test_error:
             user_content += (
