@@ -1,14 +1,14 @@
-# Copyright 2026 Volf Authors
+# Copyright 2026 Koyote Authors
 # SPDX-License-Identifier: Apache-2.0
 """PR surface parity: summary, badges, diagrams, footer, assembly order."""
 
-from volf.github.pr_render import (
+from koyote.github.pr_render import (
     render_flow_diagram,
     render_pr_footer,
     render_pr_summary,
     severity_of,
 )
-from volf.pipeline import AnalysisResult, DriftFinding, TriggerContext
+from koyote.pipeline import AnalysisResult, DriftFinding, TriggerContext
 
 
 def _ctx(**kwargs):
@@ -70,15 +70,15 @@ def test_flow_diagram_fenced_and_named():
 def test_footer_names_commit_and_rerun():
     body = render_pr_footer(_ctx())
     assert "abc123" in body
-    assert "@volf" in body
+    assert "@koyote" in body
 
 
 def test_surface_assembly_order():
     from unittest.mock import MagicMock
-    from volf.pipeline import surface_result
-    from volf.config import PipelinePolicy
+    from koyote.pipeline import surface_result
+    from koyote.config import PipelinePolicy
     result = surface_result(_ctx(), _analysis(), PipelinePolicy(), MagicMock())
     body = result.comment_body
-    assert body.index("## Volf review") < body.index("VOLF FOUND A MAINTENANCE ISSUE")
-    assert body.index("```mermaid") > body.index("VOLF FOUND A MAINTENANCE ISSUE")
-    assert body.rstrip().endswith("Comment `@volf` to re-run this review.")
+    assert body.index("## Koyote review") < body.index("KOYOTE FOUND A MAINTENANCE ISSUE")
+    assert body.index("```mermaid") > body.index("KOYOTE FOUND A MAINTENANCE ISSUE")
+    assert body.rstrip().endswith("Comment `@koyote` to re-run this review.")

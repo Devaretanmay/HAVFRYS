@@ -2,13 +2,13 @@ import re
 import os
 
 files_to_clean = [
-    "python/volf/change_source.py",
-    "python/volf/audit.py",
-    "python/volf/maintenance.py",
-    "python/volf/intelligence.py",
-    "python/volf/knowledge.py",
-    "python/volf/github/trust_pr.py",
-    "python/volf/github/provisioning.py",
+    "python/koyote/change_source.py",
+    "python/koyote/audit.py",
+    "python/koyote/maintenance.py",
+    "python/koyote/intelligence.py",
+    "python/koyote/knowledge.py",
+    "python/koyote/github/trust_pr.py",
+    "python/koyote/github/provisioning.py",
     "tests/test_knowledge.py",
     "tests/test_doctor.py",
     "tests/test_credential_scoping.py",

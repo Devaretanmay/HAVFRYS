@@ -3,8 +3,8 @@
 Covers:
 - Execution.git_trailers() RFC-5322 format
 - Security status in git trailers (clean vs blocked actions)
-- `volf diff --trailers` output
-- `volf commit` and `volf apply --commit`
+- `koyote diff --trailers` output
+- `koyote commit` and `koyote apply --commit`
 """
 
 import io
@@ -16,8 +16,8 @@ import tempfile
 from contextlib import redirect_stdout
 
 
-from volf.cli.main import _git_commit_execution, cmd_diff
-from volf.engine.execution import Execution, ExecutionKind, ExecutionManager
+from koyote.cli.main import _git_commit_execution, cmd_diff
+from koyote.engine.execution import Execution, ExecutionKind, ExecutionManager
 
 
 def test_execution_git_trailers_format():
@@ -62,12 +62,12 @@ def test_execution_git_trailers_with_security_violations():
 
 
 def test_git_commit_execution_staging_and_trailers():
-    """_git_commit_execution stages files and creates a commit with Volf trailers."""
+    """_git_commit_execution stages files and creates a commit with Koyote trailers."""
     tmp = tempfile.mkdtemp()
     try:
         subprocess.run(["git", "init", "-b", "main"], cwd=tmp, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "Volf Bot"], cwd=tmp, check=True)
-        subprocess.run(["git", "config", "user.email", "bot@volf.dev"], cwd=tmp, check=True)
+        subprocess.run(["git", "config", "user.name", "Koyote Bot"], cwd=tmp, check=True)
+        subprocess.run(["git", "config", "user.email", "bot@koyote.dev"], cwd=tmp, check=True)
 
         readme = os.path.join(tmp, "README.md")
         with open(readme, "w") as f:
@@ -112,10 +112,10 @@ def test_git_commit_execution_staging_and_trailers():
 
 
 def test_diff_with_trailers_in_json(monkeypatch):
-    """`volf diff --json` includes git_trailers in every execution dictionary."""
+    """`koyote diff --json` includes git_trailers in every execution dictionary."""
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".volf"))
+        os.makedirs(os.path.join(tmp, ".koyote"))
         monkeypatch.chdir(tmp)
         mgr = ExecutionManager(workdir=tmp)
         ex = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"], compartment_id="coding")

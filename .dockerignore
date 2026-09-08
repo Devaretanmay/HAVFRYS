@@ -3,7 +3,7 @@ target/
 __pycache__/
 .pytest_cache/
 logs/
-.volf/
+.koyote/
 .git/
 trials/
 docs/

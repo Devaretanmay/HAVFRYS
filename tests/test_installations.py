@@ -1,4 +1,4 @@
-# Copyright 2026 Volf Authors
+# Copyright 2026 Koyote Authors
 # SPDX-License-Identifier: Apache-2.0
 """Installation persistence: record → index → READY survives restarts."""
 
@@ -6,15 +6,15 @@ import os
 import shutil
 from unittest.mock import MagicMock
 
-from volf.github.installations import (
+from koyote.github.installations import (
     REPO_INDEXED, REPO_PENDING, REPO_READY, list_ready_repos, load_installation,
     record_installation_event, set_repo_state,
 )
-from volf.github.pr_bot import handle_installation_event
+from koyote.github.pr_bot import handle_installation_event
 
 
 def test_record_round_trips(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "inst"))
     rec = record_installation_event(
         {"action": "created", "installation": {"id": 42, "account": {"login": "acme"}}},
         {"acme/backend": {"state": REPO_PENDING}},
@@ -28,7 +28,7 @@ def test_record_round_trips(tmp_path, monkeypatch):
 
 
 def test_install_event_indexes_local_checkout(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "inst"))
     workdir = str(tmp_path / "backend")
     shutil.copytree("trials/fixtures/taxonomy_stripe", workdir)
     client = MagicMock()
@@ -38,13 +38,13 @@ def test_install_event_indexes_local_checkout(tmp_path, monkeypatch):
                                     workdir_fn=lambda r: workdir)
     assert res["success"] is True
     assert res["repo_states"] == {"acme/backend": REPO_READY}
-    assert os.path.isfile(os.path.join(workdir, ".volf", "graph.json"))
+    assert os.path.isfile(os.path.join(workdir, ".koyote", "graph.json"))
     assert client.create_issue.call_count == 1
     assert list_ready_repos("7") == ["acme/backend"]
 
 
 def test_install_event_without_checkout_stays_pending(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "inst"))
     client = MagicMock()
     res = handle_installation_event(
         {"action": "created", "installation": {"id": 8},
@@ -55,7 +55,7 @@ def test_install_event_without_checkout_stays_pending(tmp_path, monkeypatch):
 
 
 def test_ready_lifecycle(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "inst"))
     record_installation_event({"installation": {"id": 9}}, {"acme/a": {"state": REPO_INDEXED}})
     assert list_ready_repos("9") == []
     set_repo_state("9", "acme/a", "READY")

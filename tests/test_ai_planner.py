@@ -4,8 +4,8 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock
 
-from volf.ai_planner import AIPatchPlanner, parse_search_replace_blocks
-from volf.llm import LLMClient, LLMResponse
+from koyote.ai_planner import AIPatchPlanner, parse_search_replace_blocks
+from koyote.llm import LLMClient, LLMResponse
 
 
 class TestAIPatchPlanner(unittest.TestCase):

@@ -1,4 +1,4 @@
-# Copyright 2026 Volf Authors
+# Copyright 2026 Koyote Authors
 # SPDX-License-Identifier: Apache-2.0
 """Watch loop: polls READY checkouts, fires pipeline only on new findings."""
 
@@ -7,8 +7,8 @@ import shutil
 import subprocess
 from unittest.mock import MagicMock
 
-from volf.github.installations import REPO_READY, record_installation_event
-from volf.github.watch import watch_once
+from koyote.github.installations import REPO_READY, record_installation_event
+from koyote.github.watch import watch_once
 
 
 def _seed_repo_with_remote(tmp_path, name="backend"):
@@ -33,10 +33,10 @@ def _seed_repo_with_remote(tmp_path, name="backend"):
 
 
 def test_watch_fires_once_then_quiet(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_INSTALLATIONS_DIR", str(tmp_path / "inst"))
-    monkeypatch.setenv("VOLF_REPOS_DIR", str(tmp_path / "repos"))
-    monkeypatch.setenv("VOLF_REPO_REMOTE_ACME__BACKEND", _seed_repo_with_remote(tmp_path))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY", "GITHUB_TOKEN"):
+    monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("KOYOTE_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("KOYOTE_REPO_REMOTE_ACME__BACKEND", _seed_repo_with_remote(tmp_path))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY", "GITHUB_TOKEN"):
         monkeypatch.delenv(k, raising=False)
     record_installation_event(
         {"action": "created", "installation": {"id": 21, "account": {"login": "acme"}}},
@@ -50,8 +50,8 @@ def test_watch_fires_once_then_quiet(tmp_path, monkeypatch):
 
 
 def test_watch_skips_non_ready(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_INSTALLATIONS_DIR", str(tmp_path / "inst"))
-    monkeypatch.setenv("VOLF_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "inst"))
+    monkeypatch.setenv("KOYOTE_REPOS_DIR", str(tmp_path / "repos"))
     record_installation_event(
         {"installation": {"id": 22}}, {"acme/pending": {"state": "PENDING"}})
     assert watch_once(client=MagicMock()) == []

@@ -1,4 +1,4 @@
-"""Tests for the framework integration hooks (volf.hooks).
+"""Tests for the framework integration hooks (koyote.hooks).
 
 All hooks are exercised with ``sandbox=False`` because the kernel sandbox
 (Landlock / Seatbelt) is irreversible per process: applying it inside pytest
@@ -13,7 +13,7 @@ import shutil
 import tempfile
 import unittest
 
-from volf.hooks.base import (
+from koyote.hooks.base import (
     DEFAULT_PERMISSIONS,
     VALID_PERMISSIONS,
     ExecutionResult,
@@ -22,15 +22,15 @@ from volf.hooks.base import (
     index_workdir,
     validate_permissions,
 )
-from volf.hooks.langchain import VolfGraphNode, VolfPythonREPLTool
-from volf.hooks.crewai import VolfCodeInterpreterTool, CrewAICodeExecutor
-from volf.hooks.autogen import VolfCodeExecutor, CodeBlock, CodeResult
-from volf.hooks.data_agent import DataScienceSandboxHook
+from koyote.hooks.langchain import KoyoteGraphNode, KoyotePythonREPLTool
+from koyote.hooks.crewai import KoyoteCodeInterpreterTool, CrewAICodeExecutor
+from koyote.hooks.autogen import KoyoteCodeExecutor, CodeBlock, CodeResult
+from koyote.hooks.data_agent import DataScienceSandboxHook
 
 
 class TempCase(unittest.TestCase):
     def setUp(self):
-        self.base = tempfile.mkdtemp(prefix="volf_hooks_test_")
+        self.base = tempfile.mkdtemp(prefix="koyote_hooks_test_")
         self.workdir = os.path.join(self.base, "run")
         os.makedirs(self.workdir, exist_ok=True)
 
@@ -141,20 +141,20 @@ class TestSandboxRunner(TempCase):
 
 class TestLangchainTool(TempCase):
     def test_runs_code(self):
-        tool = VolfPythonREPLTool(workdir=self.workdir, sandbox=False)
+        tool = KoyotePythonREPLTool(workdir=self.workdir, sandbox=False)
         self.assertIn("2", tool._run("print(1 + 1)"))
 
     def test_sanitizes_input(self):
-        tool = VolfPythonREPLTool(workdir=self.workdir, sandbox=False)
+        tool = KoyotePythonREPLTool(workdir=self.workdir, sandbox=False)
         self.assertIn("42", tool._run("```python\nprint(40 + 2)\n```"))
 
     def test_invoke(self):
-        tool = VolfPythonREPLTool(workdir=self.workdir, sandbox=False)
+        tool = KoyotePythonREPLTool(workdir=self.workdir, sandbox=False)
         self.assertIn("7", tool.invoke("print(3 + 4)"))
 
     def test_rejects_bad_permission(self):
         with self.assertRaises(ValueError):
-            VolfPythonREPLTool(workdir=self.workdir, permission=["banana"])
+            KoyotePythonREPLTool(workdir=self.workdir, permission=["banana"])
 
 
 class TestLanggraphNode(TempCase):
@@ -162,14 +162,14 @@ class TestLanggraphNode(TempCase):
         def crunch(state, ctx):
             return {"result": state["input"] + 1}
 
-        node = VolfGraphNode(crunch, workdir=self.workdir, sandbox=False).as_node()
+        node = KoyoteGraphNode(crunch, workdir=self.workdir, sandbox=False).as_node()
         self.assertEqual(node({"input": 1}), {"result": 2})
 
     def test_node_error_propagates(self):
         def boom(state, ctx):
             raise RuntimeError("kaboom")
 
-        node = VolfGraphNode(boom, workdir=self.workdir, sandbox=False).as_node()
+        node = KoyoteGraphNode(boom, workdir=self.workdir, sandbox=False).as_node()
         result = node({})
         self.assertIn("error", result)
         self.assertIn("kaboom", result["error"])
@@ -183,7 +183,7 @@ class TestLanggraphNode(TempCase):
                 self.nodes[name] = (action, metadata)
 
         builder = FakeBuilder()
-        g = VolfGraphNode(
+        g = KoyoteGraphNode(
             lambda state, ctx: {"done": True}, workdir=self.workdir, sandbox=False,
         )
         name = g.attach(builder, name="work", metadata={"permissions": ["fs_read", "fs_exec"]})
@@ -193,7 +193,7 @@ class TestLanggraphNode(TempCase):
         self.assertTrue(callable(action))
 
     def test_attach_missing_builder_raises(self):
-        g = VolfGraphNode(lambda state, ctx: {}, workdir=self.workdir, sandbox=False)
+        g = KoyoteGraphNode(lambda state, ctx: {}, workdir=self.workdir, sandbox=False)
         with self.assertRaises(TypeError):
             g.attach(None)
 
@@ -203,7 +203,7 @@ class TestLanggraphNode(TempCase):
                 self.meta = metadata
 
         builder = FakeBuilder()
-        g = VolfGraphNode(
+        g = KoyoteGraphNode(
             lambda state, ctx: {}, workdir=self.workdir, sandbox=False,
             permission=["fs_read", "fs_write"],
         )
@@ -213,15 +213,15 @@ class TestLanggraphNode(TempCase):
 
 class TestCrewAI(TempCase):
     def test_code_interpreter_runs(self):
-        tool = VolfCodeInterpreterTool(workdir=self.workdir, sandbox=False)
+        tool = KoyoteCodeInterpreterTool(workdir=self.workdir, sandbox=False)
         self.assertIn("crew hi", tool._run(code="print('crew hi')"))
 
     def test_callable_contract(self):
-        tool = VolfCodeInterpreterTool(workdir=self.workdir, sandbox=False)
+        tool = KoyoteCodeInterpreterTool(workdir=self.workdir, sandbox=False)
         self.assertIn("callable", tool("print('callable')"))
 
     def test_error_surface(self):
-        tool = VolfCodeInterpreterTool(workdir=self.workdir, sandbox=False)
+        tool = KoyoteCodeInterpreterTool(workdir=self.workdir, sandbox=False)
         self.assertIn("ValueError", tool._run(code="raise ValueError('boom')"))
 
     def test_executor(self):
@@ -232,7 +232,7 @@ class TestCrewAI(TempCase):
 
 class TestAutoGen(TempCase):
     def test_python_blocks(self):
-        ex = VolfCodeExecutor(workdir=self.workdir, sandbox=False)
+        ex = KoyoteCodeExecutor(workdir=self.workdir, sandbox=False)
         result = ex.execute_code_blocks([CodeBlock("python", "print('autogen')")])
         self.assertIsInstance(result, CodeResult)
         self.assertEqual(result.exit_code, 0)
@@ -240,30 +240,30 @@ class TestAutoGen(TempCase):
         self.assertTrue(result)
 
     def test_shell_blocks(self):
-        result = VolfCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks(
+        result = KoyoteCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks(
             [CodeBlock("bash", "echo shell-block")]
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIn("shell-block", result.output)
 
     def test_empty_blocks(self):
-        result = VolfCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks([])
+        result = KoyoteCodeExecutor(workdir=self.workdir, sandbox=False).execute_code_blocks([])
         self.assertEqual(result.exit_code, 0)
         self.assertEqual(result.output, "")
 
     def test_async_execution(self):
         result = asyncio.run(
-            VolfCodeExecutor(workdir=self.workdir, sandbox=False).aexecute_code_blocks(
+            KoyoteCodeExecutor(workdir=self.workdir, sandbox=False).aexecute_code_blocks(
                 [CodeBlock("python", "print('async')")]
             )
         )
         self.assertIn("async", result.output)
 
     def test_restart(self):
-        VolfCodeExecutor(workdir=self.workdir, sandbox=False).restart()
+        KoyoteCodeExecutor(workdir=self.workdir, sandbox=False).restart()
 
     def test_extractor_parses_markdown(self):
-        executor = VolfCodeExecutor(workdir=self.workdir, sandbox=False)
+        executor = KoyoteCodeExecutor(workdir=self.workdir, sandbox=False)
         blocks = executor.code_extractor.extract_code_blocks("```python\nprint(1)\n```")
         self.assertGreater(len(blocks), 0)
 

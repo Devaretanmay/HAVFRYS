@@ -3,9 +3,9 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "volf"
+name = "koyote"
 version = "1.1.0"
-description = "Volf: autonomous software maintenance for systems that change. Detect contract drift, repair, verify, and deliver PRs."
+description = "Koyote: autonomous software maintenance for systems that change. Detect contract drift, repair, verify, and deliver PRs."
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 keywords = ["ai-agents", "developer-tools", "provenance", "audit", "sandbox", "isolation"]
@@ -27,20 +27,20 @@ dependencies = [
 ]
 
 [project.scripts]
-volf = "volf.cli.main:cli"
+koyote = "koyote.cli.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/Devaretanmay/Volf"
-Repository = "https://github.com/Devaretanmay/Volf"
-Issues = "https://github.com/Devaretanmay/Volf/issues"
+Homepage = "https://github.com/Devaretanmay/Koyote"
+Repository = "https://github.com/Devaretanmay/Koyote"
+Issues = "https://github.com/Devaretanmay/Koyote/issues"
 
 [tool.maturin]
 features = ["pyo3-binding"]
 python-source = "python"
-module-name = "volf._core"
+module-name = "koyote._core"
 
 [tool.pytest.ini_options]
-# Tests import the installed volf package, not the source tree.
+# Tests import the installed koyote package, not the source tree.
 # (The source tree intentionally contains no compiled _core.*.so; the native
 # module ships inside the wheel, so importing source here would silently lose
 # the sandbox/compression core.)

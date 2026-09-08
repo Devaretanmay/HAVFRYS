@@ -1,7 +1,7 @@
 {
-  "name": "@volf/sdk",
+  "name": "@koyote/sdk",
   "version": "1.0.4",
-  "description": "Volf TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
+  "description": "Koyote TypeScript SDK - sandbox any AI agent in seconds. Kernel-enforced isolation, deny-by-default, no containers, no VMs.",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
@@ -17,21 +17,21 @@
     "prepack": "npm run build:target"
   },
   "napi": {
-    "name": "volf-native",
+    "name": "koyote-native",
     "triples": {
       "defaults": true
     },
-    "binaryName": "volf-native"
+    "binaryName": "koyote-native"
   },
   "optionalDependencies": {
-    "@volf/sdk-darwin-arm64": "1.0.4",
-    "@volf/sdk-darwin-x64": "1.0.4"
+    "@koyote/sdk-darwin-arm64": "1.0.4",
+    "@koyote/sdk-darwin-x64": "1.0.4"
   },
   "engines": {
     "node": ">= 16.0.0"
   },
   "keywords": [
-    "volf",
+    "koyote",
     "sandbox",
     "kernel",
     "isolation",
@@ -44,14 +44,14 @@
     "compartment"
   ],
   "license": "Apache-2.0",
-  "author": "Volf Labs (Devaretanmay) <tanmaydevare@gmail.com>",
+  "author": "Koyote Labs (Devaretanmay) <tanmaydevare@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Devaretanmay/Volf.git"
+    "url": "https://github.com/Devaretanmay/Koyote.git"
   },
-  "homepage": "https://github.com/Devaretanmay/Volf#readme",
+  "homepage": "https://github.com/Devaretanmay/Koyote#readme",
   "bugs": {
-    "url": "https://github.com/Devaretanmay/Volf/issues"
+    "url": "https://github.com/Devaretanmay/Koyote/issues"
   },
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0"

@@ -116,7 +116,7 @@ STDERR:
     }
 }
 
-/// Structured semantic comparison between Volf's patch and the human git diff.
+/// Structured semantic comparison between Koyote's patch and the human git diff.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SemanticDiffMatch {
     pub overlapping_files: Vec<String>,
@@ -161,7 +161,7 @@ pub struct ReplayEvidence {
     pub files_modified: usize,
     pub unintended_files_modified: usize,
     pub human_diff_blake3_hash: String,
-    pub volf_diff_blake3_hash: String,
+    pub koyote_diff_blake3_hash: String,
     pub semantic_match: SemanticDiffMatch,
     pub environment: EnvironmentDiagnostics,
     pub classification: CausalReplayClassification,
@@ -175,7 +175,7 @@ pub fn classify_replay(evidence: &ReplayEvidence) -> (CausalReplayClassification
     for p in &placeholder_prefixes {
         if evidence.lockfile_blake3_hash.starts_with(p)
             || evidence.human_diff_blake3_hash.starts_with(p)
-            || evidence.volf_diff_blake3_hash.starts_with(p)
+            || evidence.koyote_diff_blake3_hash.starts_with(p)
         {
             return (CausalReplayClassification::Inconclusive, false);
         }
@@ -265,9 +265,9 @@ pub fn collect_environment_diagnostics() -> EnvironmentDiagnostics {
     }
 }
 
-/// Compute structured semantic comparison between Volf's patch and human diff.
+/// Compute structured semantic comparison between Koyote's patch and human diff.
 pub fn compare_diffs_semantically(
-    volf_diff: &str,
+    koyote_diff: &str,
     human_diff: &str,
     target_file: &str,
 ) -> SemanticDiffMatch {
@@ -284,11 +284,11 @@ pub fn compare_diffs_semantically(
         }
     }
 
-    if human_files.contains(target_file) || volf_diff.contains(target_file) {
+    if human_files.contains(target_file) || koyote_diff.contains(target_file) {
         overlapping_files.push(target_file.to_string());
     }
 
-    let volf_added: Vec<&str> = volf_diff
+    let koyote_added: Vec<&str> = koyote_diff
         .lines()
         .filter(|l| l.starts_with('+') && !l.starts_with("+++"))
         .map(|l| l.trim_start_matches('+').trim())
@@ -303,7 +303,7 @@ pub fn compare_diffs_semantically(
         .collect();
 
     let mut overlapping_semantic_edits = 0;
-    for c_line in &volf_added {
+    for c_line in &koyote_added {
         let is_match = human_added.iter().any(|h| {
             h.contains(c_line)
                 || c_line.contains(h)
@@ -315,13 +315,13 @@ pub fn compare_diffs_semantically(
         }
     }
 
-    let extra_edits = volf_added.len().saturating_sub(overlapping_semantic_edits);
-    let missed_edits = if overlapping_semantic_edits == 0 && !volf_added.is_empty() { 1 } else { 0 };
+    let extra_edits = koyote_added.len().saturating_sub(overlapping_semantic_edits);
+    let missed_edits = if overlapping_semantic_edits == 0 && !koyote_added.is_empty() { 1 } else { 0 };
     let unrelated_human_edits = human_added.len().saturating_sub(overlapping_semantic_edits);
 
-    let semantic_score = if !volf_added.is_empty() {
+    let semantic_score = if !koyote_added.is_empty() {
         if !human_added.is_empty() {
-            overlapping_semantic_edits as f64 / volf_added.len() as f64
+            overlapping_semantic_edits as f64 / koyote_added.len() as f64
         } else {
             1.0
         }
@@ -346,7 +346,7 @@ mod tests {
 
     #[test]
     fn test_execute_and_record_command_produces_real_output_and_hash() {
-        let temp = std::env::temp_dir().join("volf_test_exec");
+        let temp = std::env::temp_dir().join("koyote_test_exec");
         let _ = fs::create_dir_all(&temp);
         let log_file = temp.join("test.log");
         let rec = execute_and_record_command("echo", &["hello", "world"], &temp, &log_file);
@@ -380,7 +380,7 @@ mod tests {
             files_modified: 1,
             unintended_files_modified: 0,
             human_diff_blake3_hash: "abc".into(),
-            volf_diff_blake3_hash: "def".into(),
+            koyote_diff_blake3_hash: "def".into(),
             semantic_match: SemanticDiffMatch {
                 overlapping_files: vec![],
                 overlapping_hunks_count: 0,

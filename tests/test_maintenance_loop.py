@@ -1,6 +1,6 @@
 import json
 import shutil
-from volf.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
+from koyote.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
 
 
 def test_detect_drift_in_fixture():
@@ -45,8 +45,8 @@ def test_quarantine_reports_no_path(tmp_path, monkeypatch):
     repo = tmp_path / "r"
     repo.mkdir()
     (repo / "package.json").write_text(json.dumps({"dependencies": {"twilio": "^1.0.0"}}))
-    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "none.json"))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY"):
+    monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
     report = run_maintenance_cycle(str(repo), "twilio", from_version="1.0", to_version="2.0")
     assert not report.success

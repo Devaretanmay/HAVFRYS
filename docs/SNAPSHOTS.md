@@ -1,6 +1,6 @@
 # BLAKE3 Snapshot & Differential Rollback Guide
 
-Volf provides high-speed, BLAKE3 hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee physical workspace recovery.
+Koyote provides high-speed, BLAKE3 hash-based workspace snapshotting and differential file restoration to neutralize rogue file modifications and guarantee physical workspace recovery.
 
 ---
 
@@ -8,24 +8,24 @@ Volf provides high-speed, BLAKE3 hash-based workspace snapshotting and different
 
 1. **Pre-Execution Manifest**: Before an agent or workflow step executes, `SnapshotManager` scans the workspace directory (excluding `.git`, `.venv`, `node_modules`, `target`) and computes 16-byte BLAKE3 hashes for every file.
 2. **Execution Tracking**: The agent runs inside its isolated kernel compartment.
-3. **Differential Restoration (`volf undo`)**:
+3. **Differential Restoration (`koyote undo`)**:
    - Modified files are restored to their exact pre-execution content.
    - Deleted files are recovered.
    - Newly created stray files are cleanly purged.
 
 ---
 
-## 2. CLI Usage (`volf undo`)
+## 2. CLI Usage (`koyote undo`)
 
 ```bash
 # Execute an agent
-volf claude
+koyote claude
 
 # Inspect changes
-volf diff
+koyote diff
 
 # Rollback physical files instantly if the agent corrupted code
-volf undo
+koyote undo
 ```
 
 ---
@@ -33,12 +33,12 @@ volf undo
 ## 3. Python SDK Usage
 
 ```python
-from volf.sandbox.snapshot import SnapshotManager
+from koyote.sandbox.snapshot import SnapshotManager
 
 # Initialize manager for the target worktree
 snap = SnapshotManager(
     workdir=".",
-    snapshot_dir=".volf/snapshots/exec_101"
+    snapshot_dir=".koyote/snapshots/exec_101"
 )
 
 # Take pre-execution snapshot
@@ -59,4 +59,4 @@ snap.cleanup()
 
 ## 4. Automatic Snapshotting in Workflows & Agent Sessions
 
-When using `volf claude`, `volf --run <workflow>`, or `AgentVolf`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.
+When using `koyote claude`, `koyote --run <workflow>`, or `AgentKoyote`, pre-execution snapshots are created automatically. Execution results track all added, modified, and deleted files with full auditability.

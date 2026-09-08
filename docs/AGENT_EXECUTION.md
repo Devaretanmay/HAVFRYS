@@ -1,6 +1,6 @@
-# Volf Agent Execution & Terminal TUI Supervision
+# Koyote Agent Execution & Terminal TUI Supervision
 
-Volf enables developers to run interactive terminal coding agents (Claude Code, OpenCode, Codex, Cursor, Aider) inside an OS kernel sandbox with zero configuration.
+Koyote enables developers to run interactive terminal coding agents (Claude Code, OpenCode, Codex, Cursor, Aider) inside an OS kernel sandbox with zero configuration.
 
 ---
 
@@ -9,14 +9,14 @@ Volf enables developers to run interactive terminal coding agents (Claude Code, 
 Launch your agent directly inside an isolated sandbox:
 
 ```bash
-volf claude
-volf opencode
-volf codex
-volf cursor
-volf aider
+koyote claude
+koyote opencode
+koyote codex
+koyote cursor
+koyote aider
 ```
 
-Volf automatically:
+Koyote automatically:
 1. Detects the genuine binary on system `PATH`.
 2. Allocates a pseudo-terminal master/slave pair (`PtySupervisor`).
 3. Takes a pre-execution BLAKE3 workspace snapshot.
@@ -34,7 +34,7 @@ Interactive agents rely on advanced terminal features that standard process pipe
 - **Signal Forwarding** (Ctrl+C for cancellation, Ctrl+D for EOF)
 - **Raw Input Mode** (instant keystroke response without enter buffering)
 
-Volf's `PtySupervisor` bridges these capabilities seamlessly so the agent runs identically to a bare-metal session.
+Koyote's `PtySupervisor` bridges these capabilities seamlessly so the agent runs identically to a bare-metal session.
 
 ---
 
@@ -58,14 +58,14 @@ After the agent completes its task:
 
 ```bash
 # 1. Review file changes attributed by execution
-volf diff
+koyote diff
 
 # 2. Promote changes to workspace baseline
-volf apply
+koyote apply
 
 # 3. Commit with provenance trailers
-volf commit -m "feat(auth): add OAuth provider"
+koyote commit -m "feat(auth): add OAuth provider"
 
 # 4. If the agent made a mistake, rollback instantly
-volf undo
+koyote undo
 ```

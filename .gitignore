@@ -34,6 +34,7 @@ logs/
 .envrc
 
 # Test runs write index state into fixture checkouts; never commit it
+trials/**/.koyote/
 trials/**/.volf/
 trials/**/.sheepdog/
 trials/**/.compart/

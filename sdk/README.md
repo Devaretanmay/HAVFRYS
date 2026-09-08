@@ -1,14 +1,14 @@
-# Volf SDKs
+# Koyote SDKs
 
 **One Rust core, two thin language wrappers.**
 
-Volf implements kernel sandboxing, output compression, and the
+Koyote implements kernel sandboxing, output compression, and the
 compartment runtime once in Rust. The Python and TypeScript SDKs expose the
 supported native bindings directly:
 
 ```
-volf-core (Rust)
- |-- pyo3 module  (volf._core)     -> Python SDK (published on PyPI)
+koyote-core (Rust)
+ |-- pyo3 module  (koyote._core)     -> Python SDK (published on PyPI)
  `-- napi crate   (sdk/typescript/native) -> TypeScript SDK (Node addon)
 ```
 
@@ -20,7 +20,7 @@ All SDKs require the Rust core built once (from the repository root):
 cargo build --release
 ```
 
-This produces `target/release/libvolf_core.dylib`/`.so`, and the
+This produces `target/release/libkoyote_core.dylib`/`.so`, and the
 rlib used by the napi crate.
 
 ## TypeScript SDK: `sdk/typescript/`
@@ -31,37 +31,37 @@ packages have been built and uploaded at the same version:
 ```bash
 cd sdk/typescript
 npm install
-npm run build   # compiles the napi addon (volf-native.<platform>-<arch>.node)
+npm run build   # compiles the napi addon (koyote-native.<platform>-<arch>.node)
 npm test
 ```
 
 ```ts
-import * as volf from '@volf/sdk'
+import * as koyote from '@koyote/sdk'
 
-volf.version()                    // "1.1.0"
-volf.sandboxSupported()           // true
-const out = volf.compress(text)
+koyote.version()                    // "1.1.0"
+koyote.sandboxSupported()           // true
+const out = koyote.compress(text)
 
 // Compartment runtime handle (parse once, route many).
 // configs: { configs: [{ name: 'a', allow_outbound_to: ['b'] }, { name: 'b' }] }
 // edgesJSON: '[['a','b']]'
-const rt = new volf.Runtime(configs, edgesJSON)
+const rt = new koyote.Runtime(configs, edgesJSON)
 rt.canRoute('a', 'b')        // true
 rt.runOrder()                // ['a', 'b', ...]
 rt.names()                   // ['a', 'b', ...]
 ```
 
-## Python SDK: `python/volf/`
+## Python SDK: `python/koyote/`
 
-Published on PyPI as `volf` : the same kernel-enforced isolation,
+Published on PyPI as `koyote` : the same kernel-enforced isolation,
 compartments, snapshots, and credential proxy, callable from Python 3.10+:
 
 ```bash
-pip install volf
+pip install koyote
 ```
 
 ```python
-from volf import Volf
+from koyote import Koyote
 ```
 
 ## Notes

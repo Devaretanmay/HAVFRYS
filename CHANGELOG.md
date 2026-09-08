@@ -1,8 +1,12 @@
 # Changelog
 
-All notable changes to Volf are documented here.
+All notable changes to Koyote are documented here.
 
 ## [Unreleased]
+
+### Changed
+- **Rename Volf → Koyote across product, code, and docs.** Package `koyote` 1.1.0 (CLI, imports, crate `koyote-core`, `KOYOTE_*` env, `.koyote/` state dirs, MCP tools, `@koyote` trigger, trailers, SDK names). Hard cut with no aliases. KB keeps pinned legacy read paths for `.volf/`, `.sheepdog/`, and `.compart/` trees.
+- **Howl warns, Hunt repairs.** Consult Issues sign as Howl, verified Trust PRs as Hunt — two voices, one reasoning engine.
 
 ### Changed
 - **Rename Sheepdog → Volf across product, code, and docs.** Package `volf` 1.1.0 (CLI, imports, crate `volf-core`, `VOLF_*` env, `.volf/` state dirs, MCP tools, `@volf` trigger, trailers, SDK names). Hard cut with no aliases. KB keeps pinned legacy read paths for `.sheepdog/` and `.compart/` trees.

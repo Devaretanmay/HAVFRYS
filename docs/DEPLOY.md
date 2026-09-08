@@ -1,4 +1,4 @@
-# Deploying the Volf GitHub App Daemon
+# Deploying the Koyote GitHub App Daemon
 
 ## 1. GitHub App setup
 
@@ -12,38 +12,38 @@
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `VOLF_WEBHOOK_SECRET` | **yes** | HMAC validation. The daemon refuses to serve without it (`--no-secret` is local-debug only). |
-| `GITHUB_TOKEN` or App `VOLF_GITHUB_APP_ID` + `VOLF_GITHUB_PRIVATE_KEY` | yes for private repos / PR writes | Clone auth and PR comments. Public repos work anonymously for clones. |
+| `KOYOTE_WEBHOOK_SECRET` | **yes** | HMAC validation. The daemon refuses to serve without it (`--no-secret` is local-debug only). |
+| `GITHUB_TOKEN` or App `KOYOTE_GITHUB_APP_ID` + `KOYOTE_GITHUB_PRIVATE_KEY` | yes for private repos / PR writes | Clone auth and PR comments. Public repos work anonymously for clones. |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | only for AI repair | Deterministic repairs and checks run without any key. |
 | `PORT` | no (default 8080) | Listen port. |
-| `VOLF_REPOS_DIR`, `VOLF_INSTALLATIONS_DIR` | no | Managed checkouts and install records. Persist both (volume `/data`). |
+| `KOYOTE_REPOS_DIR`, `KOYOTE_INSTALLATIONS_DIR` | no | Managed checkouts and install records. Persist both (volume `/data`). |
 
 ## 3. Run with Docker
 
 ```bash
-docker build -f docker/Dockerfile.app -t volf-app:1.1.0 .
-docker run -d --name volf -p 8080:8080 --env-file .env -v volf-data:/data volf-app:1.1.0
+docker build -f docker/Dockerfile.app -t koyote-app:1.1.0 .
+docker run -d --name koyote -p 8080:8080 --env-file .env -v koyote-data:/data koyote-app:1.1.0
 ```
 
 With background monitoring (poll READY repos every 5 minutes):
 
 ```bash
-docker run -d --name volf -p 8080:8080 --env-file .env -v volf-data:/data \
-  volf-app:1.1.0 sh -c "volf app serve --port ${PORT:-8080} --watch 300"
+docker run -d --name koyote -p 8080:8080 --env-file .env -v koyote-data:/data \
+  koyote-app:1.1.0 sh -c "koyote app serve --port ${PORT:-8080} --watch 300"
 ```
 
 ## 4. Run on bare metal
 
 ```bash
-pip install volf
-export VOLF_WEBHOOK_SECRET=... GITHUB_TOKEN=...
-volf app serve --port 8080 --watch 300
+pip install koyote
+export KOYOTE_WEBHOOK_SECRET=... GITHUB_TOKEN=...
+koyote app serve --port 8080 --watch 300
 ```
 
 ## 5. Verify
 
 - `GET /health` → `{"status": "healthy"}`.
-- `volf doctor` on the host shows GitHub CONNECTED once token env is set.
+- `koyote doctor` on the host shows GitHub CONNECTED once token env is set.
 - Install the App on a test repo: an onboarding issue appears and the repo
   reaches READY; open a PR touching a migrated SDK to see the contract guard.
 

@@ -1,6 +1,6 @@
-# Volf Framework Integration Hooks
+# Koyote Framework Integration Hooks
 
-Run AI agent code inside kernel-enforced compartments from any major agent framework. Volf provides lightweight, drop-in tool wrappers for popular Python agent frameworks.
+Run AI agent code inside kernel-enforced compartments from any major agent framework. Koyote provides lightweight, drop-in tool wrappers for popular Python agent frameworks.
 
 ---
 
@@ -9,7 +9,7 @@ Run AI agent code inside kernel-enforced compartments from any major agent frame
 Wrap any LangGraph node execution inside an isolated compartment:
 
 ```python
-from volf.hooks import VolfGraphNode
+from koyote.hooks import KoyoteGraphNode
 from langgraph.graph import StateGraph, START, END
 
 def data_processing_node(state, ctx):
@@ -18,7 +18,7 @@ def data_processing_node(state, ctx):
         f.write(state["value"].upper())
     return {"status": "complete"}
 
-node = VolfGraphNode(data_processing_node, workdir=".")
+node = KoyoteGraphNode(data_processing_node, workdir=".")
 
 builder = StateGraph(dict)
 builder.add_node("process", node.attach(builder))
@@ -33,10 +33,10 @@ builder.add_edge("process", END)
 Replace standard Python REPL tools with a kernel-enforced sandboxed version:
 
 ```python
-from volf.hooks import VolfPythonREPLTool
+from koyote.hooks import KoyotePythonREPLTool
 
 # Create a sandboxed Python REPL tool
-tool = VolfPythonREPLTool(permissions=["fs_read", "fs_write"])
+tool = KoyotePythonREPLTool(permissions=["fs_read", "fs_write"])
 
 # Execute agent-generated code safely
 result = tool.invoke("print(21 * 2)")
@@ -47,17 +47,17 @@ print(result)
 
 ## 3. CrewAI Integration
 
-Replace Docker-based code execution in CrewAI with native sub-millisecond Volf sandboxing:
+Replace Docker-based code execution in CrewAI with native sub-millisecond Koyote sandboxing:
 
 ```python
 from crewai import Agent
-from volf.hooks import VolfCodeInterpreterTool
+from koyote.hooks import KoyoteCodeInterpreterTool
 
-# Initialize agent with Volf code interpreter
+# Initialize agent with Koyote code interpreter
 agent = Agent(
     role="Data Analyst",
     goal="Analyze logs safely",
-    tools=[VolfCodeInterpreterTool(permissions=["fs_read"])]
+    tools=[KoyoteCodeInterpreterTool(permissions=["fs_read"])]
 )
 ```
 
@@ -68,11 +68,11 @@ agent = Agent(
 Sandbox multi-turn code block execution in AutoGen conversations:
 
 ```python
-from volf.hooks import VolfCodeExecutor, CodeBlock
+from koyote.hooks import KoyoteCodeExecutor, CodeBlock
 
-executor = VolfCodeExecutor(permissions=["fs_read", "fs_write", "fs_exec"])
+executor = KoyoteCodeExecutor(permissions=["fs_read", "fs_write", "fs_exec"])
 result = executor.execute_code_blocks([
-    CodeBlock("python", "print('Hello from AutoGen inside Volf')")
+    CodeBlock("python", "print('Hello from AutoGen inside Koyote')")
 ])
 
 print(f"Exit code: {result.exit_code}")
@@ -86,7 +86,7 @@ print(f"Output: {result.output}")
 Mount read-only datasets, enforce default-deny network rules to prevent data exfiltration, and track pandas file diffs:
 
 ```python
-from volf.hooks import DataScienceSandboxHook
+from koyote.hooks import DataScienceSandboxHook
 
 hook = DataScienceSandboxHook(workdir=".")
 hook.mount_dataset("sales_data.csv")

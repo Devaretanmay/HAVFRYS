@@ -1,15 +1,15 @@
-# Copyright 2026 Volf Authors
+# Copyright 2026 Koyote Authors
 # SPDX-License-Identifier: Apache-2.0
 """AI-first reasoning: deep context assembly and hybrid escalation."""
 
 import os
 from unittest.mock import MagicMock
 
-from volf.ai_planner import (
+from koyote.ai_planner import (
     AIPatchPlanner, MAX_PROMPT_FILE_CHARS, bound_file_content, build_reasoning_context,
 )
-from volf.knowledge import upsert_learned, record_failure
-from volf.llm import LLMClient, LLMResponse
+from koyote.knowledge import upsert_learned, record_failure
+from koyote.llm import LLMClient, LLMResponse
 
 
 def _seed_repo(dst: str):
@@ -91,7 +91,7 @@ def test_prompt_carries_reasoning_and_memory(tmp_path):
 
 def test_hybrid_completion_for_untouched_files(tmp_path, monkeypatch):
     """Registry rewrites miss unusual.ts (version bump still fires elsewhere); AI must complete it."""
-    import volf.maintenance as mnt
+    import koyote.maintenance as mnt
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     target = os.path.join(dst, "src", "unusual.ts")
@@ -112,9 +112,9 @@ def test_hybrid_completion_for_untouched_files(tmp_path, monkeypatch):
         model="m")
     monkeypatch.setattr(mnt.AIPatchPlanner, "from_env",
                         classmethod(lambda cls, **k: AIPatchPlanner(client=mock_client)))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY"):
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
-    monkeypatch.setenv("VOLF_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
 
     report = mnt.run_maintenance_cycle(dst, "stripe", from_version="11.18.0", to_version="13.0.0")
     assert report.success

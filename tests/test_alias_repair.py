@@ -1,13 +1,13 @@
-# Copyright 2026 Volf Authors
+# Copyright 2026 Koyote Authors
 # SPDX-License-Identifier: Apache-2.0
 """Alias-aware repair: proven client aliases get precise rewrites, never loosened regex."""
 
 import json
 import os
 
-from volf.maintenance import run_maintenance_cycle
-from volf.patch_writer import discover_aliases, instantiate_alias_rules
-from volf.providers.registry import RewriteRule
+from koyote.maintenance import run_maintenance_cycle
+from koyote.patch_writer import discover_aliases, instantiate_alias_rules
+from koyote.providers.registry import RewriteRule
 
 
 def test_instantiate_alias_rules_exact_identifier_only():
@@ -69,8 +69,8 @@ def test_aliased_client_repaired_end_to_end(tmp_path):
         "const s=fs.readFileSync(p.join(__dirname,'../src/billing.ts'),'utf8');"
         "const ok=!s.includes('.del(')&&s.includes('.cancel(');"
         "console.log(ok?'PASS':'FAIL');process.exit(ok?0:1);\n")
-    monkey_env = {"VOLF_CREDENTIALS_FILE": str(tmp_path / "none.json")}
-    old = {k: os.environ.pop(k, None) for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "VOLF_LLM_KEY")}
+    monkey_env = {"KOYOTE_CREDENTIALS_FILE": str(tmp_path / "none.json")}
+    old = {k: os.environ.pop(k, None) for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY")}
     os.environ.update(monkey_env)
     try:
         report = run_maintenance_cycle(str(repo), "stripe", from_version="11.18.0", to_version="13.0.0")
@@ -78,7 +78,7 @@ def test_aliased_client_repaired_end_to_end(tmp_path):
         for k, v in old.items():
             if v is not None:
                 os.environ[k] = v
-        os.environ.pop("VOLF_CREDENTIALS_FILE", None)
+        os.environ.pop("KOYOTE_CREDENTIALS_FILE", None)
     assert report.success, report.error
     content = (repo / "src" / "billing.ts").read_text()
     assert "s.subscriptions.cancel(id)" in content

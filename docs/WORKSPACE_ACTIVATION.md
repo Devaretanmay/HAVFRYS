@@ -1,27 +1,27 @@
-# Volf Workspace Initialization & Agent Execution
+# Koyote Workspace Initialization & Agent Execution
 
 ## 1. What It Is
 
-When you run `volf init`, Volf turns your project directory into a **managed agent workspace**. You launch your favorite agent directly inside an isolated kernel sandbox.
+When you run `koyote init`, Koyote turns your project directory into a **managed agent workspace**. You launch your favorite agent directly inside an isolated kernel sandbox.
 
 ---
 
 ## 2. How It Works
 
 ```text
-volf init
-└── creates .volf/
+koyote init
+└── creates .koyote/
     ├── config.yaml    <- workspace compartment policy
     ├── state/         <- runtime state
     ├── snapshots/     <- BLAKE3 worktree diff snapshots
     └── executions/    <- execution records
 
 Direct Execution:
-  $ volf claude      -> Launches Claude Code in kernel sandbox
-  $ volf opencode    -> Launches OpenCode in kernel sandbox
-  $ volf codex       -> Launches Codex in kernel sandbox
-  $ volf cursor      -> Launches Cursor in kernel sandbox
-  $ volf aider       -> Launches Aider in kernel sandbox
+  $ koyote claude      -> Launches Claude Code in kernel sandbox
+  $ koyote opencode    -> Launches OpenCode in kernel sandbox
+  $ koyote codex       -> Launches Codex in kernel sandbox
+  $ koyote cursor      -> Launches Cursor in kernel sandbox
+  $ koyote aider       -> Launches Aider in kernel sandbox
 ```
 
 ---
@@ -29,29 +29,29 @@ Direct Execution:
 ## 3. Running Interactive Coding Agents
 
 ```bash
-volf claude
-volf opencode
-volf codex
-volf cursor
-volf aider
+koyote claude
+koyote opencode
+koyote codex
+koyote cursor
+koyote aider
 ```
 
 Each interactive agent runs with:
 - Full native TUI support (colors, alternate screen, Ctrl+C, Ctrl+D, window resize).
 - Hard OS-level kernel isolation (Seatbelt on macOS / Landlock on Linux).
 - Deny-by-default credential protection (`~/.ssh`, `~/.aws`, `~/.config/gcloud` blocked).
-- Automatic BLAKE3 pre-execution snapshots for physical instant rollback (`volf undo`).
+- Automatic BLAKE3 pre-execution snapshots for physical instant rollback (`koyote undo`).
 
 ---
 
 ## 4. Checking Workspace Health
 
 ```bash
-volf status
+koyote status
 ```
 
 ```text
-VOLF WORKSPACE: billing-service
+KOYOTE WORKSPACE: billing-service
 
 AGENTS RUNNING
   none
@@ -71,11 +71,11 @@ SECURITY
 Run a declared workflow DAG:
 
 ```bash
-volf --run invoice-pipeline
+koyote --run invoice-pipeline
 ```
 
 Or run standalone Python agent scripts:
 
 ```bash
-volf exec --compartment research -- python3 scraper.py
+koyote exec --compartment research -- python3 scraper.py
 ```

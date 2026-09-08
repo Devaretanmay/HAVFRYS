@@ -1,17 +1,17 @@
-# Product Validation Guide: Testing Volf with Your AI Agents
+# Product Validation Guide: Testing Koyote with Your AI Agents
 
-This guide provides a quick test suite for validating Volf as the audit and control layer for your AI agents and codebase dependencies.
+This guide provides a quick test suite for validating Koyote as the audit and control layer for your AI agents and codebase dependencies.
 
 ---
 
 ## The Core Validation Model
 
 ```text
-WITHOUT VOLF
+WITHOUT KOYOTE
 Agent -> Tools -> OS / Credentials / Network (Unmonitored)
 
-WITH VOLF
-Agent -> VOLF (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
+WITH KOYOTE
+Agent -> KOYOTE (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
 ```
 
 ---
@@ -21,16 +21,16 @@ Agent -> VOLF (Topology, Policies, Proxy, Snapshots) -> OS (Kernel Enforced)
 Validate that an AI agent reading your repo and executing bash commands is blocked from reading `~/.ssh` or `~/.aws` credentials while executing workspace tasks cleanly.
 
 ```bash
-volf claude
+koyote claude
 # or arbitrary command execution:
-volf exec -- cat ~/.ssh/id_rsa
+koyote exec -- cat ~/.ssh/id_rsa
 ```
 
 ### What You Observe:
 - Host SSH credential access is blocked by the OS kernel.
 - Workspace file modifications are tracked with BLAKE3 file diffs.
-- `volf diff` isolates agent modifications.
-- `volf undo` restores workspace state in 2ms.
+- `koyote diff` isolates agent modifications.
+- `koyote undo` restores workspace state in 2ms.
 
 ---
 
@@ -39,8 +39,8 @@ volf exec -- cat ~/.ssh/id_rsa
 Audit your entire codebase for upstream breaking changes, deprecated API callsites, and auto-repairable integrations.
 
 ```bash
-volf audit .
-volf audit . --format=github-issue
+koyote audit .
+koyote audit . --format=github-issue
 ```
 
 ### What You Observe:
@@ -55,7 +55,7 @@ volf audit . --format=github-issue
 Detect upstream API drift and synthesize verified AST patches against breaking changes.
 
 ```bash
-volf maintain . --provider stripe
+koyote maintain . --provider stripe
 ```
 
 ### What You Observe:
@@ -69,4 +69,4 @@ volf maintain . --provider stripe
 
 After running these validation scenarios on your codebase:
 
-> **"Would you run your coding agents without Volf?"**
+> **"Would you run your coding agents without Koyote?"**

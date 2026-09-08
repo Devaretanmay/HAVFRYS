@@ -8,7 +8,7 @@ import uuid
 import unittest
 from blake3 import blake3
 
-from volf.sandbox.snapshot import SnapshotManager, _file_hash
+from koyote.sandbox.snapshot import SnapshotManager, _file_hash
 
 
 def _write(path: str, content: str) -> str:
@@ -22,7 +22,7 @@ class _SnapshotTestBase(unittest.TestCase):
 
     def setUp(self):
         uid = uuid.uuid4().hex[:8]
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_snap_ut_{uid}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"koyote_snap_ut_{uid}")
         self.workdir = os.path.join(self.tmpdir, "work")
         self.snapdir = os.path.join(self.tmpdir, "snapshots")
         os.makedirs(self.workdir)
@@ -195,7 +195,7 @@ class TestSnapshotExcludePatterns(_SnapshotTestBase):
 
     def setUp(self):
         uid = uuid.uuid4().hex[:8]
-        self.tmpdir = os.path.join(tempfile.gettempdir(), f"volf_exclude_ut_{uid}")
+        self.tmpdir = os.path.join(tempfile.gettempdir(), f"koyote_exclude_ut_{uid}")
         self.workdir = os.path.join(self.tmpdir, "work")
         self.snapdir = os.path.join(self.tmpdir, "snapshots")
         os.makedirs(self.workdir)

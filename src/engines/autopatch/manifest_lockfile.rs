@@ -1,4 +1,4 @@
-// Copyright 2026 Volf Authors
+// Copyright 2026 Koyote Authors
 // SPDX-License-Identifier: Apache-2.0
 
 //! Exact Manifest and Lockfile Dependency Resolution Engine.

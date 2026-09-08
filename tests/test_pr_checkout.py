@@ -1,4 +1,4 @@
-# Copyright 2026 Volf Authors
+# Copyright 2026 Koyote Authors
 # SPDX-License-Identifier: Apache-2.0
 """PR-head checkout: exact SHA when fetchable, disclosed fallback otherwise."""
 
@@ -6,7 +6,7 @@ import os
 import subprocess
 from unittest.mock import MagicMock
 
-from volf.github.provisioning import ensure_pr_checkout, resolve_pr_workdir
+from koyote.github.provisioning import ensure_pr_checkout, resolve_pr_workdir
 
 
 def _seed_repo_with_pr_ref(tmp_path):
@@ -34,9 +34,9 @@ def _seed_repo_with_pr_ref(tmp_path):
 
 
 def test_pr_head_exact_checkout(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("KOYOTE_REPOS_DIR", str(tmp_path / "repos"))
     remote, sha = _seed_repo_with_pr_ref(tmp_path)
-    monkeypatch.setenv("VOLF_REPO_REMOTE_ACME__BACKEND", remote)
+    monkeypatch.setenv("KOYOTE_REPO_REMOTE_ACME__BACKEND", remote)
     path, exact = ensure_pr_checkout("acme/backend", 42, sha)
     assert exact is True
     with open(os.path.join(path, "a.txt")) as f:
@@ -44,17 +44,17 @@ def test_pr_head_exact_checkout(tmp_path, monkeypatch):
 
 
 def test_pr_head_missing_sha_falls_back(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("KOYOTE_REPOS_DIR", str(tmp_path / "repos"))
     remote, _ = _seed_repo_with_pr_ref(tmp_path)
-    monkeypatch.setenv("VOLF_REPO_REMOTE_ACME__BACKEND", remote)
+    monkeypatch.setenv("KOYOTE_REPO_REMOTE_ACME__BACKEND", remote)
     path, exact = ensure_pr_checkout("acme/backend", 42, "0" * 40)
     assert exact is False and path is not None
 
 
 def test_resolve_pr_workdir_threads_exactness(tmp_path, monkeypatch):
-    monkeypatch.setenv("VOLF_REPOS_DIR", str(tmp_path / "repos"))
+    monkeypatch.setenv("KOYOTE_REPOS_DIR", str(tmp_path / "repos"))
     remote, sha = _seed_repo_with_pr_ref(tmp_path)
-    monkeypatch.setenv("VOLF_REPO_REMOTE_ACME__BACKEND", remote)
+    monkeypatch.setenv("KOYOTE_REPO_REMOTE_ACME__BACKEND", remote)
     payload = {"repository": {"full_name": "acme/backend"},
                "pull_request": {"number": 42, "head": {"sha": sha}}}
     path, exact = resolve_pr_workdir(payload)
@@ -62,7 +62,7 @@ def test_resolve_pr_workdir_threads_exactness(tmp_path, monkeypatch):
 
 
 def test_approximate_checkout_disclosed_in_status():
-    from volf.pipeline import AnalysisResult, DriftFinding, TriggerContext, surface_result
+    from koyote.pipeline import AnalysisResult, DriftFinding, TriggerContext, surface_result
     ctx = TriggerContext(event_id="e", event_type="pull_request.opened", repository="a/b",
                          ref="x", sha="y", workdir="/tmp", pr_number=1,
                          metadata={"exact_head": False})

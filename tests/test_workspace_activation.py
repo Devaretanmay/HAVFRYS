@@ -1,11 +1,11 @@
 """Tests for workspace activation hardening (M0-M2).
 
 Covers:
-- real-binary resolution that skips the workspace's own .volf/bin shim dir
+- real-binary resolution that skips the workspace's own .koyote/bin shim dir
   (prevents shim self-recursion when the workspace is activated),
-- the VOLF_EXECUTION_ID shim bypass so an agent launched by an agent
+- the KOYOTE_EXECUTION_ID shim bypass so an agent launched by an agent
   inherits the parent execution boundary instead of being wrapped again,
-- the deterministic nested-workspace rule (innermost .volf wins),
+- the deterministic nested-workspace rule (innermost .koyote wins),
 - PtySupervisor resolving real binaries past the shim dir.
 """
 
@@ -15,9 +15,9 @@ import sys
 
 import pytest
 
-from volf.cli.main import _SHIM_TEMPLATE, _resolve_real_binary
-from volf.config import find_workspace_root
-from volf.engine.pty_supervisor import PtySupervisor
+from koyote.cli.main import _SHIM_TEMPLATE, _resolve_real_binary
+from koyote.config import find_workspace_root
+from koyote.engine.pty_supervisor import PtySupervisor
 
 REPO_PYTHON_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "python"
@@ -33,8 +33,8 @@ def _write_executable(path: str, content: str) -> str:
 
 
 def _render_shim(workspace: str, agent: str, real_path: str) -> str:
-    """Write a rendered shim script into workspace/.volf/bin/<agent>."""
-    shim_path = os.path.join(workspace, ".volf", "bin", agent)
+    """Write a rendered shim script into workspace/.koyote/bin/<agent>."""
+    shim_path = os.path.join(workspace, ".koyote", "bin", agent)
     os.makedirs(os.path.dirname(shim_path), exist_ok=True)
     with open(shim_path, "w", encoding="utf-8") as f:
         f.write(_SHIM_TEMPLATE.format(agent=agent, real_path=real_path))
@@ -53,8 +53,8 @@ def _real_binary_script(marker_path: str) -> str:
 
 
 def test_resolve_real_binary_skips_workspace_shim_dir(tmp_path, monkeypatch):
-    """When activated, .volf/bin shadows PATH; the shim must be skipped."""
-    shim_dir = tmp_path / ".volf" / "bin"
+    """When activated, .koyote/bin shadows PATH; the shim must be skipped."""
+    shim_dir = tmp_path / ".koyote" / "bin"
     real_dir = tmp_path / "realbin"
     _write_executable(str(shim_dir / "claude"), "#!/usr/bin/env bash\n")
     real = _write_executable(str(real_dir / "claude"), "#!/usr/bin/env bash\n")
@@ -67,7 +67,7 @@ def test_resolve_real_binary_skips_workspace_shim_dir(tmp_path, monkeypatch):
 
 def test_resolve_real_binary_returns_none_when_only_shim_present(tmp_path, monkeypatch):
     """If the only match on PATH is our own shim, resolution must fail cleanly."""
-    shim_dir = tmp_path / ".volf" / "bin"
+    shim_dir = tmp_path / ".koyote" / "bin"
     _write_executable(str(shim_dir / "claude"), "#!/usr/bin/env bash\n")
 
     monkeypatch.setenv("PATH", f"{shim_dir}:/usr/bin:/bin")
@@ -77,8 +77,8 @@ def test_resolve_real_binary_returns_none_when_only_shim_present(tmp_path, monke
 
 def test_resolve_real_binary_ignores_other_workspace_shims(tmp_path, monkeypatch):
     """Only the governing workspace's shim dir is excluded, not other projects'."""
-    shim_dir = tmp_path / ".volf" / "bin"
-    other_shim_dir = tmp_path / "other-project" / ".volf" / "bin"
+    shim_dir = tmp_path / ".koyote" / "bin"
+    other_shim_dir = tmp_path / "other-project" / ".koyote" / "bin"
     _write_executable(str(shim_dir / "claude"), "#!/usr/bin/env bash\n")
     other = _write_executable(str(other_shim_dir / "claude"), "#!/usr/bin/env bash\n")
 
@@ -94,18 +94,18 @@ def test_shim_bypasses_when_execution_marker_set(tmp_path):
     """An agent launched by another agent inherits the boundary: no re-wrap."""
     workspace = tmp_path / "ws"
     workspace.mkdir()
-    (workspace / ".volf").mkdir(parents=True)
+    (workspace / ".koyote").mkdir(parents=True)
 
     marker = tmp_path / "ran.out"
     real_path = _write_executable(
         str(workspace / "realagent"), _real_binary_script(str(marker))
     )
-    shim = _render_shim(str(workspace), "volf_test_agent", real_path)
+    shim = _render_shim(str(workspace), "koyote_test_agent", real_path)
 
     env = {
         **os.environ,
-        "VOLF_EXECUTION_ID": "exec_123",
-        "VOLF_TEST_MARKER": str(marker),
+        "KOYOTE_EXECUTION_ID": "exec_123",
+        "KOYOTE_TEST_MARKER": str(marker),
     }
     result = subprocess.run(
         ["bash", shim, "--some", "args"],
@@ -123,7 +123,7 @@ def test_shim_runs_real_binary_outside_workspace(tmp_path):
     """Outside any workspace, the shim is transparent: real binary runs."""
     workspace = tmp_path / "ws"
     workspace.mkdir()
-    (workspace / ".volf").mkdir(parents=True)
+    (workspace / ".koyote").mkdir(parents=True)
     outside = tmp_path / "outside"
     outside.mkdir()
 
@@ -131,9 +131,9 @@ def test_shim_runs_real_binary_outside_workspace(tmp_path):
     real_path = _write_executable(
         str(workspace / "realagent"), _real_binary_script(str(marker))
     )
-    shim = _render_shim(str(workspace), "volf_test_agent", real_path)
+    shim = _render_shim(str(workspace), "koyote_test_agent", real_path)
 
-    env = {**os.environ, "VOLF_TEST_MARKER": str(marker)}
+    env = {**os.environ, "KOYOTE_TEST_MARKER": str(marker)}
     result = subprocess.run(
         ["bash", shim],
         cwd=str(outside),
@@ -154,18 +154,18 @@ def test_shim_delegates_to_exec_shim_inside_workspace(tmp_path):
     """
     workspace = tmp_path / "ws"
     workspace.mkdir()
-    (workspace / ".volf").mkdir(parents=True)
+    (workspace / ".koyote").mkdir(parents=True)
 
     marker = tmp_path / "ran.out"
     real_path = _write_executable(
         str(workspace / "realagent"), _real_binary_script(str(marker))
     )
-    shim = _render_shim(str(workspace), "volf_fake_agent_xyz", real_path)
+    shim = _render_shim(str(workspace), "koyote_fake_agent_xyz", real_path)
 
     env = {
         **os.environ,
         "PYTHONPATH": REPO_PYTHON_DIR + os.pathsep + os.environ.get("PYTHONPATH", ""),
-        "VOLF_TEST_MARKER": str(marker),
+        "KOYOTE_TEST_MARKER": str(marker),
     }
     result = subprocess.run(
         ["bash", shim],
@@ -183,9 +183,9 @@ def test_shim_delegates_to_exec_shim_inside_workspace(tmp_path):
 
 def test_find_workspace_root_innermost_wins(tmp_path):
     """A workspace nested inside another resolves to the innermost root."""
-    (tmp_path / ".volf").mkdir()
+    (tmp_path / ".koyote").mkdir()
     inner = tmp_path / "inner"
-    (inner / ".volf").mkdir(parents=True)
+    (inner / ".koyote").mkdir(parents=True)
     deep = inner / "src" / "deep"
     deep.mkdir(parents=True)
 
@@ -198,7 +198,7 @@ def test_find_workspace_root_innermost_wins(tmp_path):
 @pytest.mark.skipif(sys.platform == "win32", reason="PTY not available on Windows")
 def test_pty_supervisor_resolve_skips_shim_dir(tmp_path, monkeypatch):
     """Standalone PtySupervisor must not launch the workspace's own shim."""
-    shim_dir = tmp_path / ".volf" / "bin"
+    shim_dir = tmp_path / ".koyote" / "bin"
     _write_executable(str(shim_dir / "echo"), "#!/usr/bin/env bash\n")
 
     monkeypatch.setenv("PATH", f"{shim_dir}:/usr/bin:/bin")

@@ -1,7 +1,7 @@
-# Volf API Reference & Documentation Map
+# Koyote API Reference & Documentation Map
 
 **Version:** 1.0.4  
-**Package:** `volf` (PyPI)
+**Package:** `koyote` (PyPI)
 
 ---
 
@@ -12,7 +12,7 @@
 - **[Agent Execution & TUI Supervision](AGENT_EXECUTION.md)**: Details on PTY terminal supervision, interactive coding agents, and kernel isolation.
 - **[Framework Integration Hooks](FRAMEWORK_HOOKS.md)**: Drop-in sandboxing for LangGraph, LangChain, CrewAI, and AutoGen.
 - **[Zero-Trust Credential Proxy](CREDENTIAL_PROXY.md)**: Safe API key injection and request routing without exposing raw secrets.
-- **[BLAKE3 Snapshots & Rollback](SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and physical restoration with `volf undo`.
+- **[BLAKE3 Snapshots & Rollback](SNAPSHOTS.md)**: Fast workspace hashing, diff tracking, and physical restoration with `koyote undo`.
 - **[Output Compression & Token Crushing](COMPRESSION.md)**: High-speed Rust token reduction engines (`SmartCrusher`, `LogCompressor`, `DiffCompressor`).
 - **[TypeScript & Node.js SDK](TYPESCRIPT_SDK.md)**: Native NAPI-RS bindings and TypeScript API reference.
 - **[CI/CD Security Integration](CI_INTEGRATION.md)**: GitHub Actions and CI runner drop-in step isolation.
@@ -22,14 +22,14 @@
 
 ## 2. Core Python SDK Classes
 
-### `Volf(workdir=".", config=None, verbose=False)`
+### `Koyote(workdir=".", config=None, verbose=False)`
 Base compartment container for custom agent pipelines.
-- `add(compartment: Compartment) -> Volf`: Register an inner isolated compartment.
-- `edge(from_name: str, to_name: str) -> Volf`: Wire a directional dependency/communication path.
-- `register_module(module_cls) -> Volf`: Register an optional behavior module.
-- `run(entry=None, request="") -> VolfResult`: Execute the topology under OS kernel isolation.
+- `add(compartment: Compartment) -> Koyote`: Register an inner isolated compartment.
+- `edge(from_name: str, to_name: str) -> Koyote`: Wire a directional dependency/communication path.
+- `register_module(module_cls) -> Koyote`: Register an optional behavior module.
+- `run(entry=None, request="") -> KoyoteResult`: Execute the topology under OS kernel isolation.
 
-### `AgentVolf(workdir=".", config=None, verbose=False)`
+### `AgentKoyote(workdir=".", config=None, verbose=False)`
 Agent-oriented outer compartment container. Automatically loads standard behavior modules (Credential Proxy, Snapshots, Compression).
 
 ### `Compartment(name, fn=None, config=None)`
@@ -63,20 +63,20 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ## 3. External-Change Intelligence & AutoPatch APIs
 
-### `from volf import autopatch`
+### `from koyote import autopatch`
 - `plan_maintenance(old_spec: str, new_spec: str, repo_root: str = ".", config: ScanConfig = None) -> MaintenancePlan`: Generates breaking-change diff, scans callsites, and computes patch targets.
 - `apply_patch(repo_root: str, plan: MaintenancePlan, dry_run: bool = False) -> List[PatchResult]`: Applies surgical AST transformations.
 - `synthesize_contracts(api_name: str, old_ver: str, new_ver: str, specs: List[VerificationSpec], lang: str = "ts") -> str`: Synthesizes Vitest/pytest contract test suites.
 
-### `from volf.graph import build_dependency_graph, audit_dependency_graph`
+### `from koyote.graph import build_dependency_graph, audit_dependency_graph`
 - `build_dependency_graph(repo_root: str = ".") -> Dict[str, Any]`: Constructs the full External Dependency Graph across manifests, wrappers, and AST callsites.
 - `audit_dependency_graph(repo_root: str = ".") -> Dict[str, Any]`: Generates structured audit summary (at-risk, watchlist, healthy).
 
-### `from volf.maintenance import run_maintenance_cycle, detect_drift`
+### `from koyote.maintenance import run_maintenance_cycle, detect_drift`
 - `detect_drift(repo_dir: str, provider_name: str) -> List[Dict[str, Any]]`: Scans for outdated external dependencies.
 - `run_maintenance_cycle(repo_dir: str, provider_name: str, ...) -> MaintenanceReport`: Runs end-to-end drift detection, AST patching, formatting, test verification, and PR creation.
 
-### `from volf.maintenance_agents import AutonomousMaintenancePipeline, ChangeAnalyzer, ImpactAnalyst, PatchPlanner, PatchVerifier`
+### `from koyote.maintenance_agents import AutonomousMaintenancePipeline, ChangeAnalyzer, ImpactAnalyst, PatchPlanner, PatchVerifier`
 - `ChangeAnalyzer`: Analyzes vendor OpenAPI/SDK breaking contracts.
 - `ImpactAnalyst`: Traces dependencies through wrappers to affected callsites. `analyze_impact_for(repo, source)` matches any `ChangeSource` identity against wrapper metadata, callsite patterns, and file paths; `analyze_impact(repo, provider)` is the preserved SDK branch.
 - `PatchPlanner`: Synthesizes AST transformation plans.
@@ -87,38 +87,38 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ## 4. Change Sources, Decisions, Knowledge & Installations
 
-### `from volf.change_source import ChangeSource, Detection`
+### `from koyote.change_source import ChangeSource, Detection`
 - `ChangeSource(kind, identity, version_from, version_to, contract_hash, origin)`: kinds `external_api, sdk, openapi, graphql, protobuf, webhook, mcp_server, internal_service`. Helpers: `ChangeSource.sdk(provider, …)`, `.provider`, `.key()`.
 - `Detection(source, outcome, reason, affected_files, callsite_count, ai_dependent, confidence)`: outcomes `NO_IMPACT / IMPACT_DIRECT / IMPACT_AI / IMPACT_QUARANTINE` (fail-closed).
 
-### `from volf.drift import detect_drift, detect_changes`
+### `from koyote.drift import detect_drift, detect_changes`
 - `detect_changes(repo_dir, provider_name=None) -> List[Detection]`: read-only classification — never patches.
 
-### `from volf.intelligence import VolfIntelligence, Decision, resolve_migration`
+### `from koyote.intelligence import KoyoteIntelligence, Decision, resolve_migration`
 - `Decision(strategy, reason, confidence, estimated_tokens, expected_blast_radius, verification_required)`: strategies `DIRECT / AI / HYBRID / REFUSE…QUARANTINE` are internal only (no CLI flag).
 - `decide_for_source(repo_dir, source)`: routes any `ChangeSource`; kinds without registry connectors go AI-if-credentials else quarantine.
 
-### `from volf.providers.registry import find_migration_for`
+### `from koyote.providers.registry import find_migration_for`
 - `find_migration_for(source) -> Optional[ProviderMigration]`: resolves `sdk`/`external_api` sources; all other kinds return `None` by design (no connectors yet).
 
-### `from volf.knowledge import lookup, upsert_learned, record_failure, ensure_test_recipe`
-- Entries live at `.volf/knowledge/{kind}/{identity}/{contract}.json` with legacy provider-path fallback reads. Only verified fixes upsert executable patterns; `record_failure()` quarantines guesses separately.
+### `from koyote.knowledge import lookup, upsert_learned, record_failure, ensure_test_recipe`
+- Entries live at `.koyote/knowledge/{kind}/{identity}/{contract}.json` with legacy provider-path fallback reads. Only verified fixes upsert executable patterns; `record_failure()` quarantines guesses separately.
 
-### `from volf.github.installations import record_installation_event, set_repo_state, list_ready_repos`
+### `from koyote.github.installations import record_installation_event, set_repo_state, list_ready_repos`
 - Flat-JSON install records (0600): repos tracked PENDING → INDEXED → READY.
 
-### `from volf.github.provisioning import ensure_repo_checkout, ensure_pr_checkout, resolve_pr_workdir`
+### `from koyote.github.provisioning import ensure_repo_checkout, ensure_pr_checkout, resolve_pr_workdir`
 - Managed clone/pull cache; exact PR-head checkout with `(path, exact)` honesty flag.
 
-### `from volf.github.watch import watch_once`
+### `from koyote.github.watch import watch_once`
 - Poll READY repos; run the pipeline only on new drift signatures.
 
-### `from volf.github.pr_render import render_consult_issue, render_pr_summary, render_flow_diagram`
+### `from koyote.github.pr_render import render_consult_issue, render_pr_summary, render_flow_diagram`
 - Consult Issue bodies, PR summary headers with evidence-grounded confidence, mermaid change→files→verification diagrams. Severity: P0 needs a human, P1 is repairable.
 
 ### `BotConfig.mode`
-- `consult` (report only) or `work` (repair, default) in `.volf/config.yaml`, plus `ignore_paths` / `exclude_labels` PR filters. See [GitHub App behavior](GITHUB_APP.md).
+- `consult` (report only) or `work` (repair, default) in `.koyote/config.yaml`, plus `ignore_paths` / `exclude_labels` PR filters. See [GitHub App behavior](GITHUB_APP.md).
 
-### `from volf.credentials import save_credentials, load_credentials, has_valid_credentials`
+### `from koyote.credentials import save_credentials, load_credentials, has_valid_credentials`
 - All accept optional `(installation_id, repo)` scope: env → scoped file → global file. Secrets never enter repo state, logs, or knowledge.
 

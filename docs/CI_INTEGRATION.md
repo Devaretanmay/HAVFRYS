@@ -1,4 +1,4 @@
-# Volf CI/CD Drop-In Security & Acceleration Guide
+# Koyote CI/CD Drop-In Security & Acceleration Guide
 
 > Run CI steps with local OS-kernel controls and no separate service or daemon.
 
@@ -6,11 +6,11 @@
 
 ## 1. Zero Infrastructure & $0.00 Cost Model
 
-Volf CI integration requires **no managed infrastructure, no paid runner services, no Docker daemons, and no cloud subscriptions**.
+Koyote CI integration requires **no managed infrastructure, no paid runner services, no Docker daemons, and no cloud subscriptions**.
 
 - **Uses OS Kernel Primitives**: Sandboxing is enforced natively by Linux **Landlock** (kernel ≥ 5.13) and macOS **Seatbelt** (`sandbox_init()`), which ship built-in with standard CI runners (e.g. GitHub Actions `ubuntu-latest`).
 - **Daemonless Execution**: Sandboxing rules apply directly at the process level; measure startup on your runner.
-- **Total Cost**: No Volf service fee; normal CI runner costs still apply.
+- **Total Cost**: No Koyote service fee; normal CI runner costs still apply.
 
 ---
 
@@ -32,13 +32,13 @@ jobs:
       - uses: actions/checkout@v4
       
       # 1-Line Drop-In: Installs and configures kernel-sandbox defaults
-      - uses: Devaretanmay/Volf@main
+      - uses: Devaretanmay/Koyote@main
         with:
           network: 'false'  # Block untrusted PR network exfiltration
 
       # Run your standard commands inside the kernel sandbox:
-      - run: python3 -m volf.ci.runner "pytest"
-      - run: python3 -m volf.ci.runner "npm run build"
+      - run: python3 -m koyote.ci.runner "pytest"
+      - run: python3 -m koyote.ci.runner "npm run build"
 ```
 
 ---
@@ -53,18 +53,18 @@ npm test
 pytest
 
 # AFTER (1-Word Prefix: Kernel Sandboxed & Accelerated):
-python3 -m volf.ci.runner "npm test"
-python3 -m volf.ci.runner "pytest"
+python3 -m koyote.ci.runner "npm test"
+python3 -m koyote.ci.runner "pytest"
 ```
 
 ---
 
 ## 3. Speed & Security Benchmarks
 
-| Metric | Traditional Docker / MicroVM CI | Volf Accelerated CI |
+| Metric | Traditional Docker / MicroVM CI | Koyote Accelerated CI |
 | :--- | :--- | :--- |
 | **Stage Startup Boot Time** | ~5,000ms-30,000ms | Depends on runner, Python, and repository size |
 | **Workspace Reset** | Container rebuild or external reset | BLAKE3 snapshot/restore; measure on your repository |
 | **Network Security** | Open Egress (High exfiltration risk) | TCP egress blocked where supported by the OS |
 | **Secret Theft Protection** | Vulnerable to malicious PR scripts | **Protected by deny-by-default rules** |
-| **Infrastructure Cost** | Paid Runner / VM scaling | No additional Volf service |
+| **Infrastructure Cost** | Paid Runner / VM scaling | No additional Koyote service |

@@ -1,15 +1,15 @@
-# TypeScript & Node.js Native SDK (`@volf/sdk`)
+# TypeScript & Node.js Native SDK (`@koyote/sdk`)
 
-> **Upcoming Roadmap:** The `@volf/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS) is planned for upcoming distribution.
+> **Upcoming Roadmap:** The `@koyote/sdk` npm package distribution (TypeScript / Node.js native bindings via NAPI-RS) is planned for upcoming distribution.
 
-The TypeScript SDK provides high-performance Node.js bindings to the Volf Rust core via NAPI-RS.
+The TypeScript SDK provides high-performance Node.js bindings to the Koyote Rust core via NAPI-RS.
 
 ---
 
 ## 1. Installation
 
 ```bash
-npm install @volf/sdk
+npm install @koyote/sdk
 ```
 
 ---
@@ -20,7 +20,7 @@ npm install @volf/sdk
 Returns `true` if kernel sandboxing (Seatbelt on macOS or Landlock on Linux) is supported by the current OS kernel.
 
 ```ts
-import { sandboxSupported } from '@volf/sdk'
+import { sandboxSupported } from '@koyote/sdk'
 
 if (sandboxSupported()) {
   console.log('Kernel sandbox is available.')
@@ -33,7 +33,7 @@ if (sandboxSupported()) {
 Evaluates a JSON policy against requested permissions.
 
 ```ts
-import { runtimeCheckPermission } from '@volf/sdk'
+import { runtimeCheckPermission } from '@koyote/sdk'
 
 const allowed = runtimeCheckPermission(
   JSON.stringify({ permissions: ['fs_read'] }),
@@ -48,7 +48,7 @@ console.log(allowed) // true
 Checks a command string against the native blocklist.
 
 ```ts
-import { runtimeCheckCommand } from '@volf/sdk'
+import { runtimeCheckCommand } from '@koyote/sdk'
 
 console.log(runtimeCheckCommand('ls -la'))     // true
 console.log(runtimeCheckCommand('rm -rf /'))   // false (blocked)
@@ -61,7 +61,7 @@ console.log(runtimeCheckCommand('rm -rf /'))   // false (blocked)
 Manages multi-compartment execution topology and routing order in TypeScript:
 
 ```ts
-import { Runtime } from '@volf/sdk'
+import { Runtime } from '@koyote/sdk'
 
 const configs = JSON.stringify({
   fetch: { permissions: ['fs_read'] },

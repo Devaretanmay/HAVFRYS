@@ -3,9 +3,9 @@ import shutil
 import tempfile
 import textwrap
 
-from volf.config import (
+from koyote.config import (
     load_config,
-    is_volf_workspace,
+    is_koyote_workspace,
     find_workspace_root,
 )
 
@@ -75,12 +75,12 @@ def test_policy_for_agent():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def test_is_volf_workspace():
+def test_is_koyote_workspace():
     tmp = tempfile.mkdtemp()
     try:
-        assert not is_volf_workspace(tmp)
-        os.makedirs(os.path.join(tmp, ".volf"))
-        assert is_volf_workspace(tmp)
+        assert not is_koyote_workspace(tmp)
+        os.makedirs(os.path.join(tmp, ".koyote"))
+        assert is_koyote_workspace(tmp)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -88,7 +88,7 @@ def test_is_volf_workspace():
 def test_find_workspace_root_traversal():
     tmp = tempfile.mkdtemp()
     try:
-        os.makedirs(os.path.join(tmp, ".volf"))
+        os.makedirs(os.path.join(tmp, ".koyote"))
         nested = os.path.join(tmp, "src", "deep")
         os.makedirs(nested)
         root = find_workspace_root(nested)

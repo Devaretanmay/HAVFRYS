@@ -2,7 +2,7 @@
 
 Version: 0.1 (draft)
 Status: open for comment
-Maintainer: Volf Labs
+Maintainer: Koyote Labs
 
 ## Why this exists
 
@@ -90,18 +90,17 @@ git log --grep "Agent-Sandbox: none"
 
 ## Compatibility
 
-Volf v1.x emits legacy `Volf-*` trailers (`Volf-Execution`,
-`Volf-Agent`, `Volf-Compartment`, `Volf-Security`). These map 1:1 onto
-the `Agent-*` fields above (earlier Sheepdog v1.x releases emitted the same
-fields under `Sheepdog-*` names, and Compart v1.x under `Compart-*`;
-readers should accept all variants):
+Koyote v1.x emits legacy `Koyote-*` trailers (`Koyote-Execution`,
+`Koyote-Agent`, `Koyote-Compartment`, `Koyote-Security`). These map 1:1 onto
+the `Agent-*` fields above (earlier Volf/Sheepdog/Compart v1.x releases emitted
+the same fields under their own names; readers should accept all variants):
 
 | Legacy | Spec |
 | :--- | :--- |
-| `Volf-Agent` | `Agent-Agent` |
-| `Volf-Execution` | `Agent-Execution` |
-| `Compartment` → `Volf-Compartment` | `Agent-Compartment` |
-| `Volf-Security` | `Agent-Sandbox` |
+| `Koyote-Agent` | `Agent-Agent` |
+| `Koyote-Execution` | `Agent-Execution` |
+| `Compartment` → `Koyote-Compartment` | `Agent-Compartment` |
+| `Koyote-Security` | `Agent-Sandbox` |
 
 Writers SHOULD emit spec names going forward. Readers SHOULD accept both.
 
@@ -123,7 +122,7 @@ build an agent harness and start emitting these, open a PR against this file's
 
 ### Implementations
 
-- [Volf](https://github.com/Devaretanmay/Volf) - CLI + Python SDK, emits trailers automatically via `volf commit`
+- [Koyote](https://github.com/Devaretanmay/Koyote) - CLI + Python SDK, emits trailers automatically via `koyote commit`
 
 ## License
 

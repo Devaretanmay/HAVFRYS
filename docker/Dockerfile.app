@@ -1,7 +1,7 @@
-# Volf GitHub App daemon.
-# Build:  docker build -f docker/Dockerfile.app -t volf-app:1.1.0 .
-# Run:    docker run -p 8080:8080 --env-file .env -v volf-data:/data volf-app:1.1.0
-# Requires VOLF_WEBHOOK_SECRET. See docs/DEPLOY.md.
+# Koyote GitHub App daemon.
+# Build:  docker build -f docker/Dockerfile.app -t koyote-app:1.1.0 .
+# Run:    docker run -p 8080:8080 --env-file .env -v koyote-data:/data koyote-app:1.1.0
+# Requires KOYOTE_WEBHOOK_SECRET. See docs/DEPLOY.md.
 
 FROM rust:1.82-bookworm AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,13 +20,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /wheel/*.whl /tmp/
 RUN pip install --no-cache-dir /tmp/*.whl && rm /tmp/*.whl
-RUN useradd -m volf && mkdir -p /data && chown volf:volf /data
-USER volf
+RUN useradd -m koyote && mkdir -p /data && chown koyote:koyote /data
+USER koyote
 ENV PORT=8080 \
-    VOLF_REPOS_DIR=/data/repos \
-    VOLF_INSTALLATIONS_DIR=/data/installations
+    KOYOTE_REPOS_DIR=/data/repos \
+    KOYOTE_INSTALLATIONS_DIR=/data/installations
 VOLUME ["/data"]
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD \
     python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:' + __import__('os').environ.get('PORT','8080') + '/health')"
-CMD ["sh", "-c", "volf app serve --port ${PORT:-8080}"]
+CMD ["sh", "-c", "koyote app serve --port ${PORT:-8080}"]

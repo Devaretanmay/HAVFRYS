@@ -15,10 +15,10 @@ import tempfile
 import textwrap
 import pytest
 
-from volf.cli.main import _topo_sort
-from volf.config import load_config
-from volf.engine.execution import ExecutionKind, ExecutionManager
-from volf.engine.pty_supervisor import PtySupervisor
+from koyote.cli.main import _topo_sort
+from koyote.config import load_config
+from koyote.engine.execution import ExecutionKind, ExecutionManager
+from koyote.engine.pty_supervisor import PtySupervisor
 
 
 def test_config_null_compartments_section():
@@ -119,21 +119,21 @@ def test_snapshot_dir_persists():
     try:
         mgr = ExecutionManager(workdir=tmp)
         ex = mgr.create(kind=ExecutionKind.INTERACTIVE, command=["claude"])
-        ex.snapshot_dir = "/tmp/volf_test_snap"
+        ex.snapshot_dir = "/tmp/koyote_test_snap"
         mgr.save(ex)
         loaded = mgr.get(ex.execution_id)
         assert loaded is not None
-        assert loaded.snapshot_dir == "/tmp/volf_test_snap"
+        assert loaded.snapshot_dir == "/tmp/koyote_test_snap"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
 def test_status_started_at_none_safe(capsys):
     """Duration calculation in cmd_status must not crash when started_at is None."""
-    from volf.cli.main import cmd_status
+    from koyote.cli.main import cmd_status
     import argparse
     from unittest.mock import patch
-    from volf.engine.session import SessionStatus, AgentSession
+    from koyote.engine.session import SessionStatus, AgentSession
 
     args = argparse.Namespace()
     
@@ -147,10 +147,10 @@ def test_status_started_at_none_safe(capsys):
     mock_session.started_at = None
     mock_session.finished_at = 1000.0
 
-    with patch("volf.cli.main.find_workspace_root", return_value="/tmp/test_ws"), \
-         patch("volf.cli.main.ExecutionManager"), \
-         patch("volf.cli.main.LaneManager"), \
-         patch("volf.cli.main.SessionManager") as mock_sess_mgr:
+    with patch("koyote.cli.main.find_workspace_root", return_value="/tmp/test_ws"), \
+         patch("koyote.cli.main.ExecutionManager"), \
+         patch("koyote.cli.main.LaneManager"), \
+         patch("koyote.cli.main.SessionManager") as mock_sess_mgr:
         
         mock_sess_mgr.return_value.list_sessions.return_value = [mock_session]
         

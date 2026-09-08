@@ -1,17 +1,17 @@
-# Volf Quickstart Guide
+# Koyote Quickstart Guide
 
-Get up and running with Volf in under 2 minutes.
+Get up and running with Koyote in under 2 minutes.
 
-> **“Volf understands the changes the outside world makes to software — and repairs them.”**
+> **“Koyote understands the changes the outside world makes to software — and repairs them.”**
 
 ---
 
 ## 1. Installation
 
-Install Volf via PyPI:
+Install Koyote via PyPI:
 
 ```bash
-pip install --upgrade volf
+pip install --upgrade koyote
 ```
 
 ---
@@ -21,9 +21,9 @@ pip install --upgrade volf
 ```bash
 cd my-project
 
-volf auth              # Connect AI provider — only needed when AI repair is required
-volf doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Tests, Monitoring
-volf index .           # Zero-token static index of contracts & callsites
+koyote auth              # Connect AI provider — only needed when AI repair is required
+koyote doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Tests, Monitoring
+koyote index .           # Zero-token static index of contracts & callsites
 ```
 
 ---
@@ -34,13 +34,13 @@ Immediately scan your codebase for breaking upstream changes, deprecated callsit
 
 ```bash
 # Run terminal risk register:
-volf check .
+koyote check .
 
 # Export as GitHub Issue markdown:
-volf check . --format=github-issue
+koyote check . --format=github-issue
 
 # Inspect the External-Change Dependency Graph:
-volf graph .
+koyote graph .
 ```
 
 ---
@@ -51,8 +51,8 @@ New teams start in Consult: same AI reasoning, zero code changes, findings filed
 as a GitHub Issue. Graduate to Work when the reasoning earns it.
 
 ```bash
-volf consult . --repo owner/repo   # Assess only, files an Issue
-volf fix .                         # Repair, verify, report
+koyote consult . --repo owner/repo   # Assess only, files an Issue
+koyote fix .                         # Repair, verify, report
 ```
 
 See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
@@ -60,16 +60,16 @@ See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
 ## 5. Autonomous Continuous Maintenance
 
 Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS).
-Volf's AI reasons about the change against your repository and repairs with deterministic tools —
+Koyote's AI reasons about the change against your repository and repairs with deterministic tools —
 there is no engine flag to choose. Unsafe repairs refuse loudly with zero files touched:
 
 ```bash
 # Auto-detect provider and repair:
-volf fix .
+koyote fix .
 
 # Targeted migration and open PR:
-volf fix . --provider stripe
-volf fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
+koyote fix . --provider stripe
+koyote fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
 ```
 
 ---
@@ -80,12 +80,12 @@ Run terminal coding agents inside a kernel-enforced sandbox with full native TUI
 
 ```bash
 # Launch Claude Code, OpenCode, Codex, Cursor, or Aider directly:
-volf claude
+koyote claude
 
 # When the agent finishes:
-volf diff    # Review what the agent changed
-volf undo    # Instantly restore files if the agent made a mistake
-volf commit  # Commit to Git with verified provenance trailers
+koyote diff    # Review what the agent changed
+koyote undo    # Instantly restore files if the agent made a mistake
+koyote commit  # Commit to Git with verified provenance trailers
 ```
 
 ---

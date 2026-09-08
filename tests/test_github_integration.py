@@ -2,13 +2,13 @@ import hashlib
 import hmac
 import json
 
-from volf.github.client import verify_webhook_signature
-from volf.github.webhook_server import handle_webhook_payload
-from volf.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
+from koyote.github.client import verify_webhook_signature
+from koyote.github.webhook_server import handle_webhook_payload
+from koyote.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 
 
 def test_webhook_signature_verification():
-    secret = "test_volf_secret_key_123"
+    secret = "test_koyote_secret_key_123"
     payload = b'{"action": "push", "repository": {"full_name": "owner/repo"}}'
     
     mac = hmac.new(secret.encode("utf-8"), msg=payload, digestmod=hashlib.sha256)
@@ -68,4 +68,4 @@ def test_trust_pr_markdown_generation():
     assert "amount: String(amount)" in markdown
     assert "SUCCESS (GREEN)" in markdown
     assert "42ms" in markdown
-    assert "— Shearer, Work bot" in markdown
+    assert "— Hunt, Work bot" in markdown

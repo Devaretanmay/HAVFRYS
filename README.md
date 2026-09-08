@@ -1,18 +1,18 @@
 <div align="center">
 
-# Volf
+# Koyote
 
 ### External-change intelligence for codebases.
 
-**Volf understands the changes the outside world makes to software — and repairs them.**
+**Koyote understands the changes the outside world makes to software — and repairs them.**
 
-[PyPI Package](https://pypi.org/project/volf/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md)
+[PyPI Package](https://pypi.org/project/koyote/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md)
 
 <br/>
 
 ```text
    APIs drift. SDKs break.
-   Volf keeps your codebase continuously updated and verified.
+   Koyote keeps your codebase continuously updated and verified.
 ```
 
 </div>
@@ -27,7 +27,7 @@ Software changes in two ways:
 
 Dependabot bumps version strings in lockfiles and leaves CI broken. Human engineers spend 20%+ of engineering cycles reading migration guides, mapping AST callsites, updating wrappers, and fixing broken tests.
 
-**Volf manages software changes originating outside the repository** — mapping external contracts to internal callsites, synthesizing surgical AST patches, running local formatters, and verifying zero blast radius with sandbox isolation.
+**Koyote manages software changes originating outside the repository** — mapping external contracts to internal callsites, synthesizing surgical AST patches, running local formatters, and verifying zero blast radius with sandbox isolation.
 
 ---
 
@@ -44,16 +44,16 @@ Sandbox + real tests → Evidence → GitHub PR → Knowledge capture (next run 
 ```
 
 ```bash
-volf auth              # BYOK provider — needed only for AI repair
-volf doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
-volf index .           # Zero-token static index
-volf check .           # Read-only drift & impact audit
-volf consult .         # AI assessment as a GitHub Issue, modifies nothing
-volf fix .             # Repair, verify, report (refuses loudly when unsafe)
+koyote auth              # BYOK provider — needed only for AI repair
+koyote doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
+koyote index .           # Zero-token static index
+koyote check .           # Read-only drift & impact audit
+koyote consult .         # AI assessment as a GitHub Issue, modifies nothing
+koyote fix .             # Repair, verify, report (refuses loudly when unsafe)
 ```
 
 Start in Consult to build trust in the reasoning, enable Work when ready —
-one engine, three voices: **Howl** hunts, **Shepherd** reports, **Shearer** repairs.
+one engine, two voices: **Howl** warns, **Hunt** repairs.
 See [GitHub App behavior](docs/GITHUB_APP.md).
 
 ## The Core Pipeline
@@ -70,20 +70,20 @@ See [GitHub App behavior](docs/GITHUB_APP.md).
 
 ---
 
-## 1. Day-0 Risk Register (`volf check`)
+## 1. Day-0 Risk Register (`koyote check`)
 
-When you run Volf on any repository, it immediately answers:
+When you run Koyote on any repository, it immediately answers:
 - *What external APIs and SDKs does this codebase depend on?*
 - *Which integrations are deprecated, behind, or at risk?*
-- *Which breaking changes can Volf already auto-repair?*
+- *Which breaking changes can Koyote already auto-repair?*
 
 ```bash
-volf check .
+koyote check .
 ```
 
 ```text
 ================================================================================
-         VOLF: EXTERNAL-CHANGE DEPENDENCY AUDIT & RISK REGISTER
+         KOYOTE: EXTERNAL-CHANGE DEPENDENCY AUDIT & RISK REGISTER
 ================================================================================
 Total External Providers Detected: 3
 Total AST Callsites Mapped:        14
@@ -92,7 +92,7 @@ Auto-Repairable Callsites:         6
 [CRITICAL] AT RISK (Action Required):
   * Stripe (stripe@v21.0.0 -> v22.0.0)
     - Status: Breaking parameter mutation detected (amount: number -> string)
-    - 4 callsites affected (4 auto-repairable by Volf)
+    - 4 callsites affected (4 auto-repairable by Koyote)
 
 [WATCHLIST] UPCOMING DEPRECATION:
   * OpenAI (openai@v3.28.0)
@@ -107,24 +107,24 @@ Auto-Repairable Callsites:         6
 
 Export directly to GitHub Issues or JSON:
 ```bash
-volf check . --format=github-issue   # Formatted markdown table for GitHub Issues
-volf check . --format=json           # Machine-readable risk register
+koyote check . --format=github-issue   # Formatted markdown table for GitHub Issues
+koyote check . --format=json           # Machine-readable risk register
 ```
 
 ---
 
-## 2. External-Change Dependency Graph (`volf graph`)
+## 2. External-Change Dependency Graph (`koyote graph`)
 
-Volf builds a unified dependency graph linking:
+Koyote builds a unified dependency graph linking:
 `Provider -> Version -> API Contract -> Manifest Dependency -> Wrapper Client -> AST Callsite -> Migration History`
 
 ```bash
-volf graph .
+koyote graph .
 ```
 
 ```text
 ================================================================================
-                 VOLF: EXTERNAL-CHANGE DEPENDENCY GRAPH                     
+                 KOYOTE: EXTERNAL-CHANGE DEPENDENCY GRAPH                     
 ================================================================================
 Repository:              /path/to/my-repo
 Providers Ingested:      3
@@ -142,19 +142,19 @@ Active Graph Edges:      28
 
 ---
 
-## 3. Autonomous Continuous Maintenance (`volf fix`)
+## 3. Autonomous Continuous Maintenance (`koyote fix`)
 
-When upstream providers release breaking changes, Volf detects the drift, synthesizes surgical AST transformations, matches your team's code formatting (`prettier`/`ruff`), validates local tests, and opens a Developer Trust PR:
+When upstream providers release breaking changes, Koyote detects the drift, synthesizes surgical AST transformations, matches your team's code formatting (`prettier`/`ruff`), validates local tests, and opens a Developer Trust PR:
 
 ```bash
 # Autonomous migration for a target provider:
-volf fix . --provider stripe
+koyote fix . --provider stripe
 
 # Custom version bump:
-volf fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
+koyote fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
 ```
 
-### What `volf fix` guarantees:
+### What `koyote fix` guarantees:
 1. **Surgical AST Patching**: Only transforms affected callsites and wrappers.
 2. **Local Formatter Bridge**: Formats changed files with your project's `prettier`, `ruff`, or `biome`.
 3. **Local Test Verification**: Executes test suites and rejects patches if tests remain red.
@@ -165,15 +165,15 @@ volf fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner
 
 ## 4. Controlled Execution & Sandboxed Verification
 
-Volf provides **controlled, reproducible execution** across local kernel sandboxes (macOS Seatbelt, Linux Landlock), Docker, and CI runners:
+Koyote provides **controlled, reproducible execution** across local kernel sandboxes (macOS Seatbelt, Linux Landlock), Docker, and CI runners:
 - **Zero-Exfiltration Isolation**: Credentials (`~/.ssh`, `~/.aws`, keychains) denied at the kernel boundary.
 - **Execution-Evidence Compression**: Native Rust engines distill massive test outputs down to high-signal failure traces and stack traces for PR evidence.
 - **2ms Instant Undo**: Pre-execution BLAKE3 hash snapshots enable physical rollback of modified and generated files in 2 milliseconds.
 
 ```bash
-volf init                          # Initialize workspace control plane
-volf diff                          # Inspect isolated execution change sets
-volf undo                          # Instant 2ms physical rollback
+koyote init                          # Initialize workspace control plane
+koyote diff                          # Inspect isolated execution change sets
+koyote undo                          # Instant 2ms physical rollback
 ```
 
 ---
@@ -181,8 +181,8 @@ volf undo                          # Instant 2ms physical rollback
 ## Python SDK
 
 ```python
-from volf.graph import build_dependency_graph, audit_dependency_graph
-from volf.maintenance import run_maintenance_cycle
+from koyote.graph import build_dependency_graph, audit_dependency_graph
+from koyote.maintenance import run_maintenance_cycle
 
 # 1. Audit repository external dependencies
 summary = audit_dependency_graph(repo_root=".")
@@ -205,34 +205,34 @@ print(report.unified_diff)
 [Quickstart Guide](docs/QUICKSTART.md) · [CLI Reference](docs/CLI.md) · [Architecture](docs/ARCHITECTURE.md) · [API Reference](docs/API_REFERENCE.md) · [Validation Guide](docs/VALIDATION_GUIDE.md) · [Agent Governance & Trailers](SPEC.md)
 
 The core abstraction is `ChangeSource` (external API, SDK, OpenAPI, GraphQL, protobuf, webhook,
-MCP server, internal service): Volf keeps software working when the systems around it change.
+MCP server, internal service): Koyote keeps software working when the systems around it change.
 Vendor SDK migrations are the working wedge; other contract kinds are representable types with no
 connectors yet — they fail closed to quarantine instead of guessing.
 
-Under the hood, Volf is an AI maintenance agent with deterministic tools: a code graph,
+Under the hood, Koyote is an AI maintenance agent with deterministic tools: a code graph,
 repository memory, verified rewrite patterns, sandbox execution, and a fail-closed verifier.
 Repeated work reuses verified knowledge instead of re-reasoning, so the system gets faster,
 cheaper, and more precise the longer it watches a repository.
 
-## Where Volf Fits
+## Where Koyote Fits
 
 Conventional AI reviewers start from a human pull request and ask whether the change
-is correct. Volf starts from the other end: a dependency or contract changed out
+is correct. Koyote starts from the other end: a dependency or contract changed out
 in the world, and it asks what that breaks in your repository. One AI reasons over
 your codebase plus the change itself, backed by maintenance memory — past verified
 repairs and quarantined failures. The output is not a review but a repair, proven
 against your real test suite before it ever reaches a pull request.
 
-Volf is not a generic coding agent, a PR reviewer, a Dependabot clone, a
+Koyote is not a generic coding agent, a PR reviewer, a Dependabot clone, a
 codebase Q&A tool, or vulnerability-management software. It is autonomous
 maintenance for systems that change.
 
 The old fable got it backwards: the village stopped believing because the boy
 cried wolf over nothing. Most automation still does — vague green checks,
-unverified badges, silent passes. Volf only howls when there's actually
+unverified badges, silent passes. Koyote only howls when there's actually
 one in the fence: verified repairs, loud refusals, never a faked pass.
 
 ## License
 
-Apache-2.0. Copyright 2026 Volf Authors.
+Apache-2.0. Copyright 2026 Koyote Authors.
 
