@@ -40,6 +40,10 @@ PRs touching only `ignore_paths`, or carrying an `exclude_labels` label, are ski
 
 New installations start in `consult`: accurate Issues build trust in the reasoning before anyone grants repair authority. Flip one line to `work` when ready — the engine never changes.
 
-## 5. Deployment
+## 5. Bot identities
+
+One engine, two voices. **Shepherd** watches the flock and reports — every Consult Issue is signed `— Shepherd, Consult bot`. **Shearer** trims the excess — every verified Trust PR is signed `— Shearer, Work bot`. The names mark authority, never intelligence: the reasoning behind both is identical.
+
+## 6. Deployment
 
 See [DEPLOY.md](DEPLOY.md) for the webhook secret requirement, environment table, Docker image, `--watch` background monitoring, volumes, and security notes.

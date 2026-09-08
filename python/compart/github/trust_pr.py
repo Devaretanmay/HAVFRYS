@@ -178,5 +178,6 @@ def generate_trust_pr_markdown(meta: TrustPRMetadata) -> str:
     lines.extend([
         "",
         "_Generated automatically by [Compart](https://github.com/Devaretanmay/Compart) Continuous Autonomous Maintenance Engine._",
+        "— Shearer, Work bot",
     ])
     return "\n".join(lines)

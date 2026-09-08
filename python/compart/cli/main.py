@@ -2099,7 +2099,7 @@ def cmd_consult(args):
     title = f"[Compart Consult] {len(items)} maintenance issue(s) in {repo}"
     resp = client.create_issue(repo=repo, title=title, body=body, labels=["compart", "consult"])
     url = resp.get("html_url") if isinstance(resp, dict) else None
-    print(f"Consulted {len(items)} issue(s); no code was modified.")
+    print(f"Shepherd consulted {len(items)} issue(s); no code was modified.")
     print(f"[ISSUE OPENED] {url}" if url else "[ISSUE OPENED]")
     print()
     print(body)
@@ -2229,7 +2229,7 @@ def cmd_maintain(args):
         print("Action required:       Run `compart auth` to enable AI repair.")
     if not report.success and report.test_exit_code != 0:
         print("Rollback:                APPLIED (snapshot restored, no changes left on disk)")
-    print(f"Maintenance Outcome:     {'SUCCESS (VERIFIED GREEN)' if report.success else 'REFUSED / INCOMPLETE'}\n")
+    print(f"Maintenance Outcome:     {'SUCCESS (VERIFIED GREEN) — Shearer' if report.success else 'REFUSED / INCOMPLETE'}\n")
 
     if report.patch_results:
         print("--- Patch Breakdown ---")

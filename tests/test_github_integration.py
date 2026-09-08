@@ -68,3 +68,4 @@ def test_trust_pr_markdown_generation():
     assert "amount: String(amount)" in markdown
     assert "SUCCESS (GREEN)" in markdown
     assert "42ms" in markdown
+    assert "— Shearer, Work bot" in markdown
