@@ -48,8 +48,12 @@ compart auth              # BYOK provider — needed only for AI repair
 compart doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
 compart index .           # Zero-token static index
 compart check .           # Read-only drift & impact audit
+compart consult .         # AI assessment as a GitHub Issue, modifies nothing
 compart fix .             # Repair, verify, report (refuses loudly when unsafe)
 ```
+
+Start in Consult to build trust in the reasoning, enable Work when ready —
+one engine, two authorities. See [GitHub App behavior](docs/GITHUB_APP.md).
 
 ## The Core Pipeline
 

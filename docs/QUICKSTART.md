@@ -45,7 +45,19 @@ compart graph .
 
 ---
 
-## 4. Autonomous Continuous Maintenance
+## 4. Consult First, Then Work
+
+New teams start in Consult: same AI reasoning, zero code changes, findings filed
+as a GitHub Issue. Graduate to Work when the reasoning earns it.
+
+```bash
+compart consult . --repo owner/repo   # Assess only, files an Issue
+compart fix .                         # Repair, verify, report
+```
+
+See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
+
+## 5. Autonomous Continuous Maintenance
 
 Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS).
 Compart's AI reasons about the change against your repository and repairs with deterministic tools —
@@ -62,7 +74,7 @@ compart fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo ow
 
 ---
 
-## 5. Interactive Coding Agents & Sandboxed Governance (advanced)
+## 6. Interactive Coding Agents & Sandboxed Governance (advanced)
 
 Run terminal coding agents inside a kernel-enforced sandbox with full native TUI fidelity:
 
@@ -78,7 +90,7 @@ compart commit  # Commit to Git with verified provenance trailers
 
 ---
 
-## 6. Key Guarantees
+## 7. Key Guarantees
 
 - **External Intelligence**: Full-codebase AST mapping of providers, contracts, wrappers, and callsites.
 - **Continuous Maintenance**: Surgical AST patching with local formatter matching and automated Developer Trust PRs.

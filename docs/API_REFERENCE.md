@@ -107,6 +107,18 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 ### `from compart.github.installations import record_installation_event, set_repo_state, list_ready_repos`
 - Flat-JSON install records (0600): repos tracked PENDING → INDEXED → READY.
 
+### `from compart.github.provisioning import ensure_repo_checkout, ensure_pr_checkout, resolve_pr_workdir`
+- Managed clone/pull cache; exact PR-head checkout with `(path, exact)` honesty flag.
+
+### `from compart.github.watch import watch_once`
+- Poll READY repos; run the pipeline only on new drift signatures.
+
+### `from compart.github.pr_render import render_consult_issue, render_pr_summary, render_flow_diagram`
+- Consult Issue bodies, PR summary headers with evidence-grounded confidence, mermaid change→files→verification diagrams. Severity: P0 needs a human, P1 is repairable.
+
+### `BotConfig.mode`
+- `consult` (report only) or `work` (repair, default) in `.compart/config.yaml`, plus `ignore_paths` / `exclude_labels` PR filters. See [GitHub App behavior](GITHUB_APP.md).
+
 ### `from compart.credentials import save_credentials, load_credentials, has_valid_credentials`
 - All accept optional `(installation_id, repo)` scope: env → scoped file → global file. Secrets never enter repo state, logs, or knowledge.
 

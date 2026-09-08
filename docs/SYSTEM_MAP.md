@@ -62,7 +62,7 @@ flowchart TD
         KB["knowledge.py<br/>namespaced flywheel · failure quarantine"]
     end
     subgraph GH["GitHub surface"]
-        BOT["pr_bot.py<br/>PR · external-change · install handlers"]
+        BOT["pr_bot.py<br/>PR · @compart comments · install handlers"]
         PROV["provisioning.py<br/>clone/pull cache · exact PR heads"]
         INST["installations.py<br/>PENDING→INDEXED→READY records"]
         WATCH["watch.py<br/>poll READY repos · fire on new drift"]

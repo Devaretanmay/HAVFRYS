@@ -42,7 +42,14 @@ graph · callsites · wrappers · tests       ChangeSource · migration · chang
 Insufficient confidence at any stage → loud refusal, zero files touched.
 The engine never asks the user to choose a strategy; `Decision`
 (DIRECT / AI / HYBRID / QUARANTINE) is internal cost accounting, not product.
-```
+
+## 1b. Authority modes: Consult vs Work
+
+One reasoning engine, two authorities. `Consult` runs the full pipeline through
+impact reasoning, then files a GitHub Issue and stops — the worktree is never
+touched. `Work` continues through repair, sandbox verification, and PR.
+`BotConfig.mode` sets the default; the CLI (`consult` vs `fix`) overrides per run.
+Adoption ladder: start in Consult, graduate to Work when the reasoning earns it.
 
 ## 2. Core types
 
