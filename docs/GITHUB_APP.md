@@ -42,7 +42,7 @@ New installations start in `consult`: accurate Issues build trust in the reasoni
 
 ## 5. Bot identities
 
-One engine, two voices. **Shepherd** watches the flock and reports — every Consult Issue is signed `— Shepherd, Consult bot`. **Shearer** trims the excess — every verified Trust PR is signed `— Shearer, Work bot`. The names mark authority, never intelligence: the reasoning behind both is identical.
+One engine, two voices. **Shepherd** is the Consult voice — every Consult Issue is signed `— Shepherd, Consult bot`. **Shearer** is the Work voice — every verified Trust PR is signed `— Shearer, Work bot`. The names mark authority, never intelligence: the reasoning behind both is identical.
 
 ## 6. Deployment
 
