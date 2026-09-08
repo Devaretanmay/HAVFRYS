@@ -47,6 +47,13 @@ def _entry_path(repo_dir: str, provider: str, from_version: str, to_version: str
 
 
 def _legacy_entry_path(repo_dir: str, provider: str, from_version: str, to_version: str) -> str:
+    # Pre-namespace layout (same product generation, no kind subdir).
+    d = os.path.join(_kb_dir(repo_dir), provider.lower())
+    fname = f"{_norm_version(from_version)}__{_norm_version(to_version)}.json"
+    return os.path.join(d, fname)
+
+
+def _rename_legacy_entry_path(repo_dir: str, provider: str, from_version: str, to_version: str) -> str:
     # Pre-rename (Compart-era) layout. Pinned to the old directory name so
     # existing installs keep reading after the Sheepdog rename.
     d = os.path.join(os.path.abspath(repo_dir), ".compart", "knowledge", provider.lower())
@@ -129,7 +136,8 @@ def _parse_entry(raw: Dict[str, Any], provider: str, from_version: str, to_versi
 
 def load_entry(repo_dir: str, provider: str, from_version: str, to_version: str, kind: str = "sdk") -> Optional[KBEntry]:
     for p in (_entry_path(repo_dir, provider, from_version, to_version, kind),
-              _legacy_entry_path(repo_dir, provider, from_version, to_version)):
+              _legacy_entry_path(repo_dir, provider, from_version, to_version),
+              _rename_legacy_entry_path(repo_dir, provider, from_version, to_version)):
         if not os.path.isfile(p):
             continue
         try:
