@@ -1954,14 +1954,15 @@ def cmd_auth(args):
         print("Select your AI Provider:")
         print("  1) Anthropic (Claude 3.5 Sonnet) [Recommended]")
         print("  2) OpenAI (GPT-4o)")
-        print("  3) OpenAI-Compatible / Local (Ollama, vLLM)\n")
+        print("  3) Groq (openai/gpt-oss-120b) [High-speed LPU]")
+        print("  4) OpenAI-Compatible / Local (Ollama, vLLM)\n")
 
         if not sys.stdin.isatty() and (not provider or not api_key):
             print("Error: Running in non-interactive environment. Please supply flags:")
-            print("  koyote auth --provider <anthropic|openai> --api-key <sk-...>")
+            print("  koyote auth --provider <anthropic|openai|groq> --api-key <...>")
             sys.exit(1)
 
-        choice = input("Enter choice [1-3] (default: 1): ").strip() or "1"
+        choice = input("Enter choice [1-4] (default: 1): ").strip() or "1"
         if choice == "1":
             provider = "anthropic"
             model = model or "claude-3-5-sonnet-20241022"
@@ -1969,6 +1970,10 @@ def cmd_auth(args):
             provider = "openai"
             model = model or "gpt-4o"
         elif choice == "3":
+            provider = "groq"
+            base_url = base_url or "https://api.groq.com/openai/v1"
+            model = model or "openai/gpt-oss-120b"
+        elif choice == "4":
             provider = "openai_compatible"
             base_url = base_url or input("Base URL [http://localhost:11434/v1]: ").strip() or "http://localhost:11434/v1"
             model = model or input("Model name [deepseek-coder]: ").strip() or "deepseek-coder"
@@ -1977,6 +1982,10 @@ def cmd_auth(args):
 
         if not api_key:
             api_key = getpass.getpass(f"Enter API Key for {provider}: ").strip()
+
+    if provider == "groq":
+        base_url = base_url or "https://api.groq.com/openai/v1"
+        model = model or "openai/gpt-oss-120b"
 
     valid, msg = verify_credentials(provider, api_key, model=model, base_url=base_url)
     if not valid:
@@ -2727,7 +2736,7 @@ def main():
 
     auth_p = subparsers.add_parser("auth", help="Connect and configure BYOK AI provider (OpenAI, Anthropic, etc.)")
     auth_p.add_argument("action", nargs="?", default=None, choices=["login", "ai", "status", "clear", None], help="Action (login, ai, status, clear)")
-    auth_p.add_argument("--provider", choices=["anthropic", "openai", "openai_compatible", "ollama", "local"], default=None, help="AI provider name")
+    auth_p.add_argument("--provider", choices=["anthropic", "openai", "groq", "openai_compatible", "ollama", "local"], default=None, help="AI provider name")
     auth_p.add_argument("--api-key", default=None, help="AI provider API key")
     auth_p.add_argument("--model", default=None, help="Model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
     auth_p.add_argument("--base-url", default=None, help="Base URL for custom/local endpoints")

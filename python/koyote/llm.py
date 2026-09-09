@@ -37,9 +37,10 @@ def resolve_llm_config(
 
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
+    groq_key = os.environ.get("GROQ_API_KEY")
 
     # If no explicit args or env vars, check ~/.koyote/credentials.json
-    if not key and not anthropic_key and not openai_key and not url:
+    if not key and not anthropic_key and not openai_key and not groq_key and not url:
         try:
             stored = load_credentials()
             if stored:
@@ -54,6 +55,13 @@ def resolve_llm_config(
                         api_key=stored_key,
                         model=stored_model or "claude-3-5-sonnet-20241022",
                         base_url=stored_url,
+                    )
+                elif stored_prov == "groq" or (stored_key and stored_key.startswith("gsk_")):
+                    return LLMConfig(
+                        provider="openai_compatible",
+                        api_key=stored_key,
+                        model=stored_model or "openai/gpt-oss-120b",
+                        base_url=stored_url or "https://api.groq.com/openai/v1",
                     )
                 elif stored_prov in ("ollama", "local", "openai_compatible"):
                     return LLMConfig(
@@ -80,11 +88,26 @@ def resolve_llm_config(
                 model=model or "claude-3-5-sonnet-20241022",
                 base_url=url,
             )
+        if key.startswith("gsk_"):
+            return LLMConfig(
+                provider="openai_compatible",
+                api_key=key,
+                model=model or "openai/gpt-oss-120b",
+                base_url=url or "https://api.groq.com/openai/v1",
+            )
         return LLMConfig(
             provider="openai",
             api_key=key,
             model=model or "gpt-4o",
             base_url=url,
+        )
+
+    if groq_key:
+        return LLMConfig(
+            provider="openai_compatible",
+            api_key=groq_key,
+            model=model or "openai/gpt-oss-120b",
+            base_url=url or "https://api.groq.com/openai/v1",
         )
 
     if anthropic_key:
@@ -132,6 +155,7 @@ class LLMClient:
             "Content-Type": "application/json",
             "x-api-key": self.config.api_key,
             "anthropic-version": "2023-06-01",
+            "User-Agent": "Koyote/1.1.0",
         }
 
         payload: dict[str, object] = {
@@ -171,6 +195,7 @@ class LLMClient:
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.config.api_key}",
+            "User-Agent": "Koyote/1.1.0",
         }
 
         formatted_messages = []
@@ -182,6 +207,7 @@ class LLMClient:
             "model": self.config.model,
             "messages": formatted_messages,
             "temperature": 0.0,
+            "max_tokens": 4096,
         }
 
         req = urllib.request.Request(

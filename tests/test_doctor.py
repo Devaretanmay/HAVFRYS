@@ -8,19 +8,19 @@ import subprocess
 import sys
 
 
-def _run(args, env):
+def _run(args, env, cwd=None):
     return subprocess.run(
         [sys.executable, "-m", "koyote.cli.main"] + args,
-        capture_output=True, text=True, env=env,
+        capture_output=True, text=True, env=env, cwd=cwd,
     )
 
 
 def _env(tmp_path):
     env = dict(os.environ)
-    env["PYTHONPATH"] = "python"
+    env["PYTHONPATH"] = os.path.abspath("python")
     env["KOYOTE_CREDENTIALS_FILE"] = str(tmp_path / "creds.json")
     env["KOYOTE_INSTALLATIONS_DIR"] = str(tmp_path / "inst")
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY",
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY",
               "GITHUB_TOKEN", "KOYOTE_GITHUB_TOKEN"):
         env.pop(k, None)
     return env
@@ -28,7 +28,7 @@ def _env(tmp_path):
 
 def test_doctor_all_states(tmp_path):
     env = _env(tmp_path)
-    res = _run(["doctor"], env)
+    res = _run(["doctor"], env, cwd=str(tmp_path))
     assert res.returncode == 0
     for line in ("GitHub:", "AI provider:", "Indexed:", "Knowledge Base:",
                  "Test command:", "Monitoring:"):

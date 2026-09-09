@@ -40,7 +40,23 @@ class TestLLMClient(unittest.TestCase):
             self.assertEqual(cfg.provider, "openai_compatible")
             self.assertEqual(cfg.base_url, "http://localhost:11434/v1")
 
-    def test_resolve_none_when_empty(self):
+    def test_resolve_groq_explicit_key(self):
+        cfg = resolve_llm_config(api_key="gsk_test1234567890")
+        self.assertIsNotNone(cfg)
+        self.assertEqual(cfg.provider, "openai_compatible")
+        self.assertEqual(cfg.base_url, "https://api.groq.com/openai/v1")
+        self.assertEqual(cfg.model, "openai/gpt-oss-120b")
+
+    def test_resolve_env_groq(self):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "gsk_fromenv123"}, clear=True):
+            cfg = resolve_llm_config()
+            self.assertIsNotNone(cfg)
+            self.assertEqual(cfg.provider, "openai_compatible")
+            self.assertEqual(cfg.api_key, "gsk_fromenv123")
+            self.assertEqual(cfg.base_url, "https://api.groq.com/openai/v1")
+
+    @patch("koyote.llm.load_credentials", return_value=None)
+    def test_resolve_none_when_empty(self, _mock_creds):
         with patch.dict(os.environ, {}, clear=True):
             cfg = resolve_llm_config()
             self.assertIsNone(cfg)

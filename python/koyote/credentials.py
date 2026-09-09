@@ -90,7 +90,12 @@ def clear_credentials() -> bool:
 
 def has_valid_credentials(installation_id: str | None = None, repo: str | None = None) -> bool:
     """Return True if a key is set via env vars, scoped file, or global credentials.json."""
-    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY") or os.environ.get("KOYOTE_LLM_KEY"):
+    if (
+        os.environ.get("ANTHROPIC_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+        or os.environ.get("GROQ_API_KEY")
+        or os.environ.get("KOYOTE_LLM_KEY")
+    ):
         return True
     creds = load_credentials(installation_id, repo)
     if creds and creds.get("api_key"):
@@ -104,6 +109,8 @@ def get_active_provider_summary() -> dict[str, Any]:
         return {"configured": True, "provider": "anthropic", "source": "env:ANTHROPIC_API_KEY"}
     if os.environ.get("OPENAI_API_KEY"):
         return {"configured": True, "provider": "openai", "source": "env:OPENAI_API_KEY"}
+    if os.environ.get("GROQ_API_KEY"):
+        return {"configured": True, "provider": "groq", "source": "env:GROQ_API_KEY"}
     if os.environ.get("KOYOTE_LLM_KEY"):
         return {"configured": True, "provider": "custom", "source": "env:KOYOTE_LLM_KEY"}
     
@@ -136,6 +143,11 @@ def verify_credentials(provider: str, api_key: str, model: str | None = None, ba
         if not (key.startswith("sk-") or len(key) > 20):
             return False, "Invalid OpenAI API key format (expected sk-...)"
         return True, "OpenAI credentials verified"
+
+    if prov == "groq":
+        if not (key.startswith("gsk_") or len(key) > 20):
+            return False, "Invalid Groq API key format (expected gsk_...)"
+        return True, "Groq credentials verified"
 
     if prov in ("ollama", "local", "openai_compatible", "custom"):
         return True, f"{provider} endpoint configured"
