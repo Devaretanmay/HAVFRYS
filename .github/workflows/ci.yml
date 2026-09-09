@@ -15,5 +15,6 @@ jobs:
           python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
       - run: pip install ruff maturin pytest pyyaml blake3 "pyjwt[crypto]>=2.8.0"
-      - run: maturin develop --release
+      - run: maturin build --release --out dist
+      - run: pip install dist/*.whl
       - run: python scripts/run_all_tests.py
