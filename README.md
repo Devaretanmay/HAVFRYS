@@ -2,18 +2,22 @@
 
 # Koyote
 
-### External-change intelligence for codebases.
+### Your codebase has a second author: the outside world. Koyote reviews its pull requests.
 
-**Koyote understands the changes the outside world makes to software — and repairs them.**
+![version](https://img.shields.io/badge/version-1.1.0-blue) ![license](https://img.shields.io/badge/license-Apache--2.0-green) ![python](https://img.shields.io/badge/python-3.10%2B-yellow) ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 
-[PyPI Package](https://pypi.org/project/koyote/) | [Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md)
+**APIs drift. SDKs break. Koyote detects it, repairs it, and proves it — before your CI goes red.**
 
-<br/>
-
-```text
-   APIs drift. SDKs break.
-   Koyote keeps your codebase continuously updated and verified.
+```bash
+git clone https://github.com/Devaretanmay/Koyote && cd Koyote
+pip install .
+koyote check /path/to/your-repo   # read-only audit, no AI key needed
 ```
+
+60 seconds to your first risk register. AI repair is opt-in (`koyote auth`).
+PyPI one-liner (`pip install koyote`) lands with the public beta.
+
+[Quickstart](docs/QUICKSTART.md) | [CLI Reference](docs/CLI.md) | [Architecture](docs/ARCHITECTURE.md) | [Validation Guide](docs/VALIDATION_GUIDE.md) | [Join the beta](https://github.com/Devaretanmay/Koyote/issues)
 
 </div>
 
@@ -163,6 +167,19 @@ koyote fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo own
 
 ---
 
+## Proof, not promises
+
+On a real open-source repo (TalkGPT, OpenAI `v3` → `v4`): verified the green base,
+reproduced the breaking bump as a red build, repaired it autonomously, and
+returned the suite to green with zero unintended files touched. Refusals are
+loud and empty-handed — a repair that can't be proven is a repair not shipped.
+
+Every commit is gated: **527 Rust + 352 Python tests**, lint-clean, with
+comment-density and import-hygiene checks. See the [Validation Guide](docs/VALIDATION_GUIDE.md)
+for the full protocol.
+
+---
+
 ## 4. Controlled Execution & Sandboxed Verification
 
 Koyote provides **controlled, reproducible execution** across local kernel sandboxes (macOS Seatbelt, Linux Landlock), Docker, and CI runners:
@@ -231,6 +248,12 @@ The old fable got it backwards: the village stopped believing because the boy
 cried wolf over nothing. Most automation still does — vague green checks,
 unverified badges, silent passes. Koyote only howls when there's actually
 one in the fence: verified repairs, loud refusals, never a faked pass.
+
+## Beta
+
+Koyote is in private beta. The fastest way in: run `koyote check` on your
+repo and [open an issue](https://github.com/Devaretanmay/Koyote/issues) with
+what it found — misses and false alarms included. That feedback is the roadmap.
 
 ## License
 

@@ -8,11 +8,15 @@ Get up and running with Koyote in under 2 minutes.
 
 ## 1. Installation
 
-Install Koyote via PyPI:
+From source (builds the native core, ~2 minutes, needs Rust + Python 3.10+):
 
 ```bash
-pip install --upgrade koyote
+git clone https://github.com/Devaretanmay/Koyote && cd Koyote
+pip install .
 ```
+
+`pip install koyote` from PyPI lands with the public beta — this page will
+say so when it does.
 
 ---
 
