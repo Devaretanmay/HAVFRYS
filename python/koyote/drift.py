@@ -10,7 +10,9 @@ from koyote.autopatch import ScanConfig, scan_callsites
 from koyote.change_source import (
     Detection, ChangeSource, NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE,
 )
-from koyote.intelligence import KoyoteIntelligence, resolve_migration
+from koyote.credentials import has_valid_credentials
+from koyote.intelligence import resolve_migration
+from koyote.knowledge import direct_rewrites_for
 from koyote.providers.registry import get_default_registry
 
 _logger = logging.getLogger("koyote.drift")
@@ -142,7 +144,6 @@ def detect_changes(repo_dir: str, provider_name: str | None = None) -> list[Dete
     Returns one Detection per detected dependency. Repair strategy is decided
     downstream by KoyoteIntelligence; this function only classifies.
     """
-    intel = KoyoteIntelligence()
     out: list[Detection] = []
     for d in detect_drift(repo_dir, provider_name):
         source = ChangeSource.sdk(
@@ -170,13 +171,18 @@ def detect_changes(repo_dir: str, provider_name: str | None = None) -> list[Dete
         if migration is not None:
             source.metadata["breaking_change"] = migration.description
             source.metadata["migration_guide_url"] = migration.changelog_url
-        decision = intel.decide(repo_dir, d["provider"], _from, _to,
-                                has_rewrites=bool(migration and migration.rewrites))
-        mapping = {"DIRECT": (IMPACT_DIRECT, False, 0.9), "AI": (IMPACT_AI, True, 0.5),
-                   "QUARANTINE": (IMPACT_QUARANTINE, False, 0.0)}
-        outcome, ai_dep, conf = mapping[decision.strategy]
+        has_pat = bool(migration and migration.rewrites) or len(direct_rewrites_for(repo_dir, d["provider"], _from, _to)) > 0
+        if has_pat:
+            outcome, ai_dep, conf = IMPACT_DIRECT, False, 0.95
+            reason = "DIRECT: known_pattern_contract"
+        elif has_valid_credentials():
+            outcome, ai_dep, conf = IMPACT_AI, True, 0.7
+            reason = "AI: novel_drift_ai_reasoning"
+        else:
+            outcome, ai_dep, conf = IMPACT_QUARANTINE, False, 0.0
+            reason = "QUARANTINE: no_credentials_for_ai"
         out.append(Detection(source=source, outcome=outcome,
-                             reason=f"{decision.strategy}: {decision.reason}",
+                             reason=reason,
                              affected_files=affected, callsite_count=len(callsites),
                              ai_dependent=ai_dep, confidence=conf))
     return out

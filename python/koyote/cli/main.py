@@ -359,6 +359,14 @@ def cmd_doctor(args):
             kb_state = "READY" if changed_since_index(ws_root).get("fresh") else "STALE"
         except Exception:
             kb_state = "READY"
+    daemon_running = False
+    try:
+        with urllib.request.urlopen("http://localhost:8080/health", timeout=0.4) as resp:
+            if resp.status == 200:
+                daemon_running = True
+    except Exception:
+        daemon_running = False
+
     monitoring = "NOT ACTIVE"
     try:
         idir = installations_store_dir()
@@ -368,6 +376,14 @@ def cmd_doctor(args):
                 break
     except Exception:
         pass
+
+    if daemon_running:
+        mon_str = "ACTIVE — Daemon live on :8080 (Howl hunting)"
+    elif monitoring == "ACTIVE":
+        mon_str = "CONFIGURED (Howl hunting — repos ready; run `koyote app serve` to listen for webhooks)"
+    else:
+        mon_str = "NOT ACTIVE (run `koyote app serve` to listen for webhooks)"
+
     print("================================================================================")
     print("                 KOYOTE DOCTOR — product readiness                              ")
     print("================================================================================\n")
@@ -375,13 +391,15 @@ def cmd_doctor(args):
     if summary.get("configured"):
         print(f"AI provider:        CONNECTED ({summary.get('provider')} via {summary.get('source')})")
     else:
-        print("AI provider:        NOT CONFIGURED — run `koyote auth` (needed only for AI repair)")
+        print("AI provider:        NOT CONFIGURED — run `koyote auth` (needed for AI repair authoring)")
     print(f"Repository:         {ws_root}")
     print(f"Indexed:            {'YES' if indexed else 'NOT INDEXED — run `koyote index`'}")
     print(f"Knowledge Base:     {kb_state}")
     print(f"Test command:       {tcmd or 'NOT FOUND — verification will fail closed'}")
-    print(f"Monitoring:         {'ACTIVE — Howl hunting' if monitoring == 'ACTIVE' else monitoring}")
-    print("\nFlow: Install → Index → Check (free) → Connect AI → Fix (when repair needs reasoning).\n================================================================================")
+    print(f"Monitoring:         {mon_str}")
+    print("\nLocal Flow:  koyote check (free) → koyote auth → koyote consult (Howl) → koyote work (Hunt)")
+    print("Hosted Flow: Install GitHub App → Choose repos → Auto-index → Connect BYOK → READY")
+    print("================================================================================")
 
 
 def _snapshot_worktree(workspace_root: str, snapshot_id: str) -> str:
@@ -2238,7 +2256,12 @@ def cmd_maintain(args):
 
     print(f"Version Migration:       {report.from_version} -> {report.to_version}")
     print(f"Files Scanned/Patched:   {report.files_scanned} scanned, {report.files_modified} modified")
-    print(f"Repair Path:             {report.repair_path}")
+    repair_path_label = {
+        "ai-reasoning": "AI-authored (Hunt reasoning with AST contract evidence)",
+        "verified-pattern": "verified-pattern (deterministic rewrite)",
+        "hybrid": "AI-authored with pattern guidance",
+    }.get(report.repair_path, report.repair_path)
+    print(f"Repair Path:             {repair_path_label}")
     print(f"Blast-Radius Check:      {'PASS (0 unintended files modified)' if report.blast_radius_verified else 'FAIL'}")
     if report.files_modified == 0:
         print("Repository Tests:        NOT RUN (no repair was applied)")

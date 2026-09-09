@@ -1,6 +1,10 @@
 import json
+import os
 import shutil
+from unittest.mock import MagicMock, patch
+
 from koyote.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
+from koyote.patch_writer import PatchResult
 
 
 def test_detect_drift_in_fixture():
@@ -12,7 +16,10 @@ def test_detect_drift_in_fixture():
     assert stripe_dep["declared_version"] == "^11.18.0"
 
 
-def test_run_maintenance_cycle_taxonomy(tmp_path):
+def test_run_maintenance_cycle_taxonomy(tmp_path, monkeypatch):
+    monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
+        monkeypatch.delenv(k, raising=False)
     fixture_dir = "trials/fixtures/taxonomy_stripe"
     target_dir = str(tmp_path / "taxonomy_stripe")
     shutil.copytree(fixture_dir, target_dir)
@@ -39,6 +46,34 @@ def test_run_maintenance_cycle_taxonomy(tmp_path):
     latest = history[-1]
     assert latest["provider_name"].lower() == "stripe"
     assert latest["blast_radius_zero"] is True
+
+
+def test_run_maintenance_cycle_ai_authored_with_credentials(tmp_path, monkeypatch):
+    monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test123")
+    fixture_dir = "trials/fixtures/taxonomy_stripe"
+    target_dir = str(tmp_path / "taxonomy_stripe_ai")
+    shutil.copytree(fixture_dir, target_dir)
+
+    mock_planner = MagicMock()
+    mock_planner.plan_and_apply.return_value = [
+        PatchResult(
+            file_path=os.path.join(target_dir, "src", "billing.ts"),
+            success=True,
+            lines_changed=4,
+            unified_diff="--- a\n+++ b",
+            rules_applied=["AI-authored Stripe migration"],
+        )
+    ]
+    with patch("koyote.ai_planner.AIPatchPlanner.from_env", return_value=mock_planner):
+        report = run_maintenance_cycle(
+            repo_dir=target_dir,
+            provider_name="stripe",
+            from_version="11.18.0",
+            to_version="22.0.0",
+            create_pr=False,
+        )
+        assert report.repair_path == "ai-reasoning"
 
 
 def test_quarantine_reports_no_path(tmp_path, monkeypatch):

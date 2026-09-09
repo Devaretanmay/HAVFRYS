@@ -10,17 +10,28 @@ from koyote.intelligence import KoyoteIntelligence, Decision
 from koyote.providers.registry import find_migration_for
 
 
-def test_direct_for_known_sdk_rewrite():
+def test_direct_for_known_sdk_rewrite_without_creds(tmp_path, monkeypatch):
+    monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
+        monkeypatch.delenv(k, raising=False)
     d = KoyoteIntelligence().decide("/tmp", "stripe", "11.18.0", "13.0.0", has_rewrites=True)
     assert d.strategy == "DIRECT"
     assert d.estimated_tokens == 0
-    assert d.confidence > 0.9
+    assert d.confidence >= 0.85
     assert d.verification_required is True
+
+
+def test_ai_authored_when_credentials_present(tmp_path, monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test123")
+    d = KoyoteIntelligence().decide("/tmp", "stripe", "11.18.0", "13.0.0", has_rewrites=True)
+    assert d.strategy == "AI"
+    assert "ai_authored" in d.reason
+    assert d.confidence >= 0.95
 
 
 def test_quarantine_without_creds_or_rewrites(tmp_path, monkeypatch):
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY"):
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
     d = KoyoteIntelligence().decide(str(tmp_path), "twilio", "1.0", "2.0", has_rewrites=False)
     assert d.strategy == "QUARANTINE"
@@ -48,7 +59,7 @@ def test_find_migration_for_future_kinds_returns_none():
 
 def test_decide_for_source_future_kind_quarantines_without_creds(tmp_path, monkeypatch):
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY"):
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
     d = KoyoteIntelligence().decide_for_source(
         str(tmp_path), ChangeSource(kind="mcp_server", identity="internal-tools"))

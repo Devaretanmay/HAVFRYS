@@ -74,20 +74,45 @@ class KoyoteIntelligence:
         if hit is None:
             hit = len(direct_rewrites_for(repo_dir, provider, actual_from, actual_to)) > 0
 
+        if has_valid_credentials():
+            elapsed = int((time.time() - t0) * 1000)
+            reason = "ai_authored_with_pattern_evidence" if (hit or has_rewrites) else "ai_authored_novel_drift"
+            return Decision(
+                strategy="AI",
+                reason=reason,
+                elapsed_ms=elapsed,
+                provider=provider,
+                from_version=actual_from,
+                to_version=actual_to,
+                confidence=0.95 if (hit or has_rewrites) else 0.8,
+                estimated_tokens=None,
+            )
+
         if hit or has_rewrites:
             elapsed = int((time.time() - t0) * 1000)
             reason = "kb_hit" if hit else "registry_rewrite"
-            return Decision(strategy="DIRECT", reason=reason, elapsed_ms=elapsed, provider=provider, from_version=actual_from, to_version=actual_to,
-                            confidence=0.95, estimated_tokens=0)
-
-        if has_valid_credentials():
-            elapsed = int((time.time() - t0) * 1000)
-            return Decision(strategy="AI", reason="novel_no_kb_match", elapsed_ms=elapsed, provider=provider, from_version=actual_from, to_version=actual_to,
-                            confidence=0.5, estimated_tokens=None)
+            return Decision(
+                strategy="DIRECT",
+                reason=reason,
+                elapsed_ms=elapsed,
+                provider=provider,
+                from_version=actual_from,
+                to_version=actual_to,
+                confidence=0.90,
+                estimated_tokens=0,
+            )
 
         elapsed = int((time.time() - t0) * 1000)
-        return Decision(strategy="QUARANTINE", reason="no_credentials_for_ai", elapsed_ms=elapsed, provider=provider, from_version=actual_from, to_version=actual_to,
-                        confidence=0.0, estimated_tokens=None)
+        return Decision(
+            strategy="QUARANTINE",
+            reason="no_credentials_for_ai",
+            elapsed_ms=elapsed,
+            provider=provider,
+            from_version=actual_from,
+            to_version=actual_to,
+            confidence=0.0,
+            estimated_tokens=None,
+        )
 
     def decide_for_source(self, repo_dir: str, source: ChangeSource) -> Decision:
         """Generalized entry point: route any change source, not just vendor SDKs."""
@@ -95,13 +120,30 @@ class KoyoteIntelligence:
         migration = find_migration_for(source)
         if migration is None:
             if has_valid_credentials():
-                return Decision(strategy="AI", reason=f"no_connector_for_{source.kind}",
-                                elapsed_ms=int((time.time() - t0) * 1000),
-                                provider=source.provider, from_version=source.version_from,
-                                to_version=source.version_to, confidence=0.4, estimated_tokens=None)
-            return Decision(strategy="QUARANTINE", reason=f"no_connector_for_{source.kind}",
-                            elapsed_ms=int((time.time() - t0) * 1000),
-                            provider=source.provider, from_version=source.version_from,
-                            to_version=source.version_to, confidence=0.0, estimated_tokens=None)
-        return self.decide(repo_dir, source.provider, source.version_from, source.version_to,
-                           has_rewrites=bool(migration.rewrites))
+                return Decision(
+                    strategy="AI",
+                    reason=f"ai_authored_novel_{source.kind}",
+                    elapsed_ms=int((time.time() - t0) * 1000),
+                    provider=source.provider,
+                    from_version=source.version_from,
+                    to_version=source.version_to,
+                    confidence=0.8,
+                    estimated_tokens=None,
+                )
+            return Decision(
+                strategy="QUARANTINE",
+                reason=f"no_connector_for_{source.kind}",
+                elapsed_ms=int((time.time() - t0) * 1000),
+                provider=source.provider,
+                from_version=source.version_from,
+                to_version=source.version_to,
+                confidence=0.0,
+                estimated_tokens=None,
+            )
+        return self.decide(
+            repo_dir,
+            source.provider,
+            source.version_from,
+            source.version_to,
+            has_rewrites=bool(migration.rewrites),
+        )

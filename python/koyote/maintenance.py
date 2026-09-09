@@ -144,20 +144,37 @@ def run_maintenance_cycle(
         ai_planner = AIPatchPlanner.from_env(api_key=llm_api_key, model=llm_model, base_url=llm_base_url)
         if ai_planner is None:
             quarantine_error = (
-                "AI repair required (novel change, no verified pattern) but no AI provider is configured. "
-                "Run `koyote auth` or set ANTHROPIC_API_KEY / OPENAI_API_KEY."
+                "AI repair required but no AI provider is configured. "
+                "Run `koyote auth` or set GROQ_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY."
             )
         else:
             impact = ImpactAnalyst().analyze_impact(repo_dir, provider_name)
-            target_files = impact.affected_files
+            target_files = set(impact.affected_files)
+            if not target_files:
+                for dirpath, dirnames, filenames in os.walk(repo_dir):
+                    dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules", ".next", "__pycache__", ".koyote"}]
+                    for fn in filenames:
+                        if fn.endswith((".ts", ".js", ".py", ".rs", ".go")):
+                            fp = os.path.join(dirpath, fn)
+                            try:
+                                with open(fp, "r", encoding="utf-8", errors="ignore") as f:
+                                    content = f.read()
+                                if provider_name.lower() in content.lower():
+                                    target_files.add(os.path.relpath(fp, repo_dir))
+                            except Exception:
+                                pass
             if target_files:
                 migration_desc = migration.description if migration else f"Upgrade {provider_name} to {actual_to}"
+                kb_rules = direct_rewrites_for(repo_dir, provider_name, actual_from, actual_to)
+                if kb_rules or applied_rewrites:
+                    rules_summary = "\n".join(f"- {r.description}: {r.pattern} -> {r.replacement}" for r in (applied_rewrites or kb_rules))
+                    migration_desc += f"\n\nContract pattern evidence (use as architectural guide):\n{rules_summary}"
                 reason_ctx = build_reasoning_context(
                     repo_dir, provider_name, actual_from, actual_to,
                     migration_desc, changelog_url)
                 ai_results = ai_planner.plan_and_apply(
                     repo_dir=repo_dir,
-                    affected_files=target_files,
+                    affected_files=sorted(list(target_files)),
                     provider_name=provider_name,
                     from_version=actual_from,
                     to_version=actual_to,
