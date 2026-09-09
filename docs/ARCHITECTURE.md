@@ -11,7 +11,7 @@ change flows through detect → decide → verify → learn.
 ## 1. The loop
 
 ```text
-WEBHOOK EVENT (PR opened / synchronized / @howl / @hunt)
+ANY CHANGESOURCE (Dependency release, vendor changelog, scheduled check, registry drift, PR event)
 │
 ▼
 KOYOTE CHANGE RADAR (detect_changes: read-only, zero-token AST scan)
@@ -26,21 +26,23 @@ graph · callsites · wrappers · tests       ChangeSource · migration · chang
 SEMANTIC KNOWLEDGE BASE (.koyote/knowledge/)
 Ground truth verified patterns fed to prompt to minimize token burn
                          ▼
-AI REASONING & GENERATION (Customer BYOK Provider)
+SHARED AI REASONING ENGINE (Customer BYOK Provider)
 The sole author of reviews, assessments, and code repairs
+AI reasons; native tools provide evidence and execute/verify
 ┌────────────────────────┴────────────────────────┐
 ↓                                                 ↓
-HOWL (ADVISOR BOT)                            HUNT (WORKER BOT)
-Read-only advisory review                     Surgical AI patch generation
-Explains risk & files Issue / comment         Kernel sandbox + real test suite
-Zero files touched                            Evidence (BLAKE3) & Trust PR
+CONSULT (Howl Persona)                            WORK (Hunt Persona)
+Find & explain maintenance problems               Find, repair, verify & deliver PR
+Deep AI impact analysis                           Surgical AI patch generation
+GitHub ISSUE filed                                Kernel sandbox + real test suite
+Zero files touched                                Evidence (BLAKE3) & Trust PR
 ```
 
-## 1b. The Two Distinct Bots: Howl vs Hunt
+## 1b. Product Modes: Consult vs Work (Personas: Howl & Hunt)
 
-Instead of a monolithic reviewer, Koyote is split into two specialized bots:
-- **Howl (The Advisor)**: Always read-only. Reviews incoming PRs and upstream contract changes, assesses architectural risk, answers `@howl explain` queries, and files advisory GitHub Issues. Never commits code or opens PRs.
-- **Hunt (The Worker)**: The autonomous maintenance agent. Synthesizes surgical code repairs via the user's AI provider, tests inside the OS kernel sandbox (Linux Landlock / macOS Seatbelt), and delivers verified, merge-ready pull requests with BLAKE3 cryptographic receipts.
+Koyote cleanly separates **Consult** and **Work** as its primary product abstractions:
+- **Consult (`@howl explain` / `koyote consult`)**: Finds and explains maintenance problems with deep AI reasoning. Explains what changed upstream, what is actually affected across internal callsites, why, what should change, and what must NOT change. Files an advisory **GitHub Issue** (or responds on an existing PR thread). Never touches files, never commits, and never opens PRs.
+- **Work (`@hunt repair` / `koyote work`)**: The autonomous maintenance worker. Synthesizes surgical code repairs via the customer's configured AI provider, runs test suites inside an OS kernel sandbox (Linux Landlock / macOS Seatbelt), and opens a verified **GitHub PR** with BLAKE3 cryptographic receipts only when tests pass (`exit 0`).
 
 ## 2. Core types
 

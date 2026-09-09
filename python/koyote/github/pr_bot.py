@@ -367,7 +367,7 @@ def handle_issue_comment_event(
     body_lower = body.lower()
     if not repo or not number or not body:
         return {"success": True, "event": event_type, "handled": False}
-    if not any(trigger in body_lower for trigger in ("@koyote", "@howl", "@hunt")):
+    if not any(trigger in body_lower for trigger in ("@koyote", "@howl", "@hunt", "@consult", "@work")):
         return {"success": True, "event": event_type, "handled": False}
     if sender == "bot" or not issue.get("pull_request"):
         return {"success": True, "event": event_type, "handled": False,
@@ -396,18 +396,18 @@ def handle_issue_comment_event(
     ctx = TriggerContext.from_pull_request_event(
         payload_pr, workdir=workdir, changed_files=files)
 
-    # Route 1: Explicit Howl advisory trigger
-    if "@howl" in body_lower or "@koyote explain" in body_lower:
+    # Route 1: Consult mode trigger (@howl, @consult, @koyote explain)
+    if any(t in body_lower for t in ("@howl", "@consult", "@koyote explain")):
         howl = HowlBot(client=client, policy=policy)
-        require_ai = "@koyote explain" in body_lower
-        res = howl.review_pull_request(ctx, require_ai=require_ai)
+        require_ai = any(t in body_lower for t in ("@koyote explain", "@howl explain", "@consult"))
+        res = howl.explain_pull_request(ctx, require_ai=require_ai)
         if not res.get("success"):
             return res
         return {"success": True, "event_type": "issue_comment.howl",
                 "repository": repo, "pr_number": number, "comment_posted": True, "result": res}
 
-    # Route 2: Explicit Hunt repair trigger
-    if "@hunt" in body_lower:
+    # Route 2: Work mode trigger (@hunt, @work)
+    if any(t in body_lower for t in ("@hunt", "@work")):
         hunt = HuntBot(client=client, policy=policy)
         res = hunt.execute_repair(ctx)
         return {"success": True, "event_type": "issue_comment.hunt",

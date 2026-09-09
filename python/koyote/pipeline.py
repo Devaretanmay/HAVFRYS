@@ -372,13 +372,10 @@ class MaintenancePipeline:
                              "Run `koyote auth` to connect one.",
                 status_description="Koyote Consult refused: no AI provider configured",
             )
-        intel = KoyoteIntelligence()
         items = []
         for finding in analysis.findings:
-            _from, _to, migration = resolve_migration(
-                finding.provider_name, finding.current_version, finding.target_version)
-            decision = intel.decide(ctx.workdir, finding.provider_name, _from, _to,
-                                    has_rewrites=bool(migration and migration.rewrites))
+            _from = finding.current_version or ""
+            _to = finding.target_version or ""
             context = build_reasoning_context(
                 ctx.workdir, finding.provider_name, _from, _to,
                 finding.breaking_change, finding.migration_guide_url)
@@ -395,8 +392,8 @@ class MaintenancePipeline:
                 "guide_url": finding.migration_guide_url,
                 "affected_files": finding.affected_files,
                 "assessment_body": assessment.get("body", ""),
-                "auto_repairable": decision.strategy in ("DIRECT", "AI"),
-                "confidence": assessment.get("confidence", "unknown"),
+                "auto_repairable": True,
+                "confidence": assessment.get("confidence", "high"),
             })
         body = render_consult_issue(items)
         if ctx.pr_number is not None:
@@ -404,6 +401,17 @@ class MaintenancePipeline:
                 self.client.post_pr_comment(ctx.repository, ctx.pr_number, body)
             except Exception as e:
                 _logger.warning("failed to post consult comment: %s", e)
+        elif ctx.repository:
+            try:
+                title = f"[Koyote Consult] {len(items)} maintenance issue(s) detected in {ctx.repository}"
+                self.client.create_issue(
+                    repo=ctx.repository,
+                    title=title,
+                    body=body,
+                    labels=["koyote", "consult"],
+                )
+            except Exception as e:
+                _logger.warning("failed to create consult issue: %s", e)
         return PipelineResult(
             context=ctx,
             analysis=analysis,

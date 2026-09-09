@@ -9,13 +9,13 @@ Koyote is autonomous software maintenance for systems that change. It detects co
 ## The Public CLI Contract
 
 ```text
-Maintenance product (normal flow: auth → doctor → index → check → howl / hunt)
+Maintenance product (normal flow: auth → doctor → index → check → consult / work)
   koyote auth                     Connect BYOK AI provider (needed only for AI repair)
   koyote doctor                   Product readiness: GitHub, AI, index, knowledge, tests
   koyote index [path]             Index repository contracts & callsites (free, zero-token)
   koyote check [path]             Detect contract changes & impact (read-only; needs no AI key)
-  koyote howl [path]              Howl (Advisor): assess with AI reasoning, file Issue, modify nothing (alias: consult)
-  koyote hunt [path] [--provider] Hunt (Worker): repair, verify in sandbox, report evidence (alias: fix, maintain)
+  koyote consult [path]           Consult mode: assess with AI reasoning, file Issue, modify nothing (alias: howl)
+  koyote work [path] [--provider] Work mode: repair, verify in sandbox, report evidence, open PR (alias: hunt, fix)
   koyote reviews [path]           List past maintenance runs from the ledger
   koyote onboard [path]           Guided setup: auth → index → doctor
   koyote logout                   Remove stored credentials (alias for auth --clear)

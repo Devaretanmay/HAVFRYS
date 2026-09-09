@@ -40,6 +40,7 @@ class HuntBot:
         return {
             "success": True,
             "bot": "hunt",
+            "mode": "work",
             "status": result.status,
             "mergeable": result.mergeable,
             "committed": result.committed,
@@ -48,3 +49,6 @@ class HuntBot:
             "comment_posted": bool(result.comment_body),
             "status_description": result.status_description,
         }
+
+
+WorkBot = HuntBot

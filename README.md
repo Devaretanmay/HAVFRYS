@@ -36,21 +36,21 @@ Dependabot bumps version strings in lockfiles and leaves CI broken. Human engine
 ---
 
 ## The Core Loop
-
+ 
 ```text
-Install GitHub App → Connect AI Provider → Zero-Token Index → READY
+Any ChangeSource (Dependency release, vendor changelog, scheduled check, PR webhook)
         ↓
-PR Webhook Event (pull_request.opened / synchronized / @howl / @hunt)
+Zero-token AST Scan + Semantic Pattern Memory (.koyote/knowledge/)
         ↓
-Zero-token AST Scan + Semantic Memory (.koyote/knowledge/)
-        ↓
-AI Reasons & Generates (Sole author; customer's BYOK provider)
+Shared AI Reasoning Engine (Customer BYOK Provider)
+AI reasons; native tools provide evidence and execute/verify
         ↓
 ┌─────────────────────────────────┬─────────────────────────────────┐
-│ Howl (Advisor Bot)              │ Hunt (Worker Bot)               │
-│ Explains drift & architectural  │ Synthesizes surgical patch      │
-│ risk. Zero code touched.        │ Kernel sandbox + real tests     │
-│ Posts PR reviews & Issues.      │ Delivers verified Trust PR      │
+│ Consult (Howl Persona)          │ Work (Hunt Persona)             │
+│ Find & explain problems.        │ Find, repair, verify & open PR. │
+│ Deep AI impact analysis.        │ Kernel sandbox + real tests.    │
+│ Files advisory GitHub Issue.    │ Delivers verified Trust PR.     │
+│ Zero files touched.             │ Fails closed on test failure.   │
 └─────────────────────────────────┴─────────────────────────────────┘
 ```
 
@@ -59,11 +59,13 @@ koyote auth              # Connect BYOK AI provider (Anthropic, OpenAI, Ollama)
 koyote doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
 koyote index .           # Zero-token static index
 koyote check .           # Read-only drift & impact audit
-koyote howl .            # Howl (Advisor): AI assessment as a GitHub Issue, modifies nothing
-koyote hunt .            # Hunt (Worker): AI repair, sandbox verification, and PR delivery
+koyote consult .         # Consult mode: AI assessment as a GitHub Issue, modifies nothing
+koyote work .            # Work mode: AI repair, sandbox verification, and PR delivery
 ```
 
-Two distinct bots for your team: **Howl** advises and warns, **Hunt** repairs.
+Two distinct product modes for your team:
+- **Consult** (`@howl explain` / `koyote consult`): Deep AI reasoning, architectural impact diagnosis, files a GitHub Issue, modifies zero code.
+- **Work** (`@hunt repair` / `koyote work`): Autonomous repair worker, sandbox test verification, delivers a verified PR.
 See [GitHub App behavior](docs/GITHUB_APP.md).
 
 ## The Core Pipeline

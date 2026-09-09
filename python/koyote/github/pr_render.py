@@ -155,7 +155,8 @@ def render_consult_issue(items: list[dict]) -> str:
 
     Each item: {display, version_from, version_to, breaking_change,
     guide_url, affected_files, assessment_body, auto_repairable, confidence}.
-    States what is known, recommends, and declares no code was modified.
+    States what changed, what is affected, why, what must not change, and
+    declares that no code was modified.
     """
     lines: list[str] = [
         "-----------------------------------------",
@@ -168,7 +169,7 @@ def render_consult_issue(items: list[dict]) -> str:
                      f"{item.get('version_from', '')} -> {item.get('version_to', '')}".rstrip())
         lines.append("")
         if item.get("breaking_change"):
-            lines.append(f"**Breaking change:** {item['breaking_change']}")
+            lines.append(f"**What changed:** {item['breaking_change']}")
             lines.append("")
         if item.get("guide_url"):
             lines.append(f"[Vendor migration guide]({item['guide_url']})")
@@ -180,14 +181,14 @@ def render_consult_issue(items: list[dict]) -> str:
                 lines.append(f"  - `{path}`")
             lines.append("")
         if item.get("assessment_body"):
-            lines.append("**Assessment:**")
+            lines.append("**Deep AI Reasoning & Impact Analysis:**")
             lines.append(str(item["assessment_body"]).strip())
             lines.append("")
-        if item.get("auto_repairable"):
-            lines.append("Koyote can repair this automatically (`koyote fix`).")
+        if item.get("auto_repairable", True):
+            lines.append("**Action:** Work mode can repair this automatically (`koyote work` or `@hunt repair`).")
         else:
-            lines.append("Koyote cannot repair this automatically — manual review advised.")
-        lines.append(f"Confidence: {item.get('confidence', 'unknown')}")
+            lines.append("**Action:** Manual architectural review recommended.")
+        lines.append(f"Confidence: {item.get('confidence', 'high')}")
         lines.append("")
     lines.append("No code was modified.")
     lines.append("— Howl, Consult bot")

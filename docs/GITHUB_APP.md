@@ -40,11 +40,11 @@ PRs touching only `ignore_paths`, or carrying an `exclude_labels` label, are ski
 
 New installations start in `consult`: accurate Issues build trust in the reasoning before anyone grants repair authority. Flip one line to `work` when ready — the engine never changes.
 
-## 5. Two Dedicated Bots: Howl & Hunt
+## 5. Two Product Modes: Consult & Work (Personas: Howl & Hunt)
 
-Koyote provides two distinct bot personalities, each with strict boundaries:
-- **Howl (The Advisor Bot)**: Listens to PR webhook events and `@howl` / `@howl explain` mentions. Performs deep contract and code review using your AI provider, explains breaking risk in PR comments or GitHub Issues, and **never modifies files**. Signed `— Howl, Advisory Bot`.
-- **Hunt (The Worker Bot)**: Listens to PR webhook events (when `mode: work`) or `@hunt` / `@hunt fix` comments. Synthesizes surgical AI repairs, runs test suites inside the kernel sandbox, enforces zero blast-radius, and delivers verified merge-ready PRs with BLAKE3 cryptographic receipts. Signed `— Hunt, Worker Bot`.
+Koyote cleanly defines its product abstractions:
+- **Consult (`@howl explain` / `koyote consult`)**: Explains maintenance problems with deep AI reasoning. For any detected maintenance problem (dependency drift, contract breaking bump, external change), Consult files a **GitHub Issue** detailing what changed, what is affected, why, what should change, and what must NOT change. When invoked on a PR (`@howl explain`), it provides an advisory impact breakdown on the PR thread. Consult is strictly read-only: it **never modifies files, never commits, and never opens PRs**.
+- **Work (`@hunt repair` / `koyote work`)**: Autonomous repair worker. Synthesizes surgical code repairs via the customer's AI provider, executes the real test suite inside the kernel sandbox (Linux Landlock / macOS Seatbelt), and delivers a verified merge-ready **GitHub PR** with BLAKE3 cryptographic receipts only when tests pass (`exit 0`). If tests fail, it fails closed without opening a PR.
 
 ## 6. Anatomy of a review
 

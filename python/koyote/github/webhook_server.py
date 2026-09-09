@@ -69,7 +69,7 @@ class WebhookHTTPHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         clean_path = self.path.split("?")[0].rstrip("/")
-        if clean_path in ("/webhook", "/api/webhook", "/webhook/howl", "/webhook/hunt"):
+        if clean_path in ("/webhook", "/api/webhook", "/webhook/howl", "/webhook/hunt", "/webhook/consult", "/webhook/work"):
             content_length = int(self.headers.get("Content-Length", 0))
             payload = self.rfile.read(content_length)
 
