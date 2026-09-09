@@ -1,4 +1,8 @@
-# Deploying the Koyote GitHub App Daemon
+# Self-Hosting the Koyote GitHub App Daemon (Operator Guide)
+
+> [!NOTE]
+> **This guide is for platform operators hosting their own Koyote webhook daemon.**
+> End-user developers do NOT need to follow this guide or generate GitHub App private keys. Customers simply install the hosted Koyote GitHub App on their repository.
 
 ## 1. GitHub App setup
 

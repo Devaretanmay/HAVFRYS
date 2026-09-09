@@ -1,6 +1,28 @@
-# Koyote GitHub App: Bot Behavior
+# Koyote GitHub App: Customer Onboarding & Bot Behavior
 
 > One agent, two authorities. `Consult` explains and files Issues. `Work` repairs and opens PRs. The reasoning engine is identical; only what it may touch differs.
+
+## Customer Onboarding (Zero Infrastructure Setup)
+
+For developers and engineering teams, adding Koyote to a GitHub repository is completely automated:
+
+```text
+GitHub
+  ↓
+Install Koyote GitHub App on repo
+  ↓
+Choose repository
+  ↓
+Koyote runs Day-0 zero-token index
+  ↓
+Connect AI provider reasoning key (BYOK)
+  ↓
+Repository status: READY
+```
+
+Developers **never** generate private keys, download PEM files, or configure webhook secrets. The hosted GitHub App manages repository permissions directly.
+
+---
 
 ## 1. Events handled
 

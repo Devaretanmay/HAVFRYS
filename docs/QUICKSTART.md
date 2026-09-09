@@ -8,26 +8,35 @@ Get up and running with Koyote in under 2 minutes.
 
 ## 1. Installation
 
-From source (builds the native core, ~2 minutes, needs Rust + Python 3.10+):
-
 ```bash
-git clone https://github.com/Devaretanmay/Koyote && cd Koyote
-pip install .
+pip install koyote
 ```
-
-`pip install koyote` from PyPI lands with the public beta — this page will
-say so when it does.
 
 ---
 
-## 2. Onboarding (no AI key required)
+## 2. Onboarding (in under 10 seconds)
 
 ```bash
 cd my-project
 
-koyote auth              # Connect AI provider — only needed when AI repair is required
-koyote doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Tests, Monitoring
-koyote index .           # Zero-token static index of contracts & callsites
+koyote init              # Detects repo, checks GitHub & AI, warms zero-token index
+koyote auth              # Connect your BYOK AI provider (Anthropic, OpenAI, Ollama)
+```
+
+Outputs your repository readiness:
+
+```text
+✓ GitHub connected (account: Devaretanmay)
+✓ Repository detected: acme/payments
+✓ Repository indexed (3 providers detected, 14 callsites mapped)
+✓ AI provider: Anthropic (claude-3-5-sonnet)
+✓ Maintenance memory initialized (.koyote/knowledge/)
+
+READY
+
+Koyote can now:
+  Consult — find and explain maintenance issues (koyote consult)
+  Work    — repair, verify, and open PRs (koyote work)
 ```
 
 ---

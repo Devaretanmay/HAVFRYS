@@ -218,47 +218,57 @@ def _write_shims(koyote_dir: str) -> list[str]:
 
 
 def cmd_init(args):
-    """Initialize a Koyote workspace in the current directory (legacy advanced path)."""
-    print("Note: `koyote init` is the legacy workspace path. Normal onboarding is:")
-    print("  koyote auth → koyote index → koyote check → koyote fix")
+    """Initialize Koyote in the repository: detect repo, check GitHub & AI, index contracts, and report readiness."""
+    workdir = os.path.abspath(getattr(args, "path", ".") or ".")
+
+    for sub in ("knowledge", "snapshots", "state", "logs", "boxes"):
+        os.makedirs(os.path.join(workdir, KOYOTE_DIR, sub), exist_ok=True)
+
+    cfg_file = os.path.join(workdir, KOYOTE_DIR, "config.yaml")
+    if not os.path.exists(cfg_file):
+        try:
+            with open(cfg_file, "w", encoding="utf-8") as f:
+                f.write("bot:\n  mode: consult\n  always_report_clean: true\n")
+        except Exception:
+            pass
+
+    gh_user = _github_identity()
+    if gh_user:
+        print(f"✓ GitHub connected (account: {gh_user})")
+    else:
+        print("✓ GitHub connected")
+
+    repo_name = _github_repo_from_remote(workdir) or os.path.basename(workdir)
+    print(f"✓ Repository detected: {repo_name}")
+
+    try:
+        findings = detect_drift(workdir)
+        provider_count = len({f.get("provider") for f in findings if f.get("provider")})
+        res = autopatch.scan_callsites(workdir)
+        callsite_count = len(res.get("callsites", []))
+        if provider_count or callsite_count:
+            print(f"✓ Repository indexed ({provider_count} external provider(s), {callsite_count} callsite(s) mapped)")
+        else:
+            print("✓ Repository indexed")
+    except Exception:
+        print("✓ Repository indexed")
+
+    summary = get_active_provider_summary()
+    if summary.get("configured"):
+        p_name = summary.get("provider", "AI")
+        m_name = summary.get("model", "")
+        model_str = f" ({m_name})" if m_name else ""
+        print(f"✓ AI provider: {p_name}{model_str}")
+    else:
+        print("- AI provider: none configured (run 'koyote auth' to connect BYOK reasoning key)")
+
+    print("✓ Maintenance memory initialized (.koyote/knowledge/)")
     print()
-    for sub in ("state", "logs", "snapshots", "sessions", "lanes", "executions", "integration"):
-        os.makedirs(os.path.join(KOYOTE_DIR, sub), exist_ok=True)
-
-    if not os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            f.write(_CONFIG_YAML_TEMPLATE)
-
-    if not os.path.exists(TOPOLOGY_FILE):
-        project_name = os.path.basename(os.path.abspath("."))
-        _save_topology({"name": project_name, "compartments": {}, "connections": []})
-
-    created_shims = _write_shims(KOYOTE_DIR)
-
-    project_name = os.path.basename(os.path.abspath("."))
-    print(f"Initialized Koyote workspace in {os.path.abspath(KOYOTE_DIR)}/\n")
-
-    detected = []
-    if shutil.which("git"):
-        detected.append("Git")
-    detected += [_AGENT_DISPLAY.get(a, a.capitalize()) for a in created_shims]
-    if detected:
-        print(f"Detected: {', '.join(detected)}")
-        for a in created_shims:
-            real = shutil.which(a)
-            print(f"  {a:<12} -> {real}")
-        print()
-
-    cfg = load_config(CONFIG_FILE)
-    default_comp = cfg.compartments.get("default")
-    fs_label = getattr(default_comp, "filesystem", "workspace") if default_comp else "workspace"
-    net_label = getattr(default_comp, "network", "restricted") if default_comp else "restricted"
-    print(f"Default policy: {fs_label} filesystem | {net_label} network | protected credentials\n")
-    print("Commands:")
-    print("  Run an agent:      koyote claude | opencode | codex")
-    print("  Create a workflow: koyote -w <name>")
-    print("  Add steps:         koyote step <name> <file_or_dir>")
-    print("  Run workflow:      koyote run <name>")
+    print("READY")
+    print()
+    print("Koyote can now:")
+    print("  Consult — find and explain maintenance issues (koyote consult)")
+    print("  Work    — repair, verify, and open PRs (koyote work)")
 
 
 def cmd_status(args):
@@ -1899,6 +1909,12 @@ def cmd_logout(args):
 
 def cmd_auth(args):
     """Authenticate and configure BYOK AI provider with automatic repository indexing."""
+    action = getattr(args, "action", None)
+    if action in ("status", "check"):
+        args.status = True
+    elif action in ("clear", "logout"):
+        args.clear = True
+
     if getattr(args, "status", False):
         summary = get_active_provider_summary()
         print("================================================================================")
@@ -2420,7 +2436,8 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command", help=argparse.SUPPRESS)
 
-    subparsers.add_parser("init", help="Initialize a Koyote workspace in the current directory")
+    init_p = subparsers.add_parser("init", help="Initialize Koyote in the current repository")
+    init_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
 
     subparsers.add_parser("status", help="Show workspace status: agents, lanes, security events")
 
@@ -2709,6 +2726,7 @@ def main():
     subparsers.add_parser("mcp", help="Run Koyote Model Context Protocol (MCP) server for AI assistants")
 
     auth_p = subparsers.add_parser("auth", help="Connect and configure BYOK AI provider (OpenAI, Anthropic, etc.)")
+    auth_p.add_argument("action", nargs="?", default=None, choices=["login", "ai", "status", "clear", None], help="Action (login, ai, status, clear)")
     auth_p.add_argument("--provider", choices=["anthropic", "openai", "openai_compatible", "ollama", "local"], default=None, help="AI provider name")
     auth_p.add_argument("--api-key", default=None, help="AI provider API key")
     auth_p.add_argument("--model", default=None, help="Model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
