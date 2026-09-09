@@ -56,9 +56,9 @@ When a pull request opens against a monitored repository, Koyote:
 
 ## 7. Troubleshooting
 
-- **No comment appeared**: check the webhook deliveries tab for failures, confirm the secret matches `COMPART_WEBHOOK_SECRET`, verify the repo reached READY (`compart doctor`), and confirm the PR isn't filtered by `ignore_paths` or `exclude_labels`.
+- **No comment appeared**: check the webhook deliveries tab for failures, confirm the secret matches `KOYOTE_WEBHOOK_SECRET`, verify the repo reached READY (`koyote doctor`), and confirm the PR isn't filtered by `ignore_paths` or `exclude_labels`.
 - **Stale results**: comment `@koyote` on the PR to re-run against the current head.
-- **REFUSED / NOT RUN**: the bot found impact it cannot safely repair (often missing AI credentials or no test suite). Run `compart doctor` for the exact missing piece.
+- **REFUSED / NOT RUN**: the bot found impact it cannot safely repair (often missing AI credentials or no test suite). Run `koyote doctor` for the exact missing piece.
 
 ## 8. Deployment
 
