@@ -4,12 +4,11 @@
 import os
 import shutil
 import subprocess
-from typing import List, Optional
 
 
 def git_commit_and_push(
     repo_dir: str,
-    modified_files: List[str],
+    modified_files: list[str],
     branch_name: str,
     commit_message: str,
 ) -> bool:
@@ -44,7 +43,7 @@ def gh_create_pr(
     branch_name: str,
     title: str,
     body: str,
-) -> Optional[str]:
+) -> str | None:
     if not shutil.which("gh"):
         return None
     result = subprocess.run(

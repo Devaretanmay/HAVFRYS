@@ -27,7 +27,7 @@ import shutil
 import subprocess
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Mapping, Sequence
 
 from ..koyote import AgentKoyote, KoyoteConfig
 from ..compartments import Compartment, CompartmentConfig
@@ -154,7 +154,7 @@ class ExecutionResult:
     stderr: str = ""
     diffs: list[dict[str, str]] = field(default_factory=list)
     elapsed_s: float = 0.0
-    error: Optional[str] = None
+    error: str | None = None
     timed_out: bool = False
 
     @property
@@ -200,7 +200,7 @@ class SandboxRunner:
     def __init__(
         self,
         workdir: str = ".",
-        credential_rules: Optional[Sequence[RouteConfig]] = None,
+        credential_rules: Sequence[RouteConfig] | None = None,
         sandbox: bool = True,
         block_network: bool = True,
         verbose: bool = False,
@@ -225,10 +225,10 @@ class SandboxRunner:
         *,
         permissions: Sequence[str] = DEFAULT_PERMISSIONS,
         timeout_s: int = 300,
-        env: Optional[Mapping[str, str]] = None,
+        env: Mapping[str, str] | None = None,
         name: str = "hook",
         snapshot: bool = True,
-        cwd: Optional[str] = None,
+        cwd: str | None = None,
     ) -> ExecutionResult:
         """Run a shell ``command`` inside a sandboxed compartment.
 
@@ -323,7 +323,7 @@ class SandboxRunner:
         language: str = "python",
         permissions: Sequence[str] = ("fs_read", "fs_write", "fs_exec"),
         timeout_s: int = 300,
-        env: Optional[Mapping[str, str]] = None,
+        env: Mapping[str, str] | None = None,
         name: str = "hook-code",
     ) -> ExecutionResult:
         """Write ``code`` to an isolated temp file and execute it.

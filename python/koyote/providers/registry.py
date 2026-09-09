@@ -1,14 +1,14 @@
 """Provider-Neutral Contract Registry & Migration Specs Catalog."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
 class RewriteRule:
     pattern: str
     replacement: str
-    file_extensions: List[str]
+    file_extensions: list[str]
     description: str
     is_regex: bool = True
 
@@ -19,10 +19,10 @@ class ProviderMigration:
     to_version: str
     changelog_url: str
     description: str
-    old_spec_path: Optional[str] = None
-    new_spec_path: Optional[str] = None
+    old_spec_path: str | None = None
+    new_spec_path: str | None = None
     breaking_changes_count: int = 1
-    rewrites: List[RewriteRule] = field(default_factory=list)
+    rewrites: list[RewriteRule] = field(default_factory=list)
 
 
 @dataclass
@@ -31,15 +31,15 @@ class ProviderSpec:
     display_name: str
     package_name: str
     docs_url: str
-    migrations: Dict[str, ProviderMigration] = field(default_factory=dict)
-    openapi_spec_url: Optional[str] = None
+    migrations: dict[str, ProviderMigration] = field(default_factory=dict)
+    openapi_spec_url: str | None = None
 
 
 class ProviderRegistry:
     """Central registry for API providers, contract specifications, and migrations."""
 
     def __init__(self):
-        self._providers: Dict[str, ProviderSpec] = {}
+        self._providers: dict[str, ProviderSpec] = {}
         self._load_builtins()
 
     def register(self, provider: ProviderSpec):
@@ -47,11 +47,11 @@ class ProviderRegistry:
         self._providers[provider.name.lower()] = provider
         self._providers[provider.package_name.lower()] = provider
 
-    def get(self, name_or_package: str) -> Optional[ProviderSpec]:
+    def get(self, name_or_package: str) -> ProviderSpec | None:
         """Lookup provider by name or package identifier."""
         return self._providers.get(name_or_package.lower())
 
-    def list_providers(self) -> List[ProviderSpec]:
+    def list_providers(self) -> list[ProviderSpec]:
         """List all registered unique providers."""
         seen = set()
         unique = []
@@ -311,7 +311,7 @@ class ProviderRegistry:
         self.register(sentry_spec)
 
 
-_GLOBAL_REGISTRY: Optional[ProviderRegistry] = None
+_GLOBAL_REGISTRY: ProviderRegistry | None = None
 
 
 def get_default_registry() -> ProviderRegistry:
@@ -322,7 +322,7 @@ def get_default_registry() -> ProviderRegistry:
     return _GLOBAL_REGISTRY
 
 
-def find_migration_for(source: Any) -> Optional[ProviderMigration]:
+def find_migration_for(source: Any) -> ProviderMigration | None:
     """Adapter: resolve a ChangeSource to a registry migration.
 
     Only sdk/external_api kinds backed by the provider registry resolve;

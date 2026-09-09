@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import shutil
-from typing import Optional
+
 
 from blake3 import blake3
 
@@ -35,7 +35,7 @@ class SnapshotManager:
         self,
         workdir: str,
         snapshot_dir: str,
-        exclude: Optional[set[str]] = None,
+        exclude: set[str] | None = None,
     ):
         self._workdir = os.path.abspath(workdir)
         self._snapshot_dir = os.path.abspath(snapshot_dir)

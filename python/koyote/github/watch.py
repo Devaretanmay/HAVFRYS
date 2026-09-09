@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 from koyote.config import PipelinePolicy
 from koyote.drift import detect_changes
@@ -25,7 +25,7 @@ from koyote.pipeline import MaintenancePipeline, TriggerContext
 _logger = logging.getLogger("koyote.watch")
 
 
-def _install_files() -> List[str]:
+def _install_files() -> list[str]:
     try:
         idir = store_dir()
         return [os.path.join(idir, f) for f in os.listdir(idir) if f.endswith(".json")]
@@ -33,14 +33,14 @@ def _install_files() -> List[str]:
         return []
 
 
-def watch_once(client: Any = None, policy: Any = None) -> List[Dict[str, Any]]:
+def watch_once(client: Any = None, policy: Any = None) -> list[dict[str, Any]]:
     """Poll every INDEXED/READY repo once. Returns an outcome per watched repo."""
     if client is None:
         client = GitHubAppClient()
     if policy is None:
         policy = PipelinePolicy()
 
-    outcomes: List[Dict[str, Any]] = []
+    outcomes: list[dict[str, Any]] = []
     for path in _install_files():
         try:
             with open(path, encoding="utf-8") as f:

@@ -195,7 +195,7 @@ result = koyote.run()                         # status, compartment outputs, ela
 print(result.status, [k for k in result.output])
 ```
 
-The `AgentKoyote` variant auto-loads behaviour modules (credential proxy,
+The `AgentKoyote` variant auto-enables insulation (credential proxy,
 snapshots, compression) via `KoyoteConfig(auto_modules=True)`; `Koyote`
 stays empty-by-default and everything here is opt-in.
 

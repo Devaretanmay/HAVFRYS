@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from functools import cache
-from typing import Optional
+
 
 
 @cache
@@ -73,7 +73,7 @@ class Tracer:
         for line in lines:
             print(line, file=sys.stderr, flush=True)
 
-    def _format_event(self, event: str, elapsed: float, data: dict) -> Optional[str]:
+    def _format_event(self, event: str, elapsed: float, data: dict) -> str | None:
         prefix = f"  {elapsed:>7.3f}s"
 
         if event == "box.created":

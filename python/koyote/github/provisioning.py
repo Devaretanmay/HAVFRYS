@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-from typing import Any, Dict, Optional
+from typing import Any
 
 _logger = logging.getLogger("koyote.provisioning")
 
@@ -31,7 +31,7 @@ def cached_path(repo_full_name: str) -> str:
     return os.path.join(cache_dir(), slug)
 
 
-def remote_for(repo_full_name: str, token: Optional[str] = None) -> str:
+def remote_for(repo_full_name: str, token: str | None = None) -> str:
     """Clone URL for a repo. Env override wins (mirrors/tests), else github."""
     slug = repo_full_name.replace("/", "__").upper()
     override = os.environ.get(f"KOYOTE_REPO_REMOTE_{slug}")
@@ -52,8 +52,8 @@ def _run_git(args: list, cwd: str, timeout: int = 120) -> bool:
         return False
 
 
-def ensure_repo_checkout(repo_full_name: str, token: Optional[str] = None,
-                         ref: str = "main") -> Optional[str]:
+def ensure_repo_checkout(repo_full_name: str, token: str | None = None,
+                         ref: str = "main") -> str | None:
     """Clone on first sight, fast-forward on later sightings. Returns path or None."""
     dest = cached_path(repo_full_name)
     if os.path.isdir(os.path.join(dest, ".git")):
@@ -70,7 +70,7 @@ def ensure_repo_checkout(repo_full_name: str, token: Optional[str] = None,
     return dest
 
 
-def workdir_for_event(payload: Dict[str, Any], token: Optional[str] = None) -> Optional[str]:
+def workdir_for_event(payload: dict[str, Any], token: str | None = None) -> str | None:
     """Resolve a managed checkout for any webhook payload carrying a repository."""
     repo = (payload.get("repository") or {}).get("full_name", "")
     if not repo:
@@ -78,14 +78,14 @@ def workdir_for_event(payload: Dict[str, Any], token: Optional[str] = None) -> O
     return ensure_repo_checkout(repo, token=token)
 
 
-def _auth_args(token: Optional[str]) -> list:
+def _auth_args(token: str | None) -> list:
     if token:
         return ["-c", f"http.extraHeader=Authorization: Bearer {token}"]
     return []
 
 
 def ensure_pr_checkout(repo_full_name: str, pr_number: int, head_sha: str,
-                       token: Optional[str] = None) -> tuple:
+                       token: str | None = None) -> tuple:
     """Check out the exact PR head SHA. Returns (path, exact).
 
     Fetches `pull/N/head` (exposed by GitHub for same-repo and fork PRs
@@ -112,7 +112,7 @@ def ensure_pr_checkout(repo_full_name: str, pr_number: int, head_sha: str,
         return (base, False)
 
 
-def resolve_pr_workdir(payload: Dict[str, Any], token: Optional[str] = None,
+def resolve_pr_workdir(payload: dict[str, Any], token: str | None = None,
                        fallback_fn: Any = None) -> tuple:
     """(workdir, exact_head) for a pull_request webhook payload."""
     repo = (payload.get("repository") or {}).get("full_name", "")

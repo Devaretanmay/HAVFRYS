@@ -26,11 +26,11 @@
 Base compartment container for custom agent pipelines.
 - `add(compartment: Compartment) -> Koyote`: Register an inner isolated compartment.
 - `edge(from_name: str, to_name: str) -> Koyote`: Wire a directional dependency/communication path.
-- `register_module(module_cls) -> Koyote`: Register an optional behavior module.
+- `enable_snapshot() / enable_credential_proxy() / enable_compression() -> Koyote`: Opt-in to insulation directly.
 - `run(entry=None, request="") -> KoyoteResult`: Execute the topology under OS kernel isolation.
 
 ### `AgentKoyote(workdir=".", config=None, verbose=False)`
-Agent-oriented outer compartment container. Automatically loads standard behavior modules (Credential Proxy, Snapshots, Compression).
+Agent-oriented outer compartment container. Automatically enables insulation (Credential Proxy, Snapshots, Compression).
 
 ### `Compartment(name, fn=None, config=None)`
 An individual unit of work executed in a specific kernel sandbox.

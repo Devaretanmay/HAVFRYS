@@ -11,10 +11,11 @@ import os
 import time
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from enum import Enum
+from typing import Any, List
 
 
-class LaneStatus:
+class LaneStatus(str, Enum):
     CREATED = "CREATED"
     ACTIVE = "ACTIVE"
     PAUSED = "PAUSED"
@@ -31,15 +32,15 @@ class Lane:
     workspace_id: str = "default_workspace"
     agent_id: str = "Claude Code"
     status: str = LaneStatus.CREATED
-    session_id: Optional[str] = None
+    session_id: str | None = None
     compartment_id: str = "AgentTask"
-    permissions: List[str] = field(default_factory=lambda: ["fs_read", "fs_write", "fs_exec"])
+    permissions: list[str] = field(default_factory=lambda: ["fs_read", "fs_write", "fs_exec"])
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
-    changes: List[Dict[str, Any]] = field(default_factory=list)
-    checkpoints: List[Dict[str, Any]] = field(default_factory=list)
+    changes: list[dict[str, Any]] = field(default_factory=list)
+    checkpoints: list[dict[str, Any]] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -63,7 +64,7 @@ class LaneManager:
         self,
         name: str,
         agent_id: str = "Claude Code",
-        permissions: Optional[List[str]] = None,
+        permissions: List[str] | None = None,
     ) -> Lane:
         """Create and persist a new Virtual Agent Lane."""
         lane_id = name.lower().replace(" ", "-")
@@ -79,7 +80,7 @@ class LaneManager:
         self.save_lane(lane)
         return lane
 
-    def get_lane(self, lane_id: str) -> Optional[Lane]:
+    def get_lane(self, lane_id: str) -> Lane | None:
         """Load a lane by ID."""
         filepath = self._lane_file(lane_id)
         if not os.path.exists(filepath):
@@ -91,9 +92,9 @@ class LaneManager:
         except Exception:
             return None
 
-    def list_lanes(self) -> List[Lane]:
+    def list_lanes(self) -> list[Lane]:
         """List all virtual agent lanes in workspace."""
-        lanes: List[Lane] = []
+        lanes: list[Lane] = []
         if not os.path.exists(self.lanes_dir):
             return lanes
         for filename in sorted(os.listdir(self.lanes_dir)):
@@ -111,7 +112,7 @@ class LaneManager:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(lane.to_dict(), f, indent=2)
 
-    def record_diff(self, lane_id: str, diffs: List[Dict[str, Any]]) -> None:
+    def record_diff(self, lane_id: str, diffs: list[dict[str, Any]]) -> None:
         """Record file changes made by the lane's session."""
         lane = self.get_lane(lane_id)
         if not lane:

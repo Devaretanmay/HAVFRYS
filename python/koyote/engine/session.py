@@ -15,7 +15,7 @@ import os
 import time
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from ..sandbox.snapshot import SnapshotManager
 
 _logger = logging.getLogger("koyote.session")
@@ -37,9 +37,9 @@ class SessionEvent:
     """Structured lifecycle event in the AgentSession stream."""
     timestamp: float
     name: str  # e.g., "session.created", "tool.started", "permission.allowed", "permission.denied", "file.changed"
-    payload: Dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -54,18 +54,18 @@ class AgentSession:
     task: str = ""
     status: str = SessionStatus.CREATED
     started_at: float = field(default_factory=time.time)
-    finished_at: Optional[float] = None
-    parent_session: Optional[str] = None
+    finished_at: float | None = None
+    parent_session: str | None = None
     compartment_id: str = "AgentTask"
-    policy: Dict[str, Any] = field(default_factory=lambda: {"permissions": ["fs_read", "fs_exec"]})
-    events: List[Dict[str, Any]] = field(default_factory=list)
-    checkpoints: List[Dict[str, Any]] = field(default_factory=list)
-    changes: List[Dict[str, Any]] = field(default_factory=list)
-    result: Dict[str, Any] = field(default_factory=dict)
+    policy: dict[str, Any] = field(default_factory=lambda: {"permissions": ["fs_read", "fs_exec"]})
+    events: list[dict[str, Any]] = field(default_factory=list)
+    checkpoints: list[dict[str, Any]] = field(default_factory=list)
+    changes: list[dict[str, Any]] = field(default_factory=list)
+    result: dict[str, Any] = field(default_factory=dict)
     
     # Backwards compatibility attributes
-    actions: List[Dict[str, Any]] = field(default_factory=list)
-    diffs: List[Dict[str, str]] = field(default_factory=list)
+    actions: list[dict[str, Any]] = field(default_factory=list)
+    diffs: list[dict[str, str]] = field(default_factory=list)
     returncode: int = 0
 
     @property
@@ -76,7 +76,7 @@ class AgentSession:
     def compartment_name(self) -> str:
         return self.compartment_id
 
-    def emit_event(self, event_name: str, payload: Optional[Dict[str, Any]] = None) -> None:
+    def emit_event(self, event_name: str, payload: Dict[str, Any] | None = None) -> None:
         """Append a structured event to the session stream."""
         event = SessionEvent(
             timestamp=time.time(),
@@ -97,7 +97,7 @@ class AgentSession:
             "details": details,
         })
 
-    def create_checkpoint(self, name: str, snapshot_manifest: Optional[str] = None) -> Dict[str, Any]:
+    def create_checkpoint(self, name: str, snapshot_manifest: str | None = None) -> dict[str, Any]:
         """Record a time-travel checkpoint for this session."""
         cp = {
             "checkpoint_id": f"cp_{int(time.time() * 1000)}",
@@ -114,7 +114,7 @@ class AgentSession:
         self.started_at = time.time()
         self.emit_event("session.started", {"agent": self.agent, "task": self.task})
 
-    def complete(self, returncode: int = 0, diffs: Optional[List[Dict[str, str]]] = None) -> None:
+    def complete(self, returncode: int = 0, diffs: List[Dict[str, str]] | None = None) -> None:
         """Mark session as finished cleanly."""
         self.returncode = returncode
         self.finished_at = time.time()
@@ -126,7 +126,7 @@ class AgentSession:
         event_name = "session.completed" if returncode == 0 else "session.failed"
         self.emit_event(event_name, self.result)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
         # Ensure agent_name backwards compatibility for legacy callers
         d["agent_name"] = self.agent
@@ -199,7 +199,7 @@ class SessionManager:
         agent_name: str = "Claude Code",
         task: str = "Agent Task",
         compartment_name: str = "AgentTask",
-        permissions: Optional[List[str]] = None,
+        permissions: List[str] | None = None,
         lane_id: str = "default_lane",
     ) -> AgentSession:
         """Create and persist a new AgentSession."""
@@ -225,7 +225,7 @@ class SessionManager:
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(session.to_dict(), f, indent=2)
 
-    def get_session(self, session_id: str) -> Optional[AgentSession]:
+    def get_session(self, session_id: str) -> AgentSession | None:
         """Load session object by ID."""
         filepath = self._session_file(session_id)
         if not os.path.exists(filepath):
@@ -248,9 +248,9 @@ class SessionManager:
         except Exception:
             return None
 
-    def list_sessions(self) -> List[AgentSession]:
+    def list_sessions(self) -> list[AgentSession]:
         """List all recorded sessions in reverse chronological order."""
-        sessions: List[AgentSession] = []
+        sessions: list[AgentSession] = []
         if not os.path.exists(self.sessions_dir):
             return sessions
 

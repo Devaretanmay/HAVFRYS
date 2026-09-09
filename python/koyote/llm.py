@@ -5,7 +5,6 @@ import os
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 from koyote.credentials import load_credentials
 
@@ -15,7 +14,7 @@ class LLMConfig:
     provider: str
     api_key: str
     model: str
-    base_url: Optional[str] = None
+    base_url: str | None = None
     timeout_seconds: int = 60
 
 
@@ -28,10 +27,10 @@ class LLMResponse:
 
 
 def resolve_llm_config(
-    api_key: Optional[str] = None,
-    model: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> Optional[LLMConfig]:
+    api_key: str | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
+) -> LLMConfig | None:
     """Resolve LLM configuration from parameters, environment variables, or stored credentials."""
     key = api_key or os.environ.get("KOYOTE_LLM_KEY")
     url = base_url or os.environ.get("OPENAI_BASE_URL")
@@ -121,13 +120,13 @@ class LLMClient:
     def __init__(self, config: LLMConfig):
         self.config = config
 
-    def complete(self, messages: List[Dict[str, str]], system_prompt: Optional[str] = None) -> LLMResponse:
+    def complete(self, messages: list[dict[str, str]], system_prompt: str | None = None) -> LLMResponse:
         """Send completion request to configured provider."""
         if self.config.provider == "anthropic":
             return self._call_anthropic(messages, system_prompt)
         return self._call_openai(messages, system_prompt)
 
-    def _call_anthropic(self, messages: List[Dict[str, str]], system_prompt: Optional[str]) -> LLMResponse:
+    def _call_anthropic(self, messages: list[dict[str, str]], system_prompt: str | None) -> LLMResponse:
         url = self.config.base_url or "https://api.anthropic.com/v1/messages"
         headers = {
             "Content-Type": "application/json",
@@ -135,7 +134,7 @@ class LLMClient:
             "anthropic-version": "2023-06-01",
         }
 
-        payload: Dict[str, object] = {
+        payload: dict[str, object] = {
             "model": self.config.model,
             "max_tokens": 4096,
             "messages": messages,
@@ -166,7 +165,7 @@ class LLMClient:
             completion_tokens=usage.get("output_tokens", 0),
         )
 
-    def _call_openai(self, messages: List[Dict[str, str]], system_prompt: Optional[str]) -> LLMResponse:
+    def _call_openai(self, messages: list[dict[str, str]], system_prompt: str | None) -> LLMResponse:
         base = self.config.base_url or "https://api.openai.com/v1"
         url = f"{base.rstrip('/')}/chat/completions"
         headers = {

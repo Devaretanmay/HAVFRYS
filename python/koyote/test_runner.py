@@ -1,17 +1,13 @@
-import hashlib
 import json
 import os
 import shutil
 import subprocess
 
-try:
-    import blake3
+from blake3 import blake3
 
-    def _blake3_digest(data: bytes) -> str:
-        return blake3.blake3(data).hexdigest()
-except ImportError:
-    def _blake3_digest(data: bytes) -> str:
-        return hashlib.blake2b(data, digest_size=16).hexdigest()
+
+def _blake3_digest(data: bytes) -> str:
+    return blake3(data).hexdigest()
 
 
 def _detect_test_command(repo_dir: str) -> str:

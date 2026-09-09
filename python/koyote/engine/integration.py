@@ -11,7 +11,7 @@ import os
 import time
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 from .lane import LaneManager
 
 
@@ -19,13 +19,13 @@ from .lane import LaneManager
 class IntegrationCandidate:
     """Represents a combined set of changes from one or more lanes ready for review/apply."""
     candidate_id: str
-    source_lanes: List[str]
+    source_lanes: list[str]
     created_at: float = field(default_factory=time.time)
-    changes: List[Dict[str, Any]] = field(default_factory=list)
-    conflicts: List[Dict[str, Any]] = field(default_factory=list)
+    changes: list[dict[str, Any]] = field(default_factory=list)
+    conflicts: list[dict[str, Any]] = field(default_factory=list)
     applied: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -41,7 +41,7 @@ class IntegrationEngine:
     def _candidate_file(self, candidate_id: str = "current_candidate") -> str:
         return os.path.join(self.integration_dir, f"{candidate_id}.json")
 
-    def create_candidate(self, lane_ids: List[str]) -> IntegrationCandidate:
+    def create_candidate(self, lane_ids: list[str]) -> IntegrationCandidate:
         """Create a candidate combining changes from specified lanes."""
         base = f"cand_{int(time.time() * 1000)}"
         cand_id = base
@@ -49,9 +49,9 @@ class IntegrationEngine:
         while os.path.exists(self._candidate_file(cand_id)):
             cand_id = f"{base}_{n}"
             n += 1
-        combined_changes: List[Dict[str, Any]] = []
-        conflicts: List[Dict[str, Any]] = []
-        seen_paths: Dict[str, str] = {}  # path -> lane_id
+        combined_changes: list[dict[str, Any]] = []
+        conflicts: list[dict[str, Any]] = []
+        seen_paths: dict[str, str] = {}  # path -> lane_id
 
         for lid in lane_ids:
             lane = self.lane_mgr.get_lane(lid)
@@ -86,7 +86,7 @@ class IntegrationEngine:
         with open(self._candidate_file(), "w", encoding="utf-8") as f:
             json.dump(candidate.to_dict(), f, indent=2)
 
-    def get_current_candidate(self) -> Optional[IntegrationCandidate]:
+    def get_current_candidate(self) -> IntegrationCandidate | None:
         filepath = self._candidate_file()
         if not os.path.exists(filepath):
             return None

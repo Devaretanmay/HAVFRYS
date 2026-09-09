@@ -26,7 +26,7 @@ import shlex
 import shutil
 import uuid
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from typing import Sequence
 
 from ..sandbox.proxy import RouteConfig
 from .base import ExecutionResult, SandboxRunner, validate_permissions
@@ -80,11 +80,11 @@ class DataScienceSandboxHook:
 
     def __init__(
         self,
-        config: Optional[DataSandboxConfig] = None,
+        config: DataSandboxConfig | None = None,
         *,
-        workdir: Optional[str] = None,
-        allow_network: Optional[bool] = None,
-        sandbox: Optional[bool] = None,
+        workdir: str | None = None,
+        allow_network: bool | None = None,
+        sandbox: bool | None = None,
     ) -> None:
         cfg = config or DataSandboxConfig()
         if workdir is not None:
@@ -179,8 +179,8 @@ class DataScienceSandboxHook:
         self,
         code: str,
         *,
-        timeout_s: Optional[int] = None,
-        env: Optional[dict[str, str]] = None,
+        timeout_s: int | None = None,
+        env: dict[str, str] | None = None,
     ) -> ExecutionResult:
         """Execute a data-processing ``code`` snippet in the sandbox.
 
@@ -205,7 +205,7 @@ class DataScienceSandboxHook:
             name="data-agent",
         )
 
-    def run_file(self, filename: str, *, timeout_s: Optional[int] = None) -> ExecutionResult:
+    def run_file(self, filename: str, *, timeout_s: int | None = None) -> ExecutionResult:
         """Execute a script already present in the workspace.
 
         Parameters

@@ -4,9 +4,9 @@ Two entry points:
 
 * :class:`Koyote` : a normal outer compartment. A kernel sandbox plus a runtime that
   runs inner compartments you register. Nothing is predefined: no compartments,
-  no behaviour modules. Load a module explicitly with :meth:`register_module`.
-* :class:`AgentKoyote` : an agent outer compartment (agent-oriented container). It auto-loads every
-  behaviour module (credential proxy, snapshots, compression) the moment
+  no insulation. Enable snapshots, the credential proxy, or compression explicitly.
+* :class:`AgentKoyote` : an agent outer compartment (agent-oriented container). It
+  enables all insulation (credential proxy, snapshots, compression) the moment
   it runs.
 
 Inner compartments are always yours: create them, wire them, and drop them into
@@ -17,12 +17,9 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field, replace
-from typing import Any, Optional
+from typing import Any
 
 from .sandbox.box import Box, BoxConfig
-from .sandbox import compression as _compression_module  # noqa: F401
-from .sandbox import credential_module as _credential_module  # noqa: F401
-from .sandbox import snapshot_module as _snapshot_module  # noqa: F401
 from .sandbox.proxy import RouteConfig
 from .compartments import Compartment, CompartmentRuntime
 from .engine.events import event_bus
@@ -58,7 +55,7 @@ class Koyote:
     def __init__(
         self,
         workdir: str = ".",
-        config: Optional[KoyoteConfig] = None,
+        config: KoyoteConfig | None = None,
         verbose: bool = False,
     ):
         if config is not None:
@@ -76,7 +73,7 @@ class Koyote:
         self.box_dir = self._box.box_dir
         self._runtime = CompartmentRuntime()
         self._started_at: float = 0.0
-        self._tracer: Optional[Tracer] = None
+        self._tracer: Tracer | None = None
         self.verbose = verbose or is_trace_enabled()
 
     def add(self, compartment: Compartment) -> "Koyote":
@@ -96,18 +93,24 @@ class Koyote:
         self._runtime.edge(from_name, to_name)
         return self
 
-    def register_module(self, module_cls) -> "Koyote":
-        """Opt-in a behaviour module for this outer compartment.
+    def enable_snapshot(self) -> "Koyote":
+        """Opt-in to pre-compartment filesystem snapshots with rollback."""
+        self._box.enable_snapshot()
+        return self
 
-        Normal compartments ship empty. If you want snapshots, the credential
-        proxy, or output compression, register the module explicitly.
-        """
-        self._box.register_module(module_cls)
+    def enable_credential_proxy(self) -> "Koyote":
+        """Opt-in to the credential-injecting HTTP proxy for the run."""
+        self._box.enable_credential_proxy()
+        return self
+
+    def enable_compression(self) -> "Koyote":
+        """Opt-in to output compression for compartment results."""
+        self._box.enable_compression()
         return self
 
     def run(
         self,
-        entry: Optional[str] = None,
+        entry: str | None = None,
         request: str = "",
     ) -> KoyoteResult:
         """Execute all registered inner compartments inside this outer compartment.
@@ -115,7 +118,7 @@ class Koyote:
         The lifecycle is:
 
         1. **Sandbox entered** - sandbox environment is created
-        2. **Sandbox insulated** - behaviour modules load for the task
+        2. **Sandbox insulated** - enabled insulation wires up for the task
         3. **Compartments execute** - each runs with its own policy
         4. **Cleanup** - insulation released, sandbox destroyed
 
@@ -213,12 +216,8 @@ class Koyote:
         self._tracer_unsubscribe.clear()
 
     def _read_compressed_outputs(self) -> dict[str, str]:
-        """Read compressed outputs from the CompressionModule (if loaded)."""
-        for engine in self._box._engines.values():
-            for module in engine.modules:
-                if hasattr(module, "compressed_outputs"):
-                    return module.compressed_outputs
-        return {}
+        """Read compressed outputs from the box compressor (if enabled)."""
+        return self._box.compressed_outputs
 
     def _build_result(self, raw: dict[str, Any], elapsed: float) -> KoyoteResult:
         errors: list[str] = []
@@ -247,7 +246,7 @@ class Koyote:
 
 
 class AgentKoyote(Koyote):
-    """An agent compartment (pro outer compartment): auto-loads every behaviour module.
+    """An agent compartment (pro outer compartment): enables all insulation.
 
     Credential proxy, snapshots, and output compression all activate
     automatically when the compartment runs. Inner compartments are still yours to define.
@@ -256,7 +255,7 @@ class AgentKoyote(Koyote):
     def __init__(
         self,
         workdir: str = ".",
-        config: Optional[KoyoteConfig] = None,
+        config: KoyoteConfig | None = None,
         verbose: bool = False,
     ):
         if config is not None:

@@ -7,12 +7,12 @@ import json
 import os
 import subprocess
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from koyote.graph import audit_dependency_graph, build_dependency_graph
 
 
-def render_audit_cli(summary: Dict[str, Any]) -> str:
+def render_audit_cli(summary: dict[str, Any]) -> str:
     lines = []
     lines.append("=" * 80)
     lines.append("         KOYOTE: EXTERNAL-CHANGE DEPENDENCY AUDIT & RISK REGISTER")
@@ -59,7 +59,7 @@ def render_audit_cli(summary: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def render_audit_github_issue(summary: Dict[str, Any]) -> str:
+def render_audit_github_issue(summary: dict[str, Any]) -> str:
     lines = []
     lines.append("# Koyote: External Dependency Map & Risk Register\n")
     lines.append(f"Koyote mapped **{summary.get('total_callsites_mapped', 0)} external API touchpoints** across **{summary.get('total_providers_detected', 0)} providers** in this repository.\n")
@@ -109,9 +109,9 @@ def _head_sha(repo_root: str) -> str:
         return ""
 
 
-def _changed_since(repo_root: str, state: Dict[str, Any]) -> List[str]:
+def _changed_since(repo_root: str, state: dict[str, Any]) -> list[str]:
     """Files changed since the stored index state (git-aware, mtime fallback)."""
-    changed: List[str] = []
+    changed: list[str] = []
     old_sha = state.get("commit_sha", "")
     new_sha = _head_sha(repo_root)
     if old_sha and new_sha and old_sha != new_sha:
@@ -140,7 +140,7 @@ def _changed_since(repo_root: str, state: Dict[str, Any]) -> List[str]:
     return sorted(set(changed))
 
 
-def read_index_state(repo_root: str = ".") -> Optional[Dict[str, Any]]:
+def read_index_state(repo_root: str = ".") -> Dict[str, Any] | None:
     p = os.path.join(repo_root, ".koyote", STATE_FILE)
     if not os.path.isfile(p):
         return None
@@ -152,10 +152,10 @@ def read_index_state(repo_root: str = ".") -> Optional[Dict[str, Any]]:
         return None
 
 
-def write_index_state(repo_root: str, summary: Dict[str, Any]) -> Dict[str, Any]:
+def write_index_state(repo_root: str, summary: dict[str, Any]) -> dict[str, Any]:
     """Persist commit SHA + file mtimes + discovery counts for incremental re-indexing."""
     repo_root = os.path.abspath(repo_root)
-    mtimes: Dict[str, float] = {}
+    mtimes: dict[str, float] = {}
     for dirpath, dirnames, filenames in os.walk(repo_root, topdown=True):
         dirnames[:] = [d for d in dirnames if d not in {".git", "node_modules", ".next", "__pycache__", ".venv", "target", ".koyote"}]
         for fn in filenames:
@@ -180,7 +180,7 @@ def write_index_state(repo_root: str, summary: Dict[str, Any]) -> Dict[str, Any]
     return state
 
 
-def changed_since_index(repo_root: str = ".") -> Dict[str, Any]:
+def changed_since_index(repo_root: str = ".") -> dict[str, Any]:
     """Describe what changed since the last persisted index. Read-only."""
     state = read_index_state(repo_root)
     if state is None:

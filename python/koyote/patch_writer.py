@@ -4,7 +4,6 @@ import difflib
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 from koyote.autopatch import ScanConfig, scan_callsites
 from koyote.providers.registry import RewriteRule
@@ -16,8 +15,8 @@ class PatchResult:
     success: bool
     lines_changed: int
     unified_diff: str
-    rules_applied: List[str] = field(default_factory=list)
-    error: Optional[str] = None
+    rules_applied: list[str] = field(default_factory=list)
+    error: str | None = None
 
 
 _SKIP_DIRS = frozenset({
@@ -29,7 +28,7 @@ _SKIP_DIRS = frozenset({
 _IDENT = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*\Z")
 
 
-def discover_aliases(repo_dir: str, provider: str) -> Dict[str, str]:
+def discover_aliases(repo_dir: str, provider: str) -> dict[str, str]:
     """Map local client identifiers to their SDK: {"s": "stripe"}.
 
     Read from the static scan (zero-token). Only exact bindings the locator
@@ -39,7 +38,7 @@ def discover_aliases(repo_dir: str, provider: str) -> Dict[str, str]:
         result = scan_callsites(repo_dir, ScanConfig(sdk_names=[provider]))
     except Exception:
         return {}
-    aliases: Dict[str, str] = {}
+    aliases: dict[str, str] = {}
     for c in result.get("callsites", []):
         alias = c.get("alias")
         if alias and _IDENT.match(alias):
@@ -48,9 +47,9 @@ def discover_aliases(repo_dir: str, provider: str) -> Dict[str, str]:
 
 
 def instantiate_alias_rules(
-    rules: List[RewriteRule],
-    aliases: Dict[str, str],
-) -> List[RewriteRule]:
+    rules: list[RewriteRule],
+    aliases: dict[str, str],
+) -> list[RewriteRule]:
     """Build exact-identifier variants of registry rules for aliased clients.
 
     Only rewrites rules whose regex pattern begins with the escaped SDK prefix
@@ -58,7 +57,7 @@ def instantiate_alias_rules(
     `s\\.subscriptions\\.del\\(` for alias `s`. Same replacement, same files,
     same precision. Non-conforming rules and non-identifier aliases are skipped.
     """
-    out: List[RewriteRule] = []
+    out: list[RewriteRule] = []
     for alias, sdk in aliases.items():
         if alias == sdk or not _IDENT.match(alias):
             continue
@@ -85,18 +84,18 @@ def instantiate_alias_rules(
 
 def apply_rewrites(
     repo_dir: str,
-    rules: List[RewriteRule],
+    rules: list[RewriteRule],
     dry_run: bool = False,
-) -> List[PatchResult]:
+) -> list[PatchResult]:
     """Walk repo_dir and apply regex rewrite rules to matching files.
 
     Returns one PatchResult per file that was modified (or would be in dry_run).
     Files outside repo_dir are never touched (blast-radius guard).
     """
     repo_dir = os.path.abspath(repo_dir)
-    results: List[PatchResult] = []
+    results: list[PatchResult] = []
 
-    ext_to_rules: dict[str, List[RewriteRule]] = {}
+    ext_to_rules: dict[str, list[RewriteRule]] = {}
     for rule in rules:
         for ext in rule.file_extensions:
             ext_to_rules.setdefault(ext, []).append(rule)
@@ -118,9 +117,9 @@ def apply_rewrites(
 
 def _rewrite_file(
     file_path: str,
-    rules: List[RewriteRule],
+    rules: list[RewriteRule],
     dry_run: bool,
-) -> Optional[PatchResult]:
+) -> PatchResult | None:
     try:
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             original = f.read()
@@ -134,7 +133,7 @@ def _rewrite_file(
         )
 
     current = original
-    applied: List[str] = []
+    applied: list[str] = []
 
     for rule in rules:
         if rule.is_regex:

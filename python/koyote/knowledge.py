@@ -17,7 +17,7 @@ import os
 import re
 import time
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from koyote.providers.registry import RewriteRule
 
@@ -52,31 +52,11 @@ def _legacy_entry_path(repo_dir: str, provider: str, from_version: str, to_versi
     return os.path.join(d, fname)
 
 
-def _rename_legacy_entry_path(repo_dir: str, provider: str, from_version: str, to_version: str) -> str:
-    # Pre-rename layouts, pinned to old directory names so existing installs
-    # keep reading across the Compart -> Sheepdog -> Volf -> Koyote renames.
-    d = os.path.join(os.path.abspath(repo_dir), ".volf", "knowledge", provider.lower())
-    fname = f"{_norm_version(from_version)}__{_norm_version(to_version)}.json"
-    return os.path.join(d, fname)
-
-
-def _rename_legacy_entry_path_v1(repo_dir: str, provider: str, from_version: str, to_version: str) -> str:
-    d = os.path.join(os.path.abspath(repo_dir), ".sheepdog", "knowledge", provider.lower())
-    fname = f"{_norm_version(from_version)}__{_norm_version(to_version)}.json"
-    return os.path.join(d, fname)
-
-
-def _rename_legacy_entry_path_v2(repo_dir: str, provider: str, from_version: str, to_version: str) -> str:
-    d = os.path.join(os.path.abspath(repo_dir), ".compart", "knowledge", provider.lower())
-    fname = f"{_norm_version(from_version)}__{_norm_version(to_version)}.json"
-    return os.path.join(d, fname)
-
-
 @dataclass
 class KBPattern:
     pattern: str
     replacement: str
-    file_extensions: List[str] = field(default_factory=list)
+    file_extensions: list[str] = field(default_factory=list)
     description: str = ""
     source: str = "learned"
     pattern_hash: str = ""
@@ -94,16 +74,16 @@ class KBEntry:
     provider: str
     from_version: str
     to_version: str
-    patterns: List[KBPattern] = field(default_factory=list)
-    test_recipe: Dict[str, Any] = field(default_factory=dict)
-    evidence: Dict[str, Any] = field(default_factory=dict)
+    patterns: list[KBPattern] = field(default_factory=list)
+    test_recipe: dict[str, Any] = field(default_factory=dict)
+    evidence: dict[str, Any] = field(default_factory=dict)
     created_utc: str = ""
     updated_utc: str = ""
     kind: str = "sdk"
     identity: str = ""
     repo_id: str = ""
     language: str = ""
-    failed_patterns: List[Dict[str, Any]] = field(default_factory=list)
+    failed_patterns: list[dict[str, Any]] = field(default_factory=list)
     confidence: float = 1.0
     source_commit: str = ""
 
@@ -117,7 +97,7 @@ def normalize_rule(pattern: str) -> str:
     return re.sub(r"\s+", " ", pattern.strip())
 
 
-def _parse_entry(raw: Dict[str, Any], provider: str, from_version: str, to_version: str) -> KBEntry:
+def _parse_entry(raw: dict[str, Any], provider: str, from_version: str, to_version: str) -> KBEntry:
     pats = []
     for pp in raw.get("patterns", []):
         try:
@@ -144,12 +124,9 @@ def _parse_entry(raw: Dict[str, Any], provider: str, from_version: str, to_versi
     )
 
 
-def load_entry(repo_dir: str, provider: str, from_version: str, to_version: str, kind: str = "sdk") -> Optional[KBEntry]:
+def load_entry(repo_dir: str, provider: str, from_version: str, to_version: str, kind: str = "sdk") -> KBEntry | None:
     for p in (_entry_path(repo_dir, provider, from_version, to_version, kind),
-              _legacy_entry_path(repo_dir, provider, from_version, to_version),
-              _rename_legacy_entry_path(repo_dir, provider, from_version, to_version),
-              _rename_legacy_entry_path_v1(repo_dir, provider, from_version, to_version),
-              _rename_legacy_entry_path_v2(repo_dir, provider, from_version, to_version)):
+              _legacy_entry_path(repo_dir, provider, from_version, to_version)):
         if not os.path.isfile(p):
             continue
         try:
@@ -160,7 +137,7 @@ def load_entry(repo_dir: str, provider: str, from_version: str, to_version: str,
     return None
 
 
-def lookup(repo_dir: str, provider: str, from_version: str, to_version: str, kind: str = "sdk") -> Optional[KBEntry]:
+def lookup(repo_dir: str, provider: str, from_version: str, to_version: str, kind: str = "sdk") -> KBEntry | None:
     return load_entry(repo_dir, provider, from_version, to_version, kind)
 
 
@@ -168,7 +145,7 @@ def _is_executable(p: "KBPattern") -> bool:
     return bool(p.pattern) and bool(p.file_extensions)
 
 
-def to_rewrite_rules(entry: Optional[KBEntry]) -> List[Any]:
+def to_rewrite_rules(entry: KBEntry | None) -> list[Any]:
     """Convert executable KB patterns into RewriteRule objects. Skips description-only notes."""
     if not entry:
         return []
@@ -186,11 +163,11 @@ def to_rewrite_rules(entry: Optional[KBEntry]) -> List[Any]:
     return rules
 
 
-def direct_rewrites_for(repo_dir: str, provider: str, from_version: str, to_version: str) -> List[Any]:
+def direct_rewrites_for(repo_dir: str, provider: str, from_version: str, to_version: str) -> list[Any]:
     return to_rewrite_rules(lookup(repo_dir, provider, from_version, to_version))
 
 
-def ensure_test_recipe(repo_dir: str, provider: str, from_version: str, to_version: str, test_command: str) -> Optional[KBEntry]:
+def ensure_test_recipe(repo_dir: str, provider: str, from_version: str, to_version: str, test_command: str) -> KBEntry | None:
     """Seed or refresh the test_recipe for a migration without requiring patterns yet."""
     if not test_command:
         return lookup(repo_dir, provider, from_version, to_version)
@@ -248,9 +225,9 @@ def record_failure(
     from_version: str,
     to_version: str,
     description: str,
-    affected_paths: Optional[List[str]] = None,
+    affected_paths: List[str] | None = None,
     kind: str = "sdk",
-) -> Optional[KBEntry]:
+) -> KBEntry | None:
     """Record an unverified/failed repair attempt. Never promotes guesses to trusted patterns."""
     repo_dir = os.path.abspath(repo_dir)
     entry = load_entry(repo_dir, provider, from_version, to_version, kind)
@@ -278,11 +255,11 @@ def upsert_learned(
     provider: str,
     from_version: str,
     to_version: str,
-    applied_rules: Optional[List[str]] = None,
-    patch_results: Optional[List[Any]] = None,
+    applied_rules: List[str] | None = None,
+    patch_results: List[Any] | None = None,
     test_command: str = "",
-    evidence: Optional[Dict[str, Any]] = None,
-    rewrites: Optional[List[Any]] = None,
+    evidence: Dict[str, Any] | None = None,
+    rewrites: List[Any] | None = None,
     kind: str = "sdk",
 ) -> KBEntry:
     """Create or update KB entry after verified fix. Stores executable rewrites, not just descriptions."""

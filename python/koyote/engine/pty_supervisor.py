@@ -4,7 +4,7 @@ import logging
 import os
 import shutil
 import subprocess
-from typing import Optional, Sequence
+from typing import Sequence
 
 try:
     from koyote._core import sandbox_apply as _core_sandbox_apply
@@ -19,7 +19,7 @@ class CaptureResult:
     returncode: int = 0
     stdout: str = ""
     stderr: str = ""
-    error: Optional[str] = None
+    error: str | None = None
 
     @property
     def success(self) -> bool:
@@ -30,8 +30,8 @@ class PtySupervisor:
     def __init__(
         self,
         workdir: str = ".",
-        compartment_policy: Optional[dict] = None,
-        extra_env: Optional[dict] = None,
+        compartment_policy: dict | None = None,
+        extra_env: dict | None = None,
     ) -> None:
         self.workdir = os.path.abspath(workdir)
         self.compartment_policy = compartment_policy or {}

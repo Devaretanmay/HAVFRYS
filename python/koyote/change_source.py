@@ -10,7 +10,7 @@ fail-closed kinds. No connectors live here — just the seam.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 
 KINDS = (
@@ -40,7 +40,7 @@ class ChangeSource:
     version_to: str = "unknown"
     contract_hash: str = ""
     origin: str = "registry"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if self.kind not in KINDS:
@@ -77,7 +77,7 @@ class Detection:
     source: ChangeSource
     outcome: str
     reason: str = ""
-    affected_files: List[str] = field(default_factory=list)
+    affected_files: list[str] = field(default_factory=list)
     callsite_count: int = 0
     ai_dependent: bool = False
     confidence: float = 0.0

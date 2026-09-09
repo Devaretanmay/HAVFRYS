@@ -18,7 +18,7 @@ built against either API can use it.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from ..compartments import Compartment, CompartmentConfig
 from ..sandbox.proxy import RouteConfig
@@ -100,7 +100,7 @@ class KoyotePythonREPLTool(BaseTool):  # type: ignore[misc]
         timeout_s: int = 300,
         sandbox: bool = True,
         block_network: bool = True,
-        credential_rules: Optional[Sequence[RouteConfig]] = None,
+        credential_rules: Sequence[RouteConfig] | None = None,
         sanitize_input: bool = True,
     ) -> None:
         super().__init__()
@@ -181,10 +181,10 @@ class KoyoteGraphNode:
         fn: Callable[[dict[str, Any], Any], dict[str, Any]],
         *,
         workdir: str = ".",
-        permission: Optional[Sequence[str]] = None,
+        permission: Sequence[str] | None = None,
         sandbox: bool = True,
         block_network: bool = True,
-        credential_rules: Optional[Sequence[RouteConfig]] = None,
+        credential_rules: Sequence[RouteConfig] | None = None,
         timeout_s: int = 300,
     ) -> None:
         self._fn = fn
@@ -199,7 +199,7 @@ class KoyoteGraphNode:
         )
         self._timeout_s = timeout_s
 
-    def _permissions_from(self, metadata: Optional[Mapping[str, Any]]) -> tuple[str, ...]:
+    def _permissions_from(self, metadata: Mapping[str, Any] | None) -> tuple[str, ...]:
         """Resolve permissions from an explicit override, then metadata."""
         if self._permission_override is not None:
             return self._permission_override
@@ -213,7 +213,7 @@ class KoyoteGraphNode:
         self,
         *,
         name: str = "koyote_node",
-        metadata: Optional[Mapping[str, Any]] = None,
+        metadata: Mapping[str, Any] | None = None,
     ) -> Callable[[dict[str, Any], Any], dict[str, Any]]:
         """Return a LangGraph-compatible node function.
 
@@ -269,8 +269,8 @@ class KoyoteGraphNode:
         self,
         builder: Any,
         *,
-        name: Optional[str] = None,
-        metadata: Optional[Mapping[str, Any]] = None,
+        name: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
     ) -> str:
         """Register this node on a LangGraph ``StateGraph`` builder.
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import warnings
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     import yaml
@@ -26,12 +26,12 @@ class PipelinePolicy:
     pr_review: bool = True
     pr_auto_fix: bool = False
     external_auto_fix: bool = False
-    auto_fix_providers: List[str] = field(default_factory=list)
+    auto_fix_providers: list[str] = field(default_factory=list)
     always_report_clean: bool = True
     inline_comments: bool = True
     mode: str = "work"
-    ignore_paths: List[str] = field(default_factory=list)
-    exclude_labels: List[str] = field(default_factory=list)
+    ignore_paths: list[str] = field(default_factory=list)
+    exclude_labels: list[str] = field(default_factory=list)
 
     def auto_fix_enabled_for(self, ctx: Any) -> bool:
         event_type = getattr(ctx, "event_type", "")
@@ -65,30 +65,30 @@ class BotConfig:
     pr_auto_fix: bool = False
     external_change_watch: bool = True
     external_auto_fix: bool = False
-    auto_fix_providers: List[str] = field(default_factory=list)
+    auto_fix_providers: list[str] = field(default_factory=list)
     always_report_clean: bool = True
     inline_comments: bool = True
     mode: str = "work"
-    ignore_paths: List[str] = field(default_factory=list)
-    exclude_labels: List[str] = field(default_factory=list)
+    ignore_paths: list[str] = field(default_factory=list)
+    exclude_labels: list[str] = field(default_factory=list)
 
 
-_FILESYSTEM_TO_PERMISSIONS: Dict[str, List[str]] = {
+_FILESYSTEM_TO_PERMISSIONS: dict[str, list[str]] = {
     "workspace":  ["fs_read", "fs_write"],
     "read-only":  ["fs_read"],
     "read-write": ["fs_read", "fs_write"],
     "none":       [],
 }
 
-_NETWORK_TO_PERMISSIONS: Dict[str, List[str]] = {
+_NETWORK_TO_PERMISSIONS: dict[str, list[str]] = {
     "restricted": [],
     "allowed":    ["network"],
     "denied":     [],
 }
 
 
-def _resolve_permissions(fs: str, network: str, execute: bool = True) -> List[str]:
-    perms: List[str] = list(_FILESYSTEM_TO_PERMISSIONS.get(fs, ["fs_read", "fs_write"]))
+def _resolve_permissions(fs: str, network: str, execute: bool = True) -> list[str]:
+    perms: list[str] = list(_FILESYSTEM_TO_PERMISSIONS.get(fs, ["fs_read", "fs_write"]))
     perms += _NETWORK_TO_PERMISSIONS.get(network, [])
     if execute and "fs_exec" not in perms:
         perms.append("fs_exec")
@@ -100,7 +100,7 @@ def _resolve_permissions(fs: str, network: str, execute: bool = True) -> List[st
 @dataclass
 class CompartmentConfig:
     name: str
-    permissions: List[str] = field(default_factory=lambda: ["fs_read", "fs_write", "fs_exec"])
+    permissions: list[str] = field(default_factory=lambda: ["fs_read", "fs_write", "fs_exec"])
     filesystem: str = "workspace"
     network: str = "restricted"
     execute: bool = True
@@ -110,7 +110,7 @@ class CompartmentConfig:
 class AgentConfig:
     name: str
     compartment: str = "default"
-    extra_env: Dict[str, str] = field(default_factory=dict)
+    extra_env: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -119,20 +119,20 @@ class WorkflowNodeConfig:
     type: str = "process"         # "agent" | "process" | "service"
     command: str = ""
     compartment: str = "default"
-    depends_on: List[str] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)
 
 
 @dataclass
 class WorkflowConfig:
     name: str
-    nodes: List[WorkflowNodeConfig] = field(default_factory=list)
+    nodes: list[WorkflowNodeConfig] = field(default_factory=list)
 
 
 @dataclass
 class WorkspaceConfig:
-    compartments: Dict[str, CompartmentConfig] = field(default_factory=dict)
-    agents: Dict[str, AgentConfig] = field(default_factory=dict)
-    workflows: Dict[str, WorkflowConfig] = field(default_factory=dict)
+    compartments: dict[str, CompartmentConfig] = field(default_factory=dict)
+    agents: dict[str, AgentConfig] = field(default_factory=dict)
+    workflows: dict[str, WorkflowConfig] = field(default_factory=dict)
     # GitHub App product behavior.
     bot: BotConfig = field(default_factory=BotConfig)
 
@@ -142,7 +142,7 @@ class WorkspaceConfig:
         compartment_name = agent_cfg.compartment if agent_cfg else "default"
         return self.compartments.get(compartment_name, _default_compartment())
 
-    def policy_for_agent(self, agent_name: str) -> Dict[str, Any]:
+    def policy_for_agent(self, agent_name: str) -> dict[str, Any]:
         comp = self.compartment_for_agent(agent_name)
         return {"permissions": comp.permissions}
 
@@ -186,7 +186,7 @@ def _default_config() -> WorkspaceConfig:
 
 # ── Loader ──────────────────────────────────────────────────────────────────
 
-def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
+def load_config(config_path: str | None = None) -> WorkspaceConfig:
     """Load `.koyote/config.yaml`.  Returns safe defaults when not found."""
     if config_path is None:
         config_path = os.path.join(".koyote", "config.yaml")
@@ -204,9 +204,9 @@ def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
         return _default_config()
 
     with open(config_path, encoding="utf-8") as f:
-        raw: Dict[str, Any] = yaml.safe_load(f) or {}
+        raw: dict[str, Any] = yaml.safe_load(f) or {}
 
-    compartments: Dict[str, CompartmentConfig] = {}
+    compartments: dict[str, CompartmentConfig] = {}
     for cname, cdata in (raw.get("compartments") or {}).items():
         if not isinstance(cdata, dict):
             continue
@@ -241,7 +241,7 @@ def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
             exclude_labels=list(bot_cfg.get("exclude_labels", []) or []),
         )
 
-    agents: Dict[str, AgentConfig] = {}
+    agents: dict[str, AgentConfig] = {}
     for aname, adata in (raw.get("agents") or {}).items():
         if not isinstance(adata, dict):
             continue
@@ -251,10 +251,10 @@ def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
             extra_env=adata.get("env") or {},
         )
 
-    def _parse_workflow_data(name: str, data: Any) -> Optional[WorkflowConfig]:
+    def _parse_workflow_data(name: str, data: Any) -> WorkflowConfig | None:
         if not isinstance(data, dict):
             return None
-        nodes: List[WorkflowNodeConfig] = []
+        nodes: list[WorkflowNodeConfig] = []
         if "nodes" in data and isinstance(data["nodes"], dict):
             for nname, ndata in data["nodes"].items():
                 if not isinstance(ndata, dict):
@@ -280,7 +280,7 @@ def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
                 ))
         return WorkflowConfig(name=name, nodes=nodes)
 
-    workflows: Dict[str, WorkflowConfig] = {}
+    workflows: dict[str, WorkflowConfig] = {}
     for wname, wdata in (raw.get("workflows") or {}).items():
         wf = _parse_workflow_data(wname, wdata)
         if wf:
@@ -317,7 +317,7 @@ def load_config(config_path: Optional[str] = None) -> WorkspaceConfig:
     )
 
 
-def is_koyote_workspace(path: Optional[str] = None) -> bool:
+def is_koyote_workspace(path: str | None = None) -> bool:
     """Return True if *path* (or cwd) is inside a Koyote workspace."""
     check = os.path.abspath(path or ".")
     while True:
@@ -329,7 +329,7 @@ def is_koyote_workspace(path: Optional[str] = None) -> bool:
         check = parent
 
 
-def find_workspace_root(path: Optional[str] = None) -> Optional[str]:
+def find_workspace_root(path: str | None = None) -> str | None:
     """Walk up the directory tree looking for a .koyote/ directory."""
     check = os.path.abspath(path or ".")
     while True:

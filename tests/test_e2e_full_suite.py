@@ -66,11 +66,10 @@ class TestSingleCompartment(unittest.TestCase):
         self.assertTrue(os.path.isdir(box.box_dir))
 
         box._box.insulate("Create a Python function that reverses a string")
-        self.assertIsNotNone(box._box._ctx)
-        self.assertEqual(box._box._ctx.task_profile, "code")
+        self.assertEqual(box._box.task_profile, "code")
 
         box._box.release()
-        self.assertIsNone(box._box._ctx)
+        self.assertEqual(box._box.state, "running")
 
         box._box.exit()
         self.assertEqual(box._box.state, "destroyed")
@@ -248,7 +247,7 @@ class TestLongWorkflow(unittest.TestCase):
             box = Koyote(workdir=self.tmpdir)
             box._box.enter(block_network=False, sandbox=False)
             box._box.insulate(request)
-            profiles_seen.append(box._box._ctx.task_profile)
+            profiles_seen.append(box._box.task_profile)
             box._box.release()
             box._box.exit()
         self.assertIn("code", profiles_seen)
@@ -317,7 +316,7 @@ class TestFailureRecovery(unittest.TestCase):
             box._box.release()
             box._box.exit()
         self.assertEqual(box._box.state, "destroyed")
-        self.assertIsNone(box._box._ctx)
+        self.assertEqual(box._box.task_profile, "testing")
 
 class TestNoAgentBehavior(unittest.TestCase):
     """Test 6 - The runtime works identically without any AI agent."""

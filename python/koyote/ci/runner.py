@@ -8,7 +8,7 @@ import argparse
 import os
 import subprocess
 import sys
-from typing import Any, Optional
+from typing import Any
 
 from koyote.koyote import AgentKoyote, KoyoteConfig
 from koyote.compartments import Compartment, CompartmentConfig
@@ -97,7 +97,7 @@ def run_ci_step(cmd: str, block_network: bool = True, sandbox: bool = True, time
     return res["returncode"]
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="koyote",
         description="Koyote CI Runner - 1-word drop-in kernel sandbox for CI pipeline steps.",

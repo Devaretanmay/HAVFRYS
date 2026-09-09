@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import os
 import stat
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 CREDENTIALS_DIR = os.path.expanduser("~/.koyote")
 CREDENTIALS_FILE = os.path.join(CREDENTIALS_DIR, "credentials.json")
@@ -19,7 +19,7 @@ def get_credentials_path() -> str:
     return os.environ.get("KOYOTE_CREDENTIALS_FILE", CREDENTIALS_FILE)
 
 
-def scoped_credentials_path(installation_id: Optional[str] = None, repo: Optional[str] = None) -> str:
+def scoped_credentials_path(installation_id: str | None = None, repo: str | None = None) -> str:
     """Per-installation/repo credential file. Scoped first, global fallback second."""
     base = os.path.dirname(get_credentials_path())
     if installation_id:
@@ -28,7 +28,7 @@ def scoped_credentials_path(installation_id: Optional[str] = None, repo: Optiona
     return get_credentials_path()
 
 
-def load_credentials(installation_id: Optional[str] = None, repo: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def load_credentials(installation_id: str | None = None, repo: str | None = None) -> Dict[str, Any] | None:
     """Load stored credentials: scoped file first, then global file."""
     candidates = []
     if installation_id:
@@ -50,10 +50,10 @@ def load_credentials(installation_id: Optional[str] = None, repo: Optional[str] 
 def save_credentials(
     provider: str,
     api_key: str,
-    model: Optional[str] = None,
-    base_url: Optional[str] = None,
-    installation_id: Optional[str] = None,
-    repo: Optional[str] = None,
+    model: str | None = None,
+    base_url: str | None = None,
+    installation_id: str | None = None,
+    repo: str | None = None,
 ) -> str:
     """Persist credentials with restrictive permissions (0600). Scoped when installation_id given."""
     creds_file = scoped_credentials_path(installation_id, repo) if installation_id else get_credentials_path()
@@ -88,7 +88,7 @@ def clear_credentials() -> bool:
     return False
 
 
-def has_valid_credentials(installation_id: Optional[str] = None, repo: Optional[str] = None) -> bool:
+def has_valid_credentials(installation_id: str | None = None, repo: str | None = None) -> bool:
     """Return True if a key is set via env vars, scoped file, or global credentials.json."""
     if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY") or os.environ.get("KOYOTE_LLM_KEY"):
         return True
@@ -98,7 +98,7 @@ def has_valid_credentials(installation_id: Optional[str] = None, repo: Optional[
     return False
 
 
-def get_active_provider_summary() -> Dict[str, Any]:
+def get_active_provider_summary() -> dict[str, Any]:
     """Return summary of active configured provider."""
     if os.environ.get("ANTHROPIC_API_KEY"):
         return {"configured": True, "provider": "anthropic", "source": "env:ANTHROPIC_API_KEY"}
@@ -120,7 +120,7 @@ def get_active_provider_summary() -> Dict[str, Any]:
 
     return {"configured": False, "provider": None, "source": None}
 
-def verify_credentials(provider: str, api_key: str, model: Optional[str] = None, base_url: Optional[str] = None) -> tuple[bool, str]:
+def verify_credentials(provider: str, api_key: str, model: str | None = None, base_url: str | None = None) -> tuple[bool, str]:
     """Verify AI provider credentials via a lightweight probe or token check."""
     prov = provider.lower().strip()
     key = api_key.strip()

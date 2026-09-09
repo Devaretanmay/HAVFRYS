@@ -4,17 +4,17 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
 import threading
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 from .client import verify_webhook_signature
 
 
 def handle_webhook_payload(
     payload_bytes: bytes,
-    headers: Dict[str, str],
-    secret: Optional[str] = None,
-    handler_fn: Optional[Callable[[Dict[str, Any], str], Dict[str, Any]]] = None,
-) -> Dict[str, Any]:
+    headers: dict[str, str],
+    secret: str | None = None,
+    handler_fn: Callable[[Dict[str, Any], str], Dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Process incoming webhook payload with signature validation."""
     sig_header = headers.get("X-Hub-Signature-256") or headers.get("x-hub-signature-256")
     event_type = headers.get("X-GitHub-Event") or headers.get("x-github-event") or "push"
@@ -54,8 +54,8 @@ def handle_webhook_payload(
 class WebhookHTTPHandler(BaseHTTPRequestHandler):
     """HTTP Request Handler for GitHub Webhooks."""
 
-    webhook_secret: Optional[str] = None
-    event_handler: Optional[Callable[[Dict[str, Any], str], Dict[str, Any]]] = None
+    webhook_secret: str | None = None
+    event_handler: Callable[[Dict[str, Any], str], Dict[str, Any]] | None = None
 
     def do_GET(self):
         if self.path == "/health" or self.path == "/":
@@ -101,15 +101,15 @@ class WebhookServer:
         self,
         port: int = 8080,
         host: str = "0.0.0.0",
-        secret: Optional[str] = None,
-        handler: Optional[Callable[[Dict[str, Any], str], Dict[str, Any]]] = None,
+        secret: str | None = None,
+        handler: Callable[[Dict[str, Any], str], Dict[str, Any]] | None = None,
     ):
         self.port = port
         self.host = host
         self.secret = secret or os.environ.get("KOYOTE_WEBHOOK_SECRET")
         self.handler = handler
-        self._server: Optional[HTTPServer] = None
-        self._thread: Optional[threading.Thread] = None
+        self._server: HTTPServer | None = None
+        self._thread: threading.Thread | None = None
 
     def start(self, blocking: bool = False):
         """Start the webhook listener server."""

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Iterable, List, Optional, Sequence
+from typing import Any, Iterable, Sequence
 
 from .base import ExecutionResult, SandboxRunner, validate_permissions
 from ..sandbox.proxy import RouteConfig
@@ -61,7 +61,7 @@ class CodeResult:
 
     exit_code: int = 0
     output: str = ""
-    diffs: List[dict[str, str]] = field(default_factory=list)
+    diffs: list[dict[str, str]] = field(default_factory=list)
 
     def __bool__(self) -> bool:
         """True when the execution succeeded."""
@@ -93,7 +93,7 @@ class KoyoteCodeExecutor:
         permission: Sequence[str] = ("fs_read", "fs_write", "fs_exec"),
         sandbox: bool = True,
         block_network: bool = True,
-        credential_rules: Optional[Sequence[RouteConfig]] = None,
+        credential_rules: Sequence[RouteConfig] | None = None,
         timeout_s: int = 300,
     ) -> None:
         self._runner = SandboxRunner(
@@ -113,10 +113,10 @@ class KoyoteCodeExecutor:
         mirroring ``autogen.coding.MarkdownCodeExtractor``.
         """
 
-        def extract_code_blocks(text: str, **kwargs: Any) -> List[CodeBlock]:
+        def extract_code_blocks(text: str, **kwargs: Any) -> list[CodeBlock]:
             pattern = r"```([a-zA-Z0-9_-]*)\n(.*?)```"
             matches = re.findall(pattern, text, re.DOTALL)
-            blocks: List[CodeBlock] = []
+            blocks: list[CodeBlock] = []
             for lang, code in matches:
                 blocks.append(CodeBlock(language=lang.strip() or "python", code=code.strip()))
             return blocks

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from koyote.pipeline import AnalysisResult, DriftFinding, TriggerContext
@@ -18,12 +18,12 @@ def render_verification_comment(
 
 def render_maintenance_issue_comment(
     analysis: "AnalysisResult",
-    client: Optional["GitHubAppClient"],
+    client: "GitHubAppClient" | None,
     ctx: "TriggerContext",
     inline: bool = True,
 ) -> str:
     """Render the maintenance issue comment."""
-    lines: List[str] = [
+    lines: list[str] = [
         "-----------------------------------------",
         "        KOYOTE FOUND A MAINTENANCE ISSUE",
         "-----------------------------------------",
@@ -40,13 +40,13 @@ def render_maintenance_issue_comment(
 
 def _render_single_finding(
     finding: "DriftFinding",
-    client: Optional["GitHubAppClient"],
+    client: "GitHubAppClient" | None,
     ctx: "TriggerContext",
     inline: bool = True,
-) -> List[str]:
+) -> list[str]:
     badge = severity_of(finding)
     badge_note = "needs human review" if badge == "P0" else "repairable"
-    lines: List[str] = [
+    lines: list[str] = [
         f"### {finding.display_name} {finding.current_version} -> {finding.target_version}",
         "",
         f"**Severity:** {badge} — {badge_note}",
@@ -80,7 +80,7 @@ def _render_single_finding(
 def _inline_comment_sections(
     finding: "DriftFinding",
     ctx: "TriggerContext",
-) -> List[str]:
+) -> list[str]:
     """Render inline review comment invitations for affected callsites."""
     return []
 
@@ -150,14 +150,14 @@ def severity_of(finding: "DriftFinding") -> str:
     return "P1"
 
 
-def render_consult_issue(items: List[dict]) -> str:
+def render_consult_issue(items: list[dict]) -> str:
     """Render a Consult-mode GitHub Issue from assessed detections.
 
     Each item: {display, version_from, version_to, breaking_change,
     guide_url, affected_files, assessment_body, auto_repairable, confidence}.
     States what is known, recommends, and declares no code was modified.
     """
-    lines: List[str] = [
+    lines: list[str] = [
         "-----------------------------------------",
         "   KOYOTE CONSULT: MAINTENANCE ADVISORY ",
         "-----------------------------------------",

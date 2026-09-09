@@ -22,7 +22,7 @@ import logging
 import os
 import time
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 _logger = logging.getLogger("koyote.engine.execution")
 
@@ -56,33 +56,33 @@ class Execution:
 
     execution_id: str
     kind: str
-    command: List[str]
+    command: list[str]
     workspace_id: str = "default"
     compartment_id: str = "default"
     lane_id: str = "default"
-    session_id: Optional[str] = None
-    pid: Optional[int] = None
+    session_id: str | None = None
+    pid: int | None = None
     status: str = ExecutionStatus.CREATED
-    started_at: Optional[float] = None
-    finished_at: Optional[float] = None
-    returncode: Optional[int] = None
-    snapshot_dir: Optional[str] = None
-    policy: Dict[str, Any] = field(default_factory=lambda: {"permissions": ["fs_read", "fs_write", "fs_exec"]})
-    events: List[Dict[str, Any]] = field(default_factory=list)
-    changes: List[Dict[str, Any]] = field(default_factory=list)
-    extra_env: Dict[str, str] = field(default_factory=dict)
+    started_at: float | None = None
+    finished_at: float | None = None
+    returncode: int | None = None
+    snapshot_dir: str | None = None
+    policy: dict[str, Any] = field(default_factory=lambda: {"permissions": ["fs_read", "fs_write", "fs_exec"]})
+    events: list[dict[str, Any]] = field(default_factory=list)
+    changes: list[dict[str, Any]] = field(default_factory=list)
+    extra_env: dict[str, str] = field(default_factory=dict)
 
-    def emit(self, name: str, payload: Optional[Dict[str, Any]] = None) -> None:
+    def emit(self, name: str, payload: Dict[str, Any] | None = None) -> None:
         """Append a structured lifecycle event."""
         self.events.append({"timestamp": time.time(), "name": name, "payload": payload or {}})
 
-    def start(self, pid: Optional[int] = None) -> None:
+    def start(self, pid: int | None = None) -> None:
         self.status = ExecutionStatus.RUNNING
         self.started_at = time.time()
         self.pid = pid
         self.emit("execution.started", {"command": self.command, "pid": pid})
 
-    def complete(self, returncode: int, changes: Optional[List[Dict[str, Any]]] = None) -> None:
+    def complete(self, returncode: int, changes: List[Dict[str, Any]] | None = None) -> None:
         self.returncode = returncode
         self.finished_at = time.time()
         self.status = ExecutionStatus.COMPLETED if returncode == 0 else ExecutionStatus.FAILED
@@ -125,11 +125,11 @@ class Execution:
         ]
         return "\n".join(lines)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @property
-    def duration_s(self) -> Optional[float]:
+    def duration_s(self) -> float | None:
         if self.started_at is None:
             return None
         end = self.finished_at or time.time()
@@ -168,11 +168,11 @@ class ExecutionManager:
     def create(
         self,
         kind: str,
-        command: List[str],
+        command: list[str],
         compartment_id: str = "default",
         lane_id: str = "default",
-        policy: Optional[Dict[str, Any]] = None,
-        extra_env: Optional[Dict[str, str]] = None,
+        policy: Dict[str, Any] | None = None,
+        extra_env: Dict[str, str] | None = None,
     ) -> Execution:
         """Create and persist a new Execution."""
         eid = self._next_id("exec")
@@ -194,7 +194,7 @@ class ExecutionManager:
         with open(self._path(execution.execution_id), "w", encoding="utf-8") as f:
             json.dump(execution.to_dict(), f, indent=2)
 
-    def get(self, execution_id: str) -> Optional[Execution]:
+    def get(self, execution_id: str) -> Execution | None:
         path = self._path(execution_id)
         if not os.path.exists(path):
             return None
@@ -207,8 +207,8 @@ class ExecutionManager:
             _logger.warning("Failed to load execution %s: %s", execution_id, exc)
             return None
 
-    def list_all(self, status_filter: Optional[str] = None) -> List[Execution]:
-        results: List[Execution] = []
+    def list_all(self, status_filter: str | None = None) -> list[Execution]:
+        results: list[Execution] = []
         if not os.path.exists(self.executions_dir):
             return results
         for fname in sorted(os.listdir(self.executions_dir), reverse=True):
@@ -219,5 +219,5 @@ class ExecutionManager:
                 results.append(ex)
         return results
 
-    def list_running(self) -> List[Execution]:
+    def list_running(self) -> list[Execution]:
         return self.list_all(status_filter=ExecutionStatus.RUNNING)

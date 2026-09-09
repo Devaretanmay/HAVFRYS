@@ -25,7 +25,7 @@ import os
 import subprocess
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, List
 
 from koyote.config import PipelinePolicy
 from koyote.github.client import GitHubAppClient
@@ -76,24 +76,24 @@ class TriggerContext:
     workdir: str
     title: str = ""
     description: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # PR-specific
-    pr_number: Optional[int] = None
-    base_ref: Optional[str] = None
-    changed_files: List[str] = field(default_factory=list)
+    pr_number: int | None = None
+    base_ref: str | None = None
+    changed_files: list[str] = field(default_factory=list)
 
     # External-change-specific
-    provider_name: Optional[str] = None
-    from_version: Optional[str] = None
-    to_version: Optional[str] = None
+    provider_name: str | None = None
+    from_version: str | None = None
+    to_version: str | None = None
 
     @classmethod
     def from_pull_request_event(
         cls,
-        payload: Dict[str, Any],
-        workdir: Optional[str] = None,
-        changed_files: Optional[List[str]] = None,
+        payload: dict[str, Any],
+        workdir: str | None = None,
+        changed_files: List[str] | None = None,
     ) -> "TriggerContext":
         ppr = payload.get("pull_request") or {}
         repo = payload.get("repository", {}).get("full_name", "")
@@ -137,7 +137,7 @@ class TriggerContext:
         repository: str,
         ref: str = "main",
         sha: str = "",
-        workdir: Optional[str] = None,
+        workdir: str | None = None,
         description: str = "",
     ) -> "TriggerContext":
         return cls(
@@ -169,8 +169,8 @@ class DriftFinding:
     target_version: str
     breaking_change: str
     migration_guide_url: str
-    callsites_in_context: List[Dict[str, Any]] = field(default_factory=list)
-    affected_files: List[str] = field(default_factory=list)
+    callsites_in_context: list[dict[str, Any]] = field(default_factory=list)
+    affected_files: list[str] = field(default_factory=list)
     is_auto_repairable: bool = True
     auto_fix_required: bool = False
 
@@ -180,21 +180,21 @@ class AnalysisResult:
     """Result of analyzing a trigger context."""
 
     context: TriggerContext
-    findings: List[DriftFinding] = field(default_factory=list)
-    providers_detected: List[Dict[str, Any]] = field(default_factory=list)
+    findings: list[DriftFinding] = field(default_factory=list)
+    providers_detected: list[dict[str, Any]] = field(default_factory=list)
     callsites_total: int = 0
     patches_planned: int = 0
     auto_fixable_count: int = 0
     timestamp: float = field(default_factory=time.time)
-    modified_files: List[str] = field(default_factory=list)
-    unified_diffs: List[str] = field(default_factory=list)
+    modified_files: list[str] = field(default_factory=list)
+    unified_diffs: list[str] = field(default_factory=list)
     verified: bool = False
     test_command: str = ""
     test_exit_code: int = 0
     test_duration_ms: int = 0
     trust_pr_body: str = ""
-    commit_sha: Optional[str] = None
-    patched_callsites: List[Dict[str, Any]] = field(default_factory=list)
+    commit_sha: str | None = None
+    patched_callsites: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def has_findings(self) -> bool:
@@ -242,12 +242,12 @@ class MaintenancePipeline:
         self,
         client: GitHubAppClient,
         policy: "PipelinePolicy",
-        workdir_resolver: Optional[Callable[[TriggerContext], str]] = None,
+        workdir_resolver: Callable[[TriggerContext], str] | None = None,
     ):
         self.client = client
         self.policy = policy
         self.workdir_resolver = workdir_resolver or self._default_workdir_resolver
-        self._stages: Dict[str, PipelineStage] = {}
+        self._stages: dict[str, PipelineStage] = {}
         self._register_default_stages()
 
     def _default_workdir_resolver(self, ctx: TriggerContext) -> str:
@@ -454,8 +454,8 @@ class SurfaceResult:
     comment_body: str
     status_description: str
     committed: bool = False
-    commit_url: Optional[str] = None
-    pr_url: Optional[str] = None
+    commit_url: str | None = None
+    pr_url: str | None = None
     mergeable: bool = False
 
 
@@ -469,8 +469,8 @@ class PipelineResult:
     comment_body: str
     status_description: str
     committed: bool = False
-    commit_url: Optional[str] = None
-    pr_url: Optional[str] = None
+    commit_url: str | None = None
+    pr_url: str | None = None
 
     @property
     def mergeable(self) -> bool:
@@ -502,7 +502,7 @@ def analyze_trigger_context(ctx: TriggerContext) -> AnalysisResult:
     provider being watched.
     """
     provider = ctx.provider_name
-    findings: List[DriftFinding] = []
+    findings: list[DriftFinding] = []
 
     if provider:
         findings.extend(_analyze_single_provider(ctx, provider))
@@ -521,10 +521,10 @@ def analyze_trigger_context(ctx: TriggerContext) -> AnalysisResult:
     )
 
 
-def _analyze_all_touched_providers(ctx: TriggerContext) -> List[DriftFinding]:
+def _analyze_all_touched_providers(ctx: TriggerContext) -> list[DriftFinding]:
     """Analyze every provider touched by the current context."""
     detected = detect_drift(ctx.workdir, None)
-    findings: List[DriftFinding] = []
+    findings: list[DriftFinding] = []
 
     relevant = detected
     if ctx.changed_files and not ctx.provider_name:
@@ -547,7 +547,7 @@ def _analyze_all_touched_providers(ctx: TriggerContext) -> List[DriftFinding]:
     return findings
 
 
-def _analyze_single_provider(ctx: TriggerContext, provider_name: str) -> List[DriftFinding]:
+def _analyze_single_provider(ctx: TriggerContext, provider_name: str) -> list[DriftFinding]:
     """Analyze a single provider for drift in the current context."""
     registry = get_default_registry()
     p_spec = registry.get(provider_name)
@@ -574,7 +574,7 @@ def _build_finding_from_provider(
     ctx: TriggerContext,
     p_spec: ProviderSpec,
     current_version: str,
-) -> Optional[DriftFinding]:
+) -> DriftFinding | None:
     """Build a DriftFinding for a provider at a given version."""
     if not p_spec.migrations:
         return None
@@ -610,7 +610,7 @@ def _build_finding_from_provider(
     )
 
 
-def _locate_relevant_callsites(ctx: TriggerContext, provider_name: str) -> List[Dict[str, Any]]:
+def _locate_relevant_callsites(ctx: TriggerContext, provider_name: str) -> list[dict[str, Any]]:
     """Locate callsites relevant to a provider in the current context."""
     try:
         cfg = ScanConfig(sdk_names=[provider_name])
@@ -628,7 +628,7 @@ def _locate_relevant_callsites(ctx: TriggerContext, provider_name: str) -> List[
         return []
 
 
-def _file_in_context(path: str, changed_files: List[str]) -> bool:
+def _file_in_context(path: str, changed_files: list[str]) -> bool:
     if not path or not changed_files:
         return bool(path)  # if no context, assume relevant
     for cf in changed_files:
@@ -637,7 +637,7 @@ def _file_in_context(path: str, changed_files: List[str]) -> bool:
     return False
 
 
-def _any_file_in_context(name: str, changed_files: List[str]) -> bool:
+def _any_file_in_context(name: str, changed_files: list[str]) -> bool:
     if not name or not changed_files:
         return False
     name_lower = name.lower()
@@ -655,8 +655,8 @@ def apply_fixes(
     policy: PipelinePolicy,
 ) -> AnalysisResult:
     """Apply fixes via Koyote Intelligence: DIRECT (registry+KB) or AI fallback. Single router."""
-    modified_files: List[str] = []
-    unified_diffs: List[str] = []
+    modified_files: list[str] = []
+    unified_diffs: list[str] = []
 
     snapshot_dir = os.path.join(ctx.workdir, ".koyote", "snapshot_tmp")
     snapshotter = SnapshotManager(workdir=ctx.workdir, snapshot_dir=snapshot_dir)
@@ -664,7 +664,7 @@ def apply_fixes(
     setattr(ctx, "_snapshotter", snapshotter)
 
     intel = KoyoteIntelligence()
-    patched_callsites: List[Dict[str, Any]] = []
+    patched_callsites: list[dict[str, Any]] = []
     for finding in analysis.findings:
         _from, _to, migration = resolve_migration(
             finding.provider_name, finding.current_version, finding.target_version

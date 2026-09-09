@@ -13,7 +13,7 @@ import textwrap
 import threading
 import time
 import urllib.request
-from typing import List, Optional
+from typing import List
 import yaml
 
 from koyote.hooks.base import SandboxRunner, diff_trees, index_workdir
@@ -389,7 +389,7 @@ def _snapshot_worktree(workspace_root: str, snapshot_id: str) -> str:
 def _resolve_compartment(
     cfg: WorkspaceConfig,
     agent_name: str,
-    override: Optional[str] = None,
+    override: str | None = None,
 ) -> CompartmentConfig:
     """Resolve the compartment for an execution.
 
@@ -413,8 +413,8 @@ def _resolve_compartment(
 def _launch_agent(
     agent_name: str,
     workspace_root: str,
-    user_argv: Optional[List[str]] = None,
-    compartment_name: Optional[str] = None,
+    user_argv: List[str] | None = None,
+    compartment_name: str | None = None,
 ) -> int:
     """Launch an interactive agent as a governed Execution.
 
@@ -882,7 +882,7 @@ _NODE_KIND_BY_TYPE = {
 }
 
 
-def _topo_sort(nodes: List[WorkflowNodeConfig]) -> List[WorkflowNodeConfig]:
+def _topo_sort(nodes: list[WorkflowNodeConfig]) -> list[WorkflowNodeConfig]:
     by_name = {n.name: n for n in nodes}
     graph = {n.name: tuple(dep for dep in n.depends_on if dep in by_name) for n in nodes}
     try:
@@ -1049,9 +1049,9 @@ def _run_workflow_file(ws_root: str, workflow_file: str, compartment_id: str, ve
 
 def _infer_step_properties(
     target: str,
-    name_opt: Optional[str] = None,
-    comp_opt: Optional[str] = None,
-    type_opt: Optional[str] = None,
+    name_opt: str | None = None,
+    comp_opt: str | None = None,
+    type_opt: str | None = None,
 ) -> tuple[str, str, str, str]:
     """Auto-infer (step_name, command, step_type, compartment) from a file or command string."""
     target_clean = target.strip()
@@ -1342,7 +1342,7 @@ def cmd_diff(args):
 def _git_commit_execution(
     ws_root: str,
     ex: Execution,
-    user_message: Optional[str] = None,
+    user_message: str | None = None,
 ) -> bool:
     """Stage an execution's changed files and create a Git commit with RFC-5322 metadata trailers."""
     if not shutil.which("git"):
@@ -1848,7 +1848,7 @@ def _print_auth_warning():
     print("================================================================================")
 
 
-def _github_identity() -> Optional[str]:
+def _github_identity() -> str | None:
     """Best-effort GitHub login for whoami output. None when unavailable."""
     try:
         client = GitHubAppClient()
@@ -2019,7 +2019,7 @@ def cmd_fix(args):
     return cmd_maintain(args)
 
 
-def _github_repo_from_remote(workdir: str) -> Optional[str]:
+def _github_repo_from_remote(workdir: str) -> str | None:
     """Extract owner/repo from the git origin URL. None when unavailable."""
     try:
         remote = subprocess.run(

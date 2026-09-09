@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 from koyote.audit import render_audit_cli
 from koyote.graph import audit_dependency_graph, build_dependency_graph
@@ -21,7 +21,7 @@ from koyote.maintenance import detect_drift, run_maintenance_cycle
 from koyote.providers.registry import get_default_registry
 
 
-TOOLS: List[Dict[str, Any]] = [
+TOOLS: list[dict[str, Any]] = [
     {
         "name": "koyote_audit",
         "description": "Scan a codebase for external API/SDK dependencies, deprecation deadlines, and contract drift.",
@@ -104,7 +104,7 @@ TOOLS: List[Dict[str, Any]] = [
 ]
 
 
-def handle_tool_call(name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+def handle_tool_call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     repo_path = os.path.abspath(arguments.get("repo_path", "."))
 
     if name == "koyote_audit":

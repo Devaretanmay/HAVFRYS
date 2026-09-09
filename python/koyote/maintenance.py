@@ -6,7 +6,7 @@ import json
 import os
 import subprocess
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from koyote.ai_planner import AIPatchPlanner, ai_followup_for_missed, build_reasoning_context
 from koyote.drift import detect_drift  # noqa: F401
@@ -45,16 +45,16 @@ class MaintenanceRunReport:
     test_duration_ms: int
     unified_diff: str
     trust_pr_body: str
-    patch_results: List[PatchResult] = field(default_factory=list)
-    pr_url: Optional[str] = None
-    pr_number: Optional[int] = None
-    error: Optional[str] = None
+    patch_results: list[PatchResult] = field(default_factory=list)
+    pr_url: str | None = None
+    pr_number: int | None = None
+    error: str | None = None
     repair_path: str = "none"
 
 
 
 
-def record_migration_history(repo_dir: str, record: Dict[str, Any]) -> None:
+def record_migration_history(repo_dir: str, record: dict[str, Any]) -> None:
     """Record an auditable verified migration event into the repository history ledger."""
     history_dir = os.path.join(repo_dir, ".koyote")
     os.makedirs(history_dir, exist_ok=True)
@@ -73,7 +73,7 @@ def record_migration_history(repo_dir: str, record: Dict[str, Any]) -> None:
         json.dump(history, f, indent=2)
 
 
-def get_migration_history(repo_dir: str) -> List[Dict[str, Any]]:
+def get_migration_history(repo_dir: str) -> list[dict[str, Any]]:
     """Retrieve verified migration history records from .koyote/history.json."""
     history_file = os.path.join(repo_dir, ".koyote", "history.json")
     if os.path.exists(history_file):
@@ -88,14 +88,14 @@ def get_migration_history(repo_dir: str) -> List[Dict[str, Any]]:
 def run_maintenance_cycle(
     repo_dir: str,
     provider_name: str,
-    from_version: Optional[str] = None,
-    to_version: Optional[str] = None,
+    from_version: str | None = None,
+    to_version: str | None = None,
     create_pr: bool = False,
-    github_repo: Optional[str] = None,
+    github_repo: str | None = None,
     github_client: Any = None,
-    llm_api_key: Optional[str] = None,
-    llm_model: Optional[str] = None,
-    llm_base_url: Optional[str] = None,
+    llm_api_key: str | None = None,
+    llm_model: str | None = None,
+    llm_base_url: str | None = None,
     **_ignored: Any,
 ) -> MaintenanceRunReport:
     """Execute full autonomous maintenance loop on a repository. Intelligence picks DIRECT vs AI."""
@@ -123,9 +123,9 @@ def run_maintenance_cycle(
     intel = KoyoteIntelligence()
     decision = intel.decide(repo_dir, provider_name, actual_from, actual_to, has_rewrites=bool(rewrites))
 
-    patch_results: List[PatchResult] = []
+    patch_results: list[PatchResult] = []
     ai_planner = None
-    quarantine_error: Optional[str] = None
+    quarantine_error: str | None = None
     applied_rewrites = list(rewrites)
 
     if decision.strategy == "DIRECT":

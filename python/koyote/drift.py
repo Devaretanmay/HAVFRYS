@@ -4,7 +4,7 @@
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 from koyote.autopatch import ScanConfig, scan_callsites
 from koyote.change_source import (
     Detection, ChangeSource, NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE,
@@ -13,7 +13,7 @@ from koyote.intelligence import KoyoteIntelligence, resolve_migration
 from koyote.providers.registry import get_default_registry
 
 
-def detect_drift(repo_dir: str, provider_name: Optional[str] = None) -> List[Dict[str, Any]]:
+def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[str, Any]]:
     registry = get_default_registry()
     detected = []
 
@@ -128,14 +128,14 @@ def detect_drift(repo_dir: str, provider_name: Optional[str] = None) -> List[Dic
     return uniq
 
 
-def detect_changes(repo_dir: str, provider_name: Optional[str] = None) -> List[Detection]:
+def detect_changes(repo_dir: str, provider_name: str | None = None) -> list[Detection]:
     """Read-only detection: understand change + locate impact, never patch.
 
     Returns one Detection per detected dependency. Repair strategy is decided
     downstream by KoyoteIntelligence; this function only classifies.
     """
     intel = KoyoteIntelligence()
-    out: List[Detection] = []
+    out: list[Detection] = []
     for d in detect_drift(repo_dir, provider_name):
         source = ChangeSource.sdk(
             d["provider"],

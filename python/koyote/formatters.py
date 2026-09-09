@@ -4,10 +4,10 @@
 import os
 import shutil
 import subprocess
-from typing import List
 
 
-def run_style_formatter(repo_dir: str, modified_files: List[str]) -> None:
+
+def run_style_formatter(repo_dir: str, modified_files: list[str]) -> None:
     """Run local repository code formatters (Prettier, Biome, Ruff) to match team style."""
     if not modified_files:
         return

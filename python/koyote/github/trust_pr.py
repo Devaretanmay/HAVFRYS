@@ -1,7 +1,7 @@
 """Developer Trust Surface: High-Confidence PR Markdown Generator."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -22,10 +22,10 @@ class TrustPRMetadata:
     patch_hash: str
     semantic_score: float
     drift_reason: str = ""
-    impacted_callsites: List[Dict[str, Any]] = field(default_factory=list)
-    unaffected_callsites: List[Dict[str, Any]] = field(default_factory=list)
-    quarantined_callsites: List[Dict[str, Any]] = field(default_factory=list)
-    found_callsites_count: Optional[int] = None
+    impacted_callsites: list[dict[str, Any]] = field(default_factory=list)
+    unaffected_callsites: list[dict[str, Any]] = field(default_factory=list)
+    quarantined_callsites: list[dict[str, Any]] = field(default_factory=list)
+    found_callsites_count: int | None = None
 
 
 def generate_trust_pr_markdown(meta: TrustPRMetadata) -> str:

@@ -13,7 +13,7 @@ import json
 import os
 import stat
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 REPO_PENDING = "PENDING"
 REPO_INDEXED = "INDEXED"
@@ -35,7 +35,7 @@ def _path(installation_id: str) -> str:
     return os.path.join(store_dir(), f"{installation_id}.json")
 
 
-def load_installation(installation_id: str) -> Optional[Dict[str, Any]]:
+def load_installation(installation_id: str) -> Dict[str, Any] | None:
     p = _path(str(installation_id))
     if not os.path.isfile(p):
         return None
@@ -47,7 +47,7 @@ def load_installation(installation_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def save_installation(record: Dict[str, Any]) -> str:
+def save_installation(record: dict[str, Any]) -> str:
     p = _path(str(record.get("installation_id", "unknown")))
     fd = os.open(p, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -56,7 +56,7 @@ def save_installation(record: Dict[str, Any]) -> str:
     return p
 
 
-def record_installation_event(payload: Dict[str, Any], repo_states: Dict[str, Dict[str, Any]] | None = None) -> Dict[str, Any]:
+def record_installation_event(payload: dict[str, Any], repo_states: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """Upsert an installation record from an installation.* webhook payload."""
     inst = payload.get("installation") or {}
     inst_id = str(inst.get("id") or payload.get("installation_id") or "unknown")
@@ -76,7 +76,7 @@ def record_installation_event(payload: Dict[str, Any], repo_states: Dict[str, Di
     return record
 
 
-def set_repo_state(installation_id: str, repo: str, state: str, **extra: Any) -> Optional[Dict[str, Any]]:
+def set_repo_state(installation_id: str, repo: str, state: str, **extra: Any) -> Dict[str, Any] | None:
     record = load_installation(str(installation_id))
     if record is None:
         return None
@@ -88,6 +88,6 @@ def set_repo_state(installation_id: str, repo: str, state: str, **extra: Any) ->
     return record
 
 
-def list_ready_repos(installation_id: str) -> List[str]:
+def list_ready_repos(installation_id: str) -> list[str]:
     record = load_installation(str(installation_id)) or {}
     return [r for r, s in record.get("repos", {}).items() if s.get("state") == REPO_READY]

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     from koyote import _core
@@ -23,12 +23,12 @@ except ImportError:
 
 @dataclass
 class ScanConfig:
-    sdk_names: List[str] = field(default_factory=list)
-    api_base_urls: List[str] = field(default_factory=list)
-    method_patterns: List[str] = field(default_factory=list)
-    extensions: List[str] = field(default_factory=lambda: ["ts", "tsx", "js", "jsx", "py", "go"])
+    sdk_names: list[str] = field(default_factory=list)
+    api_base_urls: list[str] = field(default_factory=list)
+    method_patterns: list[str] = field(default_factory=list)
+    extensions: list[str] = field(default_factory=lambda: ["ts", "tsx", "js", "jsx", "py", "go"])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "sdk_names": self.sdk_names,
             "api_base_urls": self.api_base_urls,
@@ -37,14 +37,14 @@ class ScanConfig:
         }
 
 
-def diff_schemas(old_spec_json: str, new_spec_json: str) -> Dict[str, Any]:
+def diff_schemas(old_spec_json: str, new_spec_json: str) -> dict[str, Any]:
     """Diff two OpenAPI JSON specs and return a structured diff."""
     if _core is not None:
         return json.loads(_core.schema_diff(old_spec_json, new_spec_json))
     return {"breaking_count": 0, "endpoint_changes": []}
 
 
-def scan_callsites(root_dir: str, config: Optional[ScanConfig] = None) -> Dict[str, Any]:
+def scan_callsites(root_dir: str, config: ScanConfig | None = None) -> dict[str, Any]:
     """Scan a repository directory for API callsites matching the config."""
     cfg = config or ScanConfig()
     if _core is not None:
@@ -56,8 +56,8 @@ def generate_maintenance_plan(
     old_spec_json: str,
     new_spec_json: str,
     repo_root: str,
-    config: Optional[ScanConfig] = None,
-) -> Dict[str, Any]:
+    config: ScanConfig | None = None,
+) -> dict[str, Any]:
     """Generate a complete maintenance plan correlating schema diffs with codebase callsites."""
     cfg = config or ScanConfig()
     if _core is not None:
@@ -69,7 +69,7 @@ def synthesize_contracts(
     api_name: str,
     old_version: str,
     new_version: str,
-    specs: List[Dict[str, Any]],
+    specs: list[dict[str, Any]],
     language: str = "typescript",
 ) -> str:
     """Synthesize executable contract tests (typescript vitest or python pytest)."""
@@ -78,42 +78,42 @@ def synthesize_contracts(
     return ""
 
 
-def render_markdown_report(plan: Dict[str, Any]) -> str:
+def render_markdown_report(plan: dict[str, Any]) -> str:
     """Render a MaintenancePlan as a GitHub PR markdown body."""
     if _core is not None:
         return _core.render_report_markdown(json.dumps(plan))
     return f"# AutoPatch Plan for {plan.get('api_name', 'API')}"
 
 
-def validate_workflow(workflow_dict: Dict[str, Any]) -> List[str]:
+def validate_workflow(workflow_dict: dict[str, Any]) -> list[str]:
     """Validate a maintenance workflow definition dictionary."""
     if _core is not None:
         return _core.workflow_validate(json.dumps(workflow_dict))
     return []
 
 
-def get_workflow_execution_order(workflow_dict: Dict[str, Any]) -> List[str]:
+def get_workflow_execution_order(workflow_dict: dict[str, Any]) -> list[str]:
     """Compute topological execution order for a maintenance workflow."""
     if _core is not None:
         return _core.workflow_execution_order(json.dumps(workflow_dict))
     return [s.get("name", "") for s in workflow_dict.get("steps", [])]
 
 
-def run_inventory(repo_root: str = ".") -> Dict[str, Any]:
+def run_inventory(repo_root: str = ".") -> dict[str, Any]:
     """Scan a repository for all external API dependencies using builtin provider registry."""
     if _core is not None:
         return json.loads(_core.inventory_scan(repo_root))
     return {"repo_root": repo_root, "dependencies": [], "total_callsites": 0}
 
 
-def apply_patch(repo_root: str, plan: Dict[str, Any], dry_run: bool = True) -> List[Dict[str, Any]]:
+def apply_patch(repo_root: str, plan: dict[str, Any], dry_run: bool = True) -> list[dict[str, Any]]:
     """Apply surgical AST patches for plan targets."""
     if _core is not None:
         return json.loads(_core.patch_apply(repo_root, json.dumps(plan), dry_run))
     return []
 
 
-def render_trust_report(plan: Dict[str, Any]) -> str:
+def render_trust_report(plan: dict[str, Any]) -> str:
     """Render an enterprise-grade trust report from a maintenance plan."""
     if _core is not None:
         return _core.trust_report_render(json.dumps(plan))

@@ -16,7 +16,7 @@ when CrewAI is present.
 from __future__ import annotations
 
 import shlex
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Sequence
 
 from .base import ExecutionResult, SandboxRunner, validate_permissions
 from ..sandbox.proxy import RouteConfig
@@ -72,7 +72,7 @@ class KoyoteCodeInterpreterTool(_CrewaiBaseTool):  # type: ignore[misc]
         permission: Sequence[str] = ("fs_read", "fs_write", "fs_exec"),
         sandbox: bool = True,
         block_network: bool = True,
-        credential_rules: Optional[Sequence[RouteConfig]] = None,
+        credential_rules: Sequence[RouteConfig] | None = None,
         timeout_s: int = 300,
     ) -> None:
         super().__init__()
@@ -88,7 +88,7 @@ class KoyoteCodeInterpreterTool(_CrewaiBaseTool):  # type: ignore[misc]
     def _run(
         self,
         code: str,
-        libraries_used: Optional[list[str]] = None,
+        libraries_used: list[str] | None = None,
         **kwargs: Any,
     ) -> str:
         """Execute ``code`` in the sandbox and return its output.
@@ -116,7 +116,7 @@ class KoyoteCodeInterpreterTool(_CrewaiBaseTool):  # type: ignore[misc]
     def _execute(
         self,
         code: str,
-        libraries_used: Optional[list[str]] = None,
+        libraries_used: list[str] | None = None,
     ) -> ExecutionResult:
         """Run the code with optional pre-installation of libraries."""
         if libraries_used:
@@ -168,7 +168,7 @@ class CrewAICodeExecutor:
         permission: Sequence[str] = ("fs_read", "fs_write", "fs_exec"),
         sandbox: bool = True,
         block_network: bool = True,
-        credential_rules: Optional[Sequence[RouteConfig]] = None,
+        credential_rules: Sequence[RouteConfig] | None = None,
         timeout_s: int = 300,
     ) -> None:
         self._runner = SandboxRunner(
@@ -198,7 +198,7 @@ class CrewAICodeExecutor:
             return self._runner.run(code, permissions=self._permissions, timeout_s=self._timeout_s)
         return self._runner.run_code(code, permissions=self._permissions, timeout_s=self._timeout_s)
 
-    def execute(self, code: str, language: str = "python") -> Dict[str, Any]:
+    def execute(self, code: str, language: str = "python") -> dict[str, Any]:
         """Dict-returning convenience wrapper over :meth:`run`.
 
         Parameters

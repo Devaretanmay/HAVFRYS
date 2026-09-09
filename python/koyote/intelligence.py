@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from koyote.change_source import ChangeSource
 from koyote.credentials import has_valid_credentials
@@ -27,12 +26,12 @@ class Decision:
     from_version: str = ""
     to_version: str = ""
     confidence: float = 0.0
-    estimated_tokens: Optional[int] = None
-    expected_blast_radius: List[str] = field(default_factory=list)
+    estimated_tokens: int | None = None
+    expected_blast_radius: list[str] = field(default_factory=list)
     verification_required: bool = True
 
 
-def resolve_migration(provider: str, from_version: Optional[str] = None, to_version: Optional[str] = None):
+def resolve_migration(provider: str, from_version: str | None = None, to_version: str | None = None):
     """Pick the registry migration matching the requested versions, else first.
 
     Returns (from, to, migration|None); matched versions come back canonical,
@@ -58,10 +57,10 @@ class KoyoteIntelligence:
         self,
         repo_dir: str,
         provider: str,
-        from_version: Optional[str] = None,
-        to_version: Optional[str] = None,
+        from_version: str | None = None,
+        to_version: str | None = None,
         has_rewrites: bool = False,
-        kb_hit: Optional[bool] = None,
+        kb_hit: bool | None = None,
     ) -> Decision:
         t0 = time.time()
         registry = get_default_registry()

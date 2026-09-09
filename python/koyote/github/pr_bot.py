@@ -18,7 +18,7 @@ import fnmatch
 import logging
 import os
 import subprocess
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict
 
 from koyote.ai_planner import AIPatchPlanner, build_reasoning_context
 from koyote.credentials import has_valid_credentials
@@ -45,13 +45,13 @@ _logger = logging.getLogger("koyote.pr_bot")
 # ── PR event handlers ──────────────────────────────────────────────────────
 
 def handle_pull_request_event(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     event_type: str,
     client: GitHubAppClient,
-    policy: Optional[PipelinePolicy] = None,
-    workdir: Optional[str] = None,
+    policy: PipelinePolicy | None = None,
+    workdir: str | None = None,
     exact_head: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Handle a pull_request.* webhook event.
 
@@ -114,7 +114,7 @@ def handle_pull_request_event(
     }
 
 
-def _extract_changed_files(payload: Dict[str, Any]) -> List[str]:
+def _extract_changed_files(payload: dict[str, Any]) -> list[str]:
     """Try to extract changed file list from webhook payload or metadata."""
     ppr = payload.get("pull_request") or {}
     if ppr.get("files"):
@@ -136,11 +136,11 @@ def _safe_preview(text: str) -> str:
 # ── External-change event handler ──────────────────────────────────────────
 
 def handle_external_change_event(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     client: GitHubAppClient,
-    policy: Optional[PipelinePolicy] = None,
-    workdir: Optional[str] = None,
-) -> Dict[str, Any]:
+    policy: PipelinePolicy | None = None,
+    workdir: str | None = None,
+) -> dict[str, Any]:
     """
     Handle an external-change event (provider version drift detected).
 
@@ -185,9 +185,9 @@ def run_on_pr_locally(
     pr_number: int,
     workdir: str,
     base_branch: str = "main",
-    client: Optional[GitHubAppClient] = None,
-    policy: Optional[PipelinePolicy] = None,
-) -> Dict[str, Any]:
+    client: GitHubAppClient | None = None,
+    policy: PipelinePolicy | None = None,
+) -> dict[str, Any]:
     """
     Run the PR bot against a local checkout of a PR.
 
@@ -198,7 +198,7 @@ def run_on_pr_locally(
     client = client or GitHubAppClient()
     changed_files = _diff_files_locally(workdir, base_branch)
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "action": "synchronize",
         "pull_request": {
             "number": pr_number,
@@ -221,7 +221,7 @@ def run_on_pr_locally(
     )
 
 
-def _diff_files_locally(workdir: str, base_branch: str) -> List[str]:
+def _diff_files_locally(workdir: str, base_branch: str) -> list[str]:
     """Return files changed in the current checkout relative to base_branch."""
     try:
         result = subprocess.run(
@@ -240,7 +240,7 @@ def _diff_files_locally(workdir: str, base_branch: str) -> List[str]:
     return []
 
 
-def render_day0_onboarding_issue(repo: str, workdir: Optional[str] = None) -> str:
+def render_day0_onboarding_issue(repo: str, workdir: str | None = None) -> str:
     """Render the Day-0 repository onboarding and contract inventory issue."""
     providers_text = "  - No external third-party SDK dependencies detected"
     total_files = 0
@@ -285,12 +285,12 @@ def render_day0_onboarding_issue(repo: str, workdir: Optional[str] = None) -> st
 
 
 def handle_installation_event(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     event_type: str,
     client: GitHubAppClient,
-    workdir_fn: Optional[Callable[[str], str]] = None,
+    workdir_fn: Callable[[str], str] | None = None,
     store: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Handle installation.* and installation_repositories.* webhook events.
 
     Persists the installation record, runs Day-0 indexing wherever a local
@@ -298,8 +298,8 @@ def handle_installation_event(
     → index → READY, not just a comment.
     """
     repos_data = payload.get("repositories") or payload.get("repositories_added") or []
-    onboarded: List[str] = []
-    repo_states: Dict[str, Dict[str, Any]] = {}
+    onboarded: list[str] = []
+    repo_states: dict[str, dict[str, Any]] = {}
 
     for repo_info in repos_data:
         repo_name = repo_info.get("full_name") if isinstance(repo_info, dict) else str(repo_info)
@@ -347,12 +347,12 @@ def handle_installation_event(
 
 
 def handle_issue_comment_event(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     event_type: str,
     client: GitHubAppClient,
-    policy: Optional[PipelinePolicy] = None,
-    workdir: Optional[str] = None,
-) -> Dict[str, Any]:
+    policy: PipelinePolicy | None = None,
+    workdir: str | None = None,
+) -> dict[str, Any]:
     """Handle issue_comment.* events mentioning @koyote.
 
     `@koyote` alone re-runs the pipeline on the PR; `@koyote explain`
@@ -443,14 +443,14 @@ def handle_issue_comment_event(
 
 
 def make_pr_bot_handler(
-    client: Optional[GitHubAppClient] = None,
-    policy: Optional[PipelinePolicy] = None,
-    workdir_fn: Optional[Callable[[Dict[str, Any]], str]] = None,
-) -> Callable[[Dict[str, Any], str], Dict[str, Any]]:
+    client: GitHubAppClient | None = None,
+    policy: PipelinePolicy | None = None,
+    workdir_fn: Callable[[Dict[str, Any]], str] | None = None,
+) -> Callable[[dict[str, Any], str], dict[str, Any]]:
     client = client or GitHubAppClient()
     policy = policy or PipelinePolicy()
 
-    def handler(payload: Dict[str, Any], event_type: str) -> Dict[str, Any]:
+    def handler(payload: dict[str, Any], event_type: str) -> dict[str, Any]:
         workdir = None
         if workdir_fn:
             workdir = workdir_fn(payload)
@@ -487,7 +487,7 @@ def make_pr_bot_handler(
             )
 
         if event_type.startswith("installation"):
-            def repo_workdir_resolver(repo_name: str) -> Optional[str]:
+            def repo_workdir_resolver(repo_name: str) -> str | None:
                 if workdir_fn:
                     return workdir_fn({"repository": {"full_name": repo_name}})
                 return None

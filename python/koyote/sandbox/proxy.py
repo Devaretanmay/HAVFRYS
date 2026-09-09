@@ -6,7 +6,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 _logger = logging.getLogger("koyote.proxy")
 
@@ -123,19 +123,19 @@ class _CredentialProxyHandler(http.server.BaseHTTPRequestHandler):
             _logger.exception("Proxy error for %s", target_url)
             self.send_error(500, f"Proxy internal error: {exc}")
 
-    def _match_route(self, path: str) -> Optional[RouteConfig]:
+    def _match_route(self, path: str) -> RouteConfig | None:
         for r in self.routes:
             if r.matches(path):
                 return r
         return None
 
-    def _read_body(self) -> Optional[bytes]:
+    def _read_body(self) -> bytes | None:
         length = int(self.headers.get("Content-Length", 0))
         if length > 0:
             return self.rfile.read(length)
         return None
 
-    def _clean_headers(self, route: Optional[RouteConfig]) -> dict[str, str]:
+    def _clean_headers(self, route: RouteConfig | None) -> dict[str, str]:
         headers = {}
         strip_host = route is not None  # let urllib set the correct Host
         for key, val in self.headers.items():
@@ -173,9 +173,9 @@ class CredentialProxy:
         self.routes = list(routes)
         self.host = host
         self.port = port
-        self._server: Optional[http.server.HTTPServer] = None
-        self._thread: Optional[threading.Thread] = None
-        self._saved_env: dict[str, Optional[str]] = {}
+        self._server: http.server.HTTPServer | None = None
+        self._thread: threading.Thread | None = None
+        self._saved_env: dict[str, str | None] = {}
 
     def start(self) -> None:
         if self._server is not None:

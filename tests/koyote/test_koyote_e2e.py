@@ -9,7 +9,6 @@ import uuid
 
 from koyote.koyote import Koyote, AgentKoyote
 from koyote.compartments import Compartment, CompartmentConfig
-from koyote.sandbox.credential_module import CredentialModule
 
 
 def _make_repo(path: str):
@@ -55,26 +54,27 @@ class TestKoyoteInit(unittest.TestCase):
         self.assertTrue(hasattr(box, "_box"))
         self.assertTrue(hasattr(box._box, "insulate"), "lid must be folded into the box")
 
-    def test_plain_box_loads_no_modules_by_default(self):
-        """Koyote is just the box: no modules auto-load."""
+    def test_plain_box_enables_no_insulation_by_default(self):
+        """Koyote is just the box: no insulation auto-enabled."""
         box = AgentKoyote(workdir=self.tmpdir)
         self.assertTrue(box.config.auto_modules)
         box._box.insulate("Fix the bug")
-        module_count = sum(len(e.modules) for e in box._box._engines.values())
-        self.assertGreater(module_count, 0, "AgentKoyote should auto-load modules")
+        self.assertTrue(box._box._snapshot_enabled, "AgentKoyote should enable snapshots")
+        self.assertIsNotNone(box._box.compressor, "AgentKoyote should enable compression")
 
         plain = Koyote(workdir=self.tmpdir)
         plain._box.insulate("Fix the bug")
-        plain_count = sum(len(e.modules) for e in plain._box._engines.values())
-        self.assertEqual(plain_count, 0, "plain Koyote ships empty")
+        self.assertFalse(plain._box._snapshot_enabled, "plain Koyote insulates nothing")
+        self.assertIsNone(plain._box.compressor, "plain Koyote ships empty")
 
-    def test_plain_box_can_opt_in_a_module(self):
-        """register_module() lets a plain box opt in to behaviour modules."""
+    def test_plain_box_can_opt_in_to_insulation(self):
+        """enable_*() lets a plain box opt in to insulation directly."""
         box = Koyote(workdir=self.tmpdir)
-        box.register_module(CredentialModule)
+        box.enable_snapshot().enable_compression()
         box._box.insulate("Fix the bug")
-        count = sum(len(e.modules) for e in box._box._engines.values())
-        self.assertGreaterEqual(count, 1)
+        self.assertTrue(box._box._snapshot_enabled)
+        self.assertIsNotNone(box._box.compressor)
+        self.assertIsNone(box._box.credential_proxy, "no rules configured, proxy stays off")
 
     def test_two_boxes_independent(self):
         a = Koyote(workdir=self.tmpdir)

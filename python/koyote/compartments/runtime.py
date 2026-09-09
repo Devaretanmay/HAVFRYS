@@ -2,11 +2,11 @@
 
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 from .base import Compartment
-from .config import CompartmentConfig
-from .message import Message
+from .base import CompartmentConfig
+from .base import Message
 from ..engine.events import emit
 from ..sandbox.enforcer import SandboxEnforcer
 
@@ -36,8 +36,6 @@ class CompartmentContext:
 
     def send(self, to: str, data: Any, type: str = "data") -> None:
         """Convenience - runtime routes this to the target compartment."""
-        if self._box:
-            self._box.dispatch("compartment_send", from_=self.name, to=to, data=data, type=type)
         self.state.setdefault("_outbox", []).append(
             Message(from_=self.name, to=to, data=data, type=type)
         )
@@ -89,7 +87,7 @@ class CompartmentRuntime:
 
     def run(
         self,
-        entry: Optional[str] = None,
+        entry: str | None = None,
         box: Any = None,
         workdir: str = ".",
         box_dir: str = "",
@@ -101,10 +99,10 @@ class CompartmentRuntime:
         entry : str, optional
             Name of the starting compartment. If omitted, runs all in
             registration order.
-        box : Box, optional
+            box : Box, optional
             Kernel sandbox instance. If provided, each compartment's
-            policy is pushed to the sandbox, and lifecycle events are
-            dispatched to its behaviour modules.
+            policy is pushed to the sandbox, and lifecycle hooks
+            (snapshots, compression) run around each compartment.
         workdir, box_dir : str
             Paths exposed to compartments.
 
@@ -153,7 +151,7 @@ class CompartmentRuntime:
 
             emit("compartment_start", name=name)
             if box:
-                box.dispatch("compartment_start", name=name)
+                box.compartment_started(name)
 
             # Wrap execution in per-compartment sandbox enforcement
             policy = box._current_policy if box is not None else {}
@@ -161,6 +159,9 @@ class CompartmentRuntime:
             if enforcer:
                 enforcer.__enter__()
 
+            # Box hooks run after the enforcer exits: snapshot cleanup and
+            # compression touch the real filesystem and must see clean globals.
+            outcome = "error"
             try:
                 result = comp.run(ctx)
 
@@ -173,19 +174,22 @@ class CompartmentRuntime:
                 _logger.info("Compartment %s done  %.2fs", name, elapsed)
 
                 emit("compartment_done", name=name, elapsed=elapsed, result=self._results[name])
-                if box:
-                    box.dispatch("compartment_done", name=name, elapsed=elapsed, result=self._results[name])
+                outcome = "done"
 
             except Exception as exc:
                 elapsed = round(time.time() - start, 2)
                 _logger.warning("Compartment %s failed after %.2fs: %s", name, elapsed, exc)
                 self._results[name] = {"error": str(exc)}
                 emit("compartment_failed", name=name, error=str(exc), elapsed=elapsed)
-                if box:
-                    box.dispatch("compartment_failed", name=name, error=str(exc), elapsed=elapsed)
             finally:
                 if enforcer:
                     enforcer.__exit__(None, None, None)
+
+            if box:
+                if outcome == "done":
+                    box.compartment_finished(name, self._results[name])
+                else:
+                    box.compartment_failed(name)
 
         return dict(self._results)
 

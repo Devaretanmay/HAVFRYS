@@ -1,1 +1,1 @@
-"""Sandbox subpackage: kernel-level sandbox and behaviour modules."""
+"""Sandbox subpackage: kernel-level sandbox and insulation (snapshots, credential proxy, compression)."""

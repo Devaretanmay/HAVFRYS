@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 from koyote.change_source import ChangeSource
 from koyote.graph import build_dependency_graph
@@ -8,19 +8,16 @@ from koyote.graph import build_dependency_graph
 @dataclass
 class ImpactAnalysisResult:
     provider: str
-    affected_files: List[str]
+    affected_files: list[str]
     callsites_count: int
-    wrapper_files: List[str]
-    callsites: List[Dict[str, Any]] = field(default_factory=list)
+    wrapper_files: list[str]
+    callsites: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ImpactAnalyst:
     def analyze_impact(self, repo_dir: str, provider_name: str) -> ImpactAnalysisResult:
-        """Provider path preserved: vendors match by SDK name (one branch of the general matcher)."""
-        return self.analyze_impact_for(repo_dir, ChangeSource.sdk(provider_name))
-
-    def analyze_impact_for(self, repo_dir: str, source: Any) -> ImpactAnalysisResult:
-        """General matcher: identity against wrapper metadata, callsite patterns, and file paths."""
+        """Identity match against wrapper metadata, callsite patterns, and file paths."""
+        source = ChangeSource.sdk(provider_name)
         identity = (getattr(source, "identity", "") or "").lower()
         provider_name = (getattr(source, "provider", "") or identity) or ""
         graph = build_dependency_graph(repo_dir)

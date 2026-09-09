@@ -9,7 +9,7 @@ deterministic underneath.
 import difflib
 import os
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from koyote.graph import build_dependency_graph
 from koyote.autopatch import ScanConfig, scan_callsites
@@ -25,7 +25,7 @@ _BLOCK_REGEX = re.compile(
 )
 
 
-def parse_search_replace_blocks(text: str) -> List[Tuple[str, str]]:
+def parse_search_replace_blocks(text: str) -> list[tuple[str, str]]:
     """Extract search and replace pairs from model output."""
     matches = _BLOCK_REGEX.findall(text)
     return [(search, replace) for search, replace in matches]
@@ -43,7 +43,7 @@ def parse_confidence(text: str) -> str:
 MAX_PROMPT_FILE_CHARS = 12000
 
 
-def bound_file_content(content: str, limit: int = MAX_PROMPT_FILE_CHARS) -> Tuple[str, bool]:
+def bound_file_content(content: str, limit: int = MAX_PROMPT_FILE_CHARS) -> tuple[str, bool]:
     """Cap file text sent to the model. Returns (text, truncated)."""
     if len(content) <= limit:
         return (content, False)
@@ -55,12 +55,12 @@ def ai_followup_for_missed(
     provider_name: str,
     from_version: str,
     to_version: str,
-    touched_abs_paths: List[str],
-    impact_files: List[str],
+    touched_abs_paths: list[str],
+    impact_files: list[str],
     migration_details: str = "",
     changelog_url: str = "",
     dry_run: bool = False,
-) -> Tuple[List[PatchResult], Optional["AIPatchPlanner"]]:
+) -> tuple[list[PatchResult], "AIPatchPlanner" | None]:
     """AI reasoning for affected files deterministic rewrites didn't reach.
 
     Returns ([], None) when nothing is missed or no provider is configured —
@@ -102,7 +102,7 @@ def build_reasoning_context(
     migration_details: str = "",
     changelog_url: str = "",
     max_callsites: int = 40,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Assemble what the model needs to reason like a maintainer, not a rewriter.
 
     Codebase context (wrappers, callsites, test command) + change context
@@ -110,7 +110,7 @@ def build_reasoning_context(
     failed patterns to avoid). Best-effort throughout: missing pieces yield
     empty strings, never exceptions. Zero tokens to build — all static.
     """
-    ctx: Dict[str, Any] = {
+    ctx: dict[str, Any] = {
         "test_command": "", "wrappers": [], "callsites": [],
         "verified_patterns": [], "failed_patterns": [],
     }
@@ -152,16 +152,16 @@ def build_reasoning_context(
 class AIPatchPlanner:
     """Generates surgical code patches using LLMs with self-repair support."""
 
-    def __init__(self, client: Optional[LLMClient] = None):
+    def __init__(self, client: LLMClient | None = None):
         self.client = client
 
     @classmethod
     def from_env(
         cls,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
-        base_url: Optional[str] = None,
-    ) -> Optional["AIPatchPlanner"]:
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
+    ) -> "AIPatchPlanner" | None:
         cfg = resolve_llm_config(api_key=api_key, model=model, base_url=base_url)
         if not cfg:
             return None
@@ -170,16 +170,16 @@ class AIPatchPlanner:
     def plan_and_apply(
         self,
         repo_dir: str,
-        affected_files: List[str],
+        affected_files: list[str],
         provider_name: str,
         from_version: str,
         to_version: str,
         migration_details: str = "",
-        test_error: Optional[str] = None,
+        test_error: str | None = None,
         dry_run: bool = False,
-        context: Optional[Dict[str, Any]] = None,
+        context: Dict[str, Any] | None = None,
         changelog_url: str = "",
-    ) -> List[PatchResult]:
+    ) -> list[PatchResult]:
         """Reason over deep context, then generate and apply AI patches."""
         if not self.client:
             return []
@@ -223,9 +223,9 @@ class AIPatchPlanner:
         to_version: str,
         migration_details: str = "",
         changelog_url: str = "",
-        affected_files: Optional[List[str]] = None,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        affected_files: List[str] | None = None,
+        context: Dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Reason about impact without touching the worktree.
 
         Returns {"body", "affected_files", "confidence"}. Read-only by
@@ -266,7 +266,7 @@ class AIPatchPlanner:
         provider_name: str,
         from_version: str,
         to_version: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> str:
         """Render the shared reasoning context both assess and repair use."""
         sections = [
@@ -298,10 +298,10 @@ class AIPatchPlanner:
         from_version: str,
         to_version: str,
         migration_details: str,
-        test_error: Optional[str],
+        test_error: str | None,
         dry_run: bool,
-        context: Optional[Dict[str, Any]] = None,
-    ) -> Optional[PatchResult]:
+        context: Dict[str, Any] | None = None,
+    ) -> PatchResult | None:
         context = context or {}
         system_prompt = (
             "You are an autonomous software maintenance engineer. A system your "
