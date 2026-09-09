@@ -6,6 +6,8 @@ them in the sandbox, and quarantines on failure. AI-first on top,
 deterministic underneath.
 """
 
+from __future__ import annotations
+
 import difflib
 import os
 import re
