@@ -2,11 +2,14 @@
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import logging
 import os
 import threading
 from typing import Any, Callable, Dict
 
 from .client import verify_webhook_signature
+
+_logger = logging.getLogger("koyote.github.webhook_server")
 
 
 def handle_webhook_payload(
@@ -120,7 +123,7 @@ class WebhookServer:
 
         self._server = HTTPServer((self.host, self.port), handler_cls)
         if blocking:
-            print(f"[Koyote GitHub App] Listening for webhooks on http://{self.host}:{self.port}/webhook")
+            _logger.info("Listening for webhooks on http://%s:%s/webhook", self.host, self.port)
             self._server.serve_forever()
         else:
             self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)

@@ -7,12 +7,15 @@ previews diffs, checks for conflicts, and safely applies candidates to the targe
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
 
 from dataclasses import asdict, dataclass, field
 from typing import Any
 from .lane import LaneManager
+
+_logger = logging.getLogger("koyote.engine.integration")
 
 
 @dataclass
@@ -139,7 +142,7 @@ class IntegrationEngine:
             return False
 
         if cand.conflicts:
-            print("Error: Cannot apply integration candidate with unresolved conflicts.")
+            _logger.error("Cannot apply integration candidate with unresolved conflicts.")
             return False
 
         cand.applied = True

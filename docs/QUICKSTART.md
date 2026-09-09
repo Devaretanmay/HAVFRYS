@@ -49,14 +49,14 @@ koyote graph .
 
 ---
 
-## 4. Consult First, Then Work
+## 4. Consult First, Then Work (Howl & Hunt)
 
-New teams start in Consult: same AI reasoning, zero code changes, findings filed
-as a GitHub Issue. Graduate to Work when the reasoning earns it.
+New teams start in Consult (Howl): same AI reasoning, zero code changes, findings filed
+as a GitHub Issue. Graduate to Work (Hunt) when the reasoning earns it.
 
 ```bash
-koyote consult . --repo owner/repo   # Assess only, files an Issue
-koyote fix .                         # Repair, verify, report
+koyote consult . --repo owner/repo   # Assess only, files an Issue (Howl)
+koyote work .                        # Repair, verify, report (Hunt)
 ```
 
 See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
@@ -69,11 +69,11 @@ there is no engine flag to choose. Unsafe repairs refuse loudly with zero files 
 
 ```bash
 # Auto-detect provider and repair:
-koyote fix .
+koyote work .
 
 # Targeted migration and open PR:
-koyote fix . --provider stripe
-koyote fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
+koyote work . --provider stripe
+koyote work . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo owner/repo
 ```
 
 ---

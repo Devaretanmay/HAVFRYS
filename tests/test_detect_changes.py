@@ -22,7 +22,7 @@ def test_empty_repo_detects_nothing(tmp_path):
     assert detect_changes(str(tmp_path)) == []
 
 
-def test_check_writes_nothing_outside_sheepdog(tmp_path):
+def test_check_writes_nothing_outside_koyote(tmp_path):
     dst = str(tmp_path / "r")
     shutil.copytree("trials/fixtures/taxonomy_stripe", dst)
     before = {}

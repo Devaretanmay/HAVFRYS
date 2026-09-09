@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 import shutil
 import subprocess
 
 from blake3 import blake3
+
+_logger = logging.getLogger("koyote.test_runner")
 
 
 def _blake3_digest(data: bytes) -> str:
@@ -22,8 +25,8 @@ def _detect_test_command(repo_dir: str) -> str:
             for candidate in ("test", "test:unit", "test:ci", "type-check", "build"):
                 if candidate in scripts:
                     return f"npm run {candidate}" if candidate != "test" else "npm test"
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.warning("Failed to parse %s: %s", pkg_json_path, e)
     if os.path.exists(os.path.join(repo_dir, "pytest.ini")) or os.path.exists(os.path.join(repo_dir, "tests")):
         return "pytest -q"
     if os.path.exists(os.path.join(repo_dir, "Cargo.toml")):
@@ -49,8 +52,8 @@ def _compute_lockfile_hash(repo_dir: str) -> str:
             try:
                 with open(fp, "rb") as f:
                     return _blake3_digest(f.read())
-            except Exception:
-                pass
+            except Exception as e:
+                _logger.warning("Failed to hash lockfile %s: %s", fp, e)
     return _blake3_digest(repo_dir.encode("utf-8"))
 
 
@@ -63,8 +66,8 @@ def _run_install(repo_dir: str, timeout: int = 120) -> subprocess.CompletedProce
         cmd = ["pip", "install", "-r", req] if os.path.exists(req) else ["pip", "install", "-e", "."]
         try:
             return subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True, timeout=timeout)
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.warning("Failed to run pip install: %s", e)
     if shutil.which("pnpm") and os.path.exists(os.path.join(repo_dir, "pnpm-lock.yaml")):
         cmd = ["pnpm", "install", "--frozen-lockfile=false"]
     elif shutil.which("yarn") and os.path.exists(os.path.join(repo_dir, "yarn.lock")):

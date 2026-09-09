@@ -29,7 +29,6 @@ class HuntBot:
     def __init__(self, client: GitHubAppClient | None = None, policy: PipelinePolicy | None = None):
         self.client = client or GitHubAppClient()
         self.policy = policy or PipelinePolicy(mode="work")
-        # Ensure work mode is enforced for Hunt
         self.policy.mode = "work"
 
     def execute_repair(self, ctx: TriggerContext) -> dict[str, Any]:

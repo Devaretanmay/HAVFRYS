@@ -39,8 +39,8 @@ koyote exec -- cat ~/.ssh/id_rsa
 Audit your entire codebase for upstream breaking changes, deprecated API callsites, and auto-repairable integrations.
 
 ```bash
-koyote audit .
-koyote audit . --format=github-issue
+koyote check .
+koyote check . --format=github-issue
 ```
 
 ### What You Observe:
@@ -55,7 +55,7 @@ koyote audit . --format=github-issue
 Detect upstream API drift and synthesize verified AST patches against breaking changes.
 
 ```bash
-koyote maintain . --provider stripe
+koyote work . --provider stripe
 ```
 
 ### What You Observe:

@@ -99,8 +99,8 @@ class Execution:
         """Format Git trailers per the Agent Provenance Trailers spec (SPEC.md).
 
         Emits Agent-* field names. Pre-rename releases wrote legacy
-        Compart-* names; readers should accept all variants (see SPEC.md,
-        "Compatibility").
+        Koyote-*, Volf-*, Sheepdog-*, or Compart-* names; readers should accept
+        all variants (see SPEC.md, "Compatibility").
         """
         sandbox_status = "clean"
         blocked_count = sum(

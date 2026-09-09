@@ -254,7 +254,7 @@ class TestLongWorkflow(unittest.TestCase):
         self.assertIn("debugging", profiles_seen)
         self.assertIn("research", profiles_seen)
 
-    def test_multiple_runs_via_sheepdog(self):
+    def test_multiple_runs_via_koyote(self):
         """Using Koyote.run() multiple times with different compartments."""
         for name in ["build", "test", "deploy"]:
             box = Koyote(workdir=self.tmpdir)

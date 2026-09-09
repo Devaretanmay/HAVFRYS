@@ -235,5 +235,5 @@ print(res.diffs)                              # audited mutations
 hook.cleanup()
 ```
 
-All examples above run against `koyote==1.0.4` as installed from PyPI / wheel
+All examples above run against `koyote==1.1.1` as installed from PyPI / wheel
 (including the Rust `_core`).

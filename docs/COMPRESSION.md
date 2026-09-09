@@ -20,13 +20,22 @@ The Koyote Rust core includes four specialized evidence compression engines:
 Koyote automatically detects the content type of execution output (build logs, JSON, diffs, raw text) and applies the optimal engine:
 
 ```python
-from koyote.maintenance_agents import PatchVerifier
+from koyote._core import route_and_compress
 
-verifier = PatchVerifier()
-result = verifier.verify(repo_dir=".", test_cmd="npm test")
+# Route and compress execution output (test logs, build traces, diffs)
+raw_log = """
+==================================== ERRORS ====================================
+_______________________ test_stripe_charges_v4_migration _______________________
+TypeError: Stripe.Charge.create() missing 1 required positional argument: 'params'
+...
+=========================== short test summary info ============================
+FAILED tests/test_stripe.py::test_stripe_charges_v4_migration - TypeError
+"""
 
-print(f"Raw Log: {result.raw_log_bytes} bytes -> Compressed Evidence: {result.compressed_log_bytes} bytes")
-print(result.compressed_execution_log)
+compressed_log = route_and_compress(raw_log)
+
+print(f"Raw Log: {len(raw_log)} bytes -> Compressed Evidence: {len(compressed_log)} bytes")
+print(compressed_log)
 ```
 
 ---
@@ -34,5 +43,5 @@ print(result.compressed_execution_log)
 ## 3. Why This Matters for Autonomous Maintenance
 
 * **Scalable Evidence Bundles**: Test failure outputs are attached to GitHub PRs and issues without hitting character limits.
-* **Efficient Agent Loops**: When `PatchVerifier` diagnoses a test failure, it feeds high-signal stack traces directly to `PatchPlanner` without blowing token context budgets.
+* **Efficient Agent Loops**: When test verification diagnoses a test failure, it feeds high-signal stack traces directly to `AIPatchPlanner` without blowing token context budgets.
 * **Deterministic Compression**: Fast, reproducible Rust execution ensures evidence is compressed identically across runs.

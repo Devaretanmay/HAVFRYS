@@ -34,7 +34,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph IN["Interfaces"]
-        CLI["cli/main.py<br/>auth · doctor · index · check · fix · app · pr"]
+        CLI["cli/main.py<br/>auth · doctor · index · check · fix · work · consult · app · pr"]
         MCP["mcp_server.py<br/>audit · analyze · repair tools"]
         WH["github/webhook_server.py<br/>HMAC webhook daemon"]
     end
@@ -54,7 +54,7 @@ flowchart TD
         KB["knowledge.py<br/>namespaced flywheel · failure quarantine"]
     end
     subgraph GH["GitHub surface"]
-        BOT["pr_bot.py<br/>PR · @koyote comments · install handlers"]
+        BOT["pr_bot.py · howl_bot.py<br/>PR · @koyote comments · install handlers"]
         PROV["provisioning.py<br/>clone/pull cache · exact PR heads"]
         INST["installations.py<br/>PENDING→INDEXED→READY records"]
         WATCH["watch.py<br/>poll READY repos · fire on new drift"]
@@ -83,8 +83,8 @@ flowchart TD
 
 | Layer | Status | Pinned by |
 |---|---|---|
-| 529 Rust tests | green | `cargo test --all-targets` |
-| 324 Python tests | green | `pytest tests/` |
+| 527 Rust tests | green | `cargo test --all-targets` |
+| 357 Python tests | green | `pytest tests/` |
 | ruff + hygiene gate | clean | `scripts/run_all_tests.py` (step 0–1) |
 | clippy | 0 warnings | `cargo clippy --all-targets` |
 | Tier-1 controlled fixtures | done | trials/fixtures (stripe, openai, clerk, aws, sentry) |

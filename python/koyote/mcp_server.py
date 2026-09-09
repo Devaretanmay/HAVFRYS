@@ -221,7 +221,7 @@ def serve_stdio():
                         "protocolVersion": "2024-11-05",
                         "serverInfo": {
                             "name": "koyote-mcp-server",
-                            "version": "1.0.0",
+                            "version": "1.1.0",
                         },
                         "capabilities": {
                             "tools": {},

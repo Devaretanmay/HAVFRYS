@@ -6,11 +6,6 @@ import shutil
 import subprocess
 from typing import Sequence
 
-try:
-    from koyote._core import sandbox_apply as _core_sandbox_apply
-except ImportError:
-    _core_sandbox_apply = None
-
 _logger = logging.getLogger("koyote.process_runner")
 
 

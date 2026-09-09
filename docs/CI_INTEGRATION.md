@@ -16,9 +16,10 @@ Koyote CI integration requires **no managed infrastructure, no paid runner servi
 
 ## 2. Drop-In Integration Options
 
-### Option A: GitHub Actions 1-Line Setup (`action.yml`)
+### Option A: GitHub Actions Setup
 
-Add the repository action at the top of your steps:
+> [!WARNING]
+> The GitHub Action wrapper is not yet published. Use Option B (direct module runner) below.
 
 ```yaml
 name: CI Pipeline
@@ -30,11 +31,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      # 1-Line Drop-In: Installs and configures kernel-sandbox defaults
-      - uses: Devaretanmay/Koyote@main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          network: 'false'  # Block untrusted PR network exfiltration
+          python-version: '3.11'
+
+      - name: Install Koyote
+        run: pip install koyote
 
       # Run your standard commands inside the kernel sandbox:
       - run: python3 -m koyote.ci.runner "pytest"

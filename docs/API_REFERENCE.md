@@ -1,6 +1,6 @@
-# Koyote API Reference & Documentation Map
+# Koyote Python & Engine API Reference
 
-**Version:** 1.0.4  
+**Version:** 1.1.1  
 **Package:** `koyote` (PyPI)
 
 ---
@@ -76,12 +76,16 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 - `detect_drift(repo_dir: str, provider_name: str) -> List[Dict[str, Any]]`: Scans for outdated external dependencies.
 - `run_maintenance_cycle(repo_dir: str, provider_name: str, ...) -> MaintenanceReport`: Runs end-to-end drift detection, AST patching, formatting, test verification, and PR creation.
 
-### `from koyote.maintenance_agents import AutonomousMaintenancePipeline, ChangeAnalyzer, ImpactAnalyst, PatchPlanner, PatchVerifier`
-- `ChangeAnalyzer`: Analyzes vendor OpenAPI/SDK breaking contracts.
+### `from koyote.pipeline import MaintenancePipeline, PipelinePolicy, TriggerContext`
+- `MaintenancePipeline`: Coordinates the full maintenance lifecycle end-to-end (drift detection, impact analysis, planning, sandboxed verification, PR generation).
+- `PipelinePolicy`: Execution policy governing maintenance run modes (`work` vs. `consult`), auto-fix providers, ignore paths, and label filters.
+- `TriggerContext`: Structured event context describing the trigger source (e.g. pull request, scheduled watch loop, webhook event).
+
+### `from koyote.ai_planner import AIPatchPlanner`
+- `AIPatchPlanner`: Synthesizes AST transformations and AI-guided code repairs, consulting verified knowledge memory before making model calls.
+
+### `from koyote.maintenance_agents import ImpactAnalyst`
 - `ImpactAnalyst`: Traces dependencies through wrappers to affected callsites. `analyze_impact_for(repo, source)` matches any `ChangeSource` identity against wrapper metadata, callsite patterns, and file paths; `analyze_impact(repo, provider)` is the preserved SDK branch.
-- `PatchPlanner`: Synthesizes AST transformation plans.
-- `PatchVerifier`: Runs sandboxed tests, compresses execution evidence logs, checks zero blast radius, and certifies merge readiness.
-- `AutonomousMaintenancePipeline`: Coordinates the 4 specialized maintenance agents end-to-end.
 
 ---
 
@@ -115,6 +119,12 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ### `from koyote.github.pr_render import render_consult_issue, render_pr_summary, render_flow_diagram`
 - Consult Issue bodies, PR summary headers with evidence-grounded confidence, mermaid change→files→verification diagrams. Severity: P0 needs a human, P1 is repairable.
+
+### `from koyote.github.howl_bot import HowlBot, ConsultBot`
+- `HowlBot` (alias `ConsultBot`): Consult-mode advisor agent that diagnoses drift, assesses impact, and opens GitHub Issues without modifying code.
+
+### `from koyote.github.hunt_bot import HuntBot, WorkBot`
+- `HuntBot` (alias `WorkBot`): Worker/repair agent that detects breaking drift, synthesizes patches, verifies in an OS sandbox, and delivers commits or PRs.
 
 ### `BotConfig.mode`
 - `consult` (report only) or `work` (repair, default) in `.koyote/config.yaml`, plus `ignore_paths` / `exclude_labels` PR filters. See [GitHub App behavior](GITHUB_APP.md).

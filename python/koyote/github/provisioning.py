@@ -42,9 +42,11 @@ def remote_for(repo_full_name: str, token: str | None = None) -> str:
     return f"https://github.com/{repo_full_name}.git"
 
 
-def _run_git(args: list, cwd: str, timeout: int = 120) -> bool:
+def _run_git(args: list, cwd: str, timeout: int = 120,
+             token: str | None = None) -> bool:
     try:
-        proc = subprocess.run(["git"] + args, cwd=cwd, capture_output=True,
+        cmd = ["git"] + _auth_args(token) + args
+        proc = subprocess.run(cmd, cwd=cwd, capture_output=True,
                               text=True, timeout=timeout)
         return proc.returncode == 0
     except Exception as e:
@@ -57,13 +59,14 @@ def ensure_repo_checkout(repo_full_name: str, token: str | None = None,
     """Clone on first sight, fast-forward on later sightings. Returns path or None."""
     dest = cached_path(repo_full_name)
     if os.path.isdir(os.path.join(dest, ".git")):
-        _run_git(["fetch", "origin"], dest)
+        _run_git(["fetch", "origin"], dest, token=token)
         _run_git(["checkout", ref], dest)
         _run_git(["merge", "--ff-only", f"origin/{ref}"], dest)
         return dest
     parent = os.path.dirname(dest)
     os.makedirs(parent, exist_ok=True)
-    ok = _run_git(["clone", remote_for(repo_full_name, token), dest], parent, timeout=300)
+    ok = _run_git(["clone", remote_for(repo_full_name), dest], parent,
+                  timeout=300, token=token)
     if not ok or not os.path.isdir(os.path.join(dest, ".git")):
         return None
     _run_git(["checkout", ref], dest)

@@ -285,7 +285,7 @@ koyote graph . --json
 
 ---
 
-### `koyote fix [root_dir]` (alias: `maintain`, `update`)
+### `koyote work [root_dir]` (alias: `hunt`, `fix`, `maintain`, `update`)
 Executes an autonomous continuous maintenance cycle: Koyote's AI reasons over the repository,
 the change, and maintenance memory, then repairs with deterministic tools, formats with local tools
 (`prettier`/`ruff`), runs repository tests, verifies zero blast radius, and reports evidence.
@@ -293,12 +293,12 @@ Verified patterns execute without model calls; novel work uses your provider; un
 refused loudly with zero files touched. There is no engine flag — strategy is internal:
 
 ```bash
-koyote fix .                       # Auto-detect provider from manifests
-koyote fix . --provider stripe
-koyote fix . --provider openai --from v3.28.0 --to v4.0.0
-koyote fix . --detect              # Detect installed API providers
-koyote fix . --show-pr             # Preview Developer Trust PR body
-koyote fix . --create-pr --repo owner/repo
+koyote work .                       # Auto-detect provider from manifests
+koyote work . --provider stripe
+koyote work . --provider openai --from v3.28.0 --to v4.0.0
+koyote work . --detect              # Detect installed API providers
+koyote work . --show-pr             # Preview Developer Trust PR body
+koyote work . --create-pr --repo owner/repo
 ```
 
 ### `koyote consult [path] [--repo owner/repo]`

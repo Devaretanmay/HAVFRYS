@@ -2,41 +2,51 @@
 
 All notable changes to Koyote are documented here.
 
-## [Unreleased]
+## [1.1.1] - 2026-09-09
+
+### Added
+- **Automated CI Workflow**: Gated pull requests and main branch on `ruff`, `cargo test --lib`, and `pytest`.
+- **Runtime Dependencies**: Added `pyjwt[crypto]>=2.8.0` for full GitHub App authentication support.
+- **PEP 621 Manifest Parsing**: Support for standard `pyproject.toml` dependencies array and `Cargo.toml` inline tables in `drift.py`.
+
+### Changed
+- **Consult & Work Mode Architecture**: Formalized the Consult (Howl persona) vs Work (Hunt persona) mode split. Consult diagnoses maintenance drift and opens GitHub Issues without modifying code; Work repairs code, validates in sandbox, and delivers verified PRs.
+- **Security & Credential Protection**: Ephemeral tokens are dynamically passed via `http.extraHeader` instead of being persisted into `.git/config`.
+- **Eliminated Circular Import Cycle**: Cleaned module boundaries between `koyote.pipeline` and `koyote.github`.
+- **Naming Reconciliation**: Canonical Koyote naming applied across code, documentation, test suites, and configurations.
+
 
 ### Changed
 - **Rename Volf → Koyote across product, code, and docs.** Package `koyote` 1.1.0 (CLI, imports, crate `koyote-core`, `KOYOTE_*` env, `.koyote/` state dirs, MCP tools, `@koyote` trigger, trailers, SDK names). Hard cut with no aliases. KB keeps pinned legacy read paths for `.volf/`, `.sheepdog/`, and `.compart/` trees.
 - **Howl warns, Hunt repairs.** Consult Issues sign as Howl, verified Trust PRs as Hunt — two voices, one reasoning engine.
-
-### Changed
 - **Rename Sheepdog → Volf across product, code, and docs.** Package `volf` 1.1.0 (CLI, imports, crate `volf-core`, `VOLF_*` env, `.volf/` state dirs, MCP tools, `@volf` trigger, trailers, SDK names). Hard cut with no aliases. KB keeps pinned legacy read paths for `.sheepdog/` and `.compart/` trees.
-- **Howl, the hunt voice.** The watch loop and monitoring surface speak as Howl — `Howl hunting` in serve/doctor output. Shepherd advises, Shearer repairs, Howl hunts; one reasoning engine behind all three.
+- **Howl, the hunt voice.** The watch loop and monitoring surface speak as Howl — `Howl hunting` in serve/doctor output. Howl advises, Hunt repairs; one reasoning engine behind both.
 
 ### Added
 - **Alias-aware callsite analysis and repair.** The AST locator resolves proven client bindings (`const s = new Stripe()`, `require('stripe')`, `import stripe as s`) and reports `alias`-tagged callsites. DIRECT rewrites instantiate exact-identifier variants with the receiver preserved — regexes are never loosened, exotic bindings fail closed.
 
 ### Added
-- **External-Change Dependency Graph (`volf graph`).** Native Rust graph engine mapping external providers, versions, OpenAPI contracts, manifest dependencies, wrapper clients, and AST callsites.
-- **Day-0 Risk Register (`volf audit`).** Instant audit command scanning codebases for at-risk, deprecated, and auto-repairable external API callsites with ANSI and GitHub Issue markdown exports.
-- **Autonomous Continuous Maintenance (`volf maintain`).** Closed-loop maintenance engine detecting upstream breaking changes, synthesizing surgical AST patches, running local formatters (`prettier`, `ruff`), and opening verified Developer Trust PRs.
-- **Provider Contract Registry (`volf providers`).** Pre-indexed breaking-change contract catalog for Stripe, OpenAI, Anthropic, Clerk, Sentry, Supabase, Twilio, Octokit, and AWS SDK.
-- **Time-Machine Replay Protocol (`volf reproduce`).** Historical benchmark engine evaluating verified ground-truth migrations against real open-source repositories with zero blast radius.
-- **GitHub App & Webhook Server (`volf app`).** Continuous webhook daemon for automated PR drift detection and verification.
-- **Change-source abstraction (`volf.change_source`).** Thin `ChangeSource`/`Detection` types generalizing the pipeline beyond vendor SDKs (OpenAPI, GraphQL, protobuf, webhooks, MCP, internal services as representable, fail-closed kinds).
-- **Invisible decision engine (`VolfIntelligence`).** Internal DIRECT/AI/HYBRID/QUARANTINE routing with confidence, token estimates, and blast-radius metadata. No `--ai`/`--direct` user flags.
-- **Repository knowledge flywheel (`.volf/knowledge/`).** Namespaced verified-pattern cache with legacy fallback reads, failure quarantine, and test-recipe seeding on index.
+- **External-Change Dependency Graph (`koyote graph`).** Native Rust graph engine mapping external providers, versions, OpenAPI contracts, manifest dependencies, wrapper clients, and AST callsites.
+- **Day-0 Risk Register (`koyote check`).** Instant audit command scanning codebases for at-risk, deprecated, and auto-repairable external API callsites with ANSI and GitHub Issue markdown exports.
+- **Autonomous Continuous Maintenance (`koyote work`).** Closed-loop maintenance engine detecting upstream breaking changes, synthesizing surgical AST patches, running local formatters (`prettier`, `ruff`), and opening verified Developer Trust PRs.
+- **Provider Contract Registry (`koyote providers`).** Pre-indexed breaking-change contract catalog for Stripe, OpenAI, Anthropic, Clerk, Sentry, Supabase, Twilio, Octokit, and AWS SDK.
+- **Time-Machine Replay Protocol (`koyote reproduce`).** Historical benchmark engine evaluating verified ground-truth migrations against real open-source repositories with zero blast radius.
+- **GitHub App & Webhook Server (`koyote app`).** Continuous webhook daemon for automated PR drift detection and verification.
+- **Change-source abstraction (`koyote.change_source`).** Thin `ChangeSource`/`Detection` types generalizing the pipeline beyond vendor SDKs (OpenAPI, GraphQL, protobuf, webhooks, MCP, internal services as representable, fail-closed kinds).
+- **Invisible decision engine (`KoyoteIntelligence`).** Internal DIRECT/AI/HYBRID/QUARANTINE routing with confidence, token estimates, and blast-radius metadata. No `--ai`/`--direct` user flags.
+- **Repository knowledge flywheel (`.koyote/knowledge/`).** Namespaced verified-pattern cache with legacy fallback reads, failure quarantine, and test-recipe seeding on index.
 - **Incremental indexing (`index_state.json`).** Commit-SHA + mtime tracking; `changed_since_index()` reports freshness and discovery deltas.
-- **Installation persistence (`volf.github.installations`).** Flat-JSON install records with PENDING → INDEXED → READY lifecycle and Day-0 indexing on install events.
+- **Installation persistence (`koyote.github.installations`).** Flat-JSON install records with PENDING → INDEXED → READY lifecycle and Day-0 indexing on install events.
 - **Scoped BYOK credentials.** Env → per-installation → global resolution (0600); secrets never enter repo state, logs, or knowledge.
-- **`volf doctor`.** Six-line product readiness: GitHub, AI provider, index, knowledge, test command, monitoring.
+- **`koyote doctor`.** Six-line product readiness: GitHub, AI provider, index, knowledge, test command, monitoring.
 - **Fail-closed webhook serving.** Missing secret is a hard error (`--no-secret` is local-debug only).
-- **Rename Compart → Volf.** Package, CLI, crate, env vars (`VOLF_*`), state dirs (`.volf/`), and docs. Hard cut: no `compart` aliases. KB entries under old `.compart/` trees are still read via legacy fallback; re-run `volf auth` once to recreate credentials.
+- **Rename Compart → Koyote.** Package, CLI, crate, env vars (`KOYOTE_*`), state dirs (`.koyote/`), and docs. Hard cut: no `compart` aliases. KB entries under old `.compart/` trees are still read via legacy fallback; re-run `koyote auth` once to recreate credentials.
 
 ### Changed
 - **Relicensed Apache-2.0.** The project moves from Elastic License 2.0 to the
-  Apache License 2.0. The Volf name and logo remain trademarks of Volf
+  Apache License 2.0. The Koyote name and logo remain trademarks of Compart
   Labs (see NOTICE). Contributors are covered by CLA.md.
-- **Agent Provenance Trailers (spec v0.1).** `volf commit` now emits the
+- **Agent Provenance Trailers (spec v0.1).** `koyote commit` now emits the
   open `Agent-*` trailer names defined in SPEC.md (`Agent-Origin`,
   `Agent-Agent`, `Agent-Execution`, `Agent-Compartment`, `Agent-Sandbox`),
   adding `Agent-Origin` classification and collapsing security detail to the

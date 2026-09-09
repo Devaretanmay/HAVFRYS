@@ -22,14 +22,15 @@ proxy = CredentialProxy(routes=[
         prefix="/openai",
         upstream="https://api.openai.com",
         credential_source="env:OPENAI_API_KEY",
-        header_name="Authorization",
-        header_prefix="Bearer "
+        header="Authorization",
+        format="Bearer {credential}"
     ),
     RouteConfig(
         prefix="/anthropic",
         upstream="https://api.anthropic.com",
         credential_source="env:ANTHROPIC_API_KEY",
-        header_name="x-api-key"
+        header="x-api-key",
+        format="{credential}"
     )
 ])
 ```

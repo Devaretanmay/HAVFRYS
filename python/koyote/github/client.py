@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import subprocess
 import time
@@ -15,6 +16,8 @@ try:
     import jwt
 except ImportError:
     jwt = None
+
+_logger = logging.getLogger("koyote.github.client")
 
 
 def verify_webhook_signature(payload: bytes, signature_header: str | None, secret: str) -> bool:
@@ -36,8 +39,8 @@ def _get_gh_cli_token() -> str | None:
         proc = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, timeout=5)
         if proc.returncode == 0 and proc.stdout.strip():
             return proc.stdout.strip()
-    except Exception:
-        pass
+    except Exception as e:
+        _logger.warning("Failed to retrieve gh CLI token: %s", e)
     return None
 
 
@@ -74,7 +77,8 @@ class GitHubAppClient:
                     key_pem = f.read()
 
             return jwt.encode(payload, key_pem, algorithm="RS256")
-        except Exception:
+        except Exception as e:
+            _logger.warning("Failed to generate JWT: %s", e)
             return None
 
     def get_installation_access_token(self, installation_id: int) -> str | None:
@@ -90,7 +94,7 @@ class GitHubAppClient:
             headers={
                 "Accept": "application/vnd.github+json",
                 "Authorization": f"Bearer {app_jwt}",
-                "User-Agent": "Koyote-Autonomous-Maintenance/1.0",
+                "User-Agent": "Koyote-Autonomous-Maintenance/1.1.0",
             },
             method="POST",
         )
@@ -98,13 +102,14 @@ class GitHubAppClient:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
                 return body.get("token")
-        except Exception:
+        except Exception as e:
+            _logger.warning("Failed to get installation access token for %s: %s", installation_id, e)
             return None
 
     def _headers(self) -> dict[str, str]:
         headers = {
             "Accept": "application/vnd.github+json",
-            "User-Agent": "Koyote-Autonomous-Maintenance/1.0",
+            "User-Agent": "Koyote-Autonomous-Maintenance/1.1.0",
         }
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"

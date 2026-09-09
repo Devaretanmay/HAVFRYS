@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import logging
 import os
 import re
 from typing import Any
@@ -11,6 +12,8 @@ from koyote.change_source import (
 )
 from koyote.intelligence import KoyoteIntelligence, resolve_migration
 from koyote.providers.registry import get_default_registry
+
+_logger = logging.getLogger("koyote.drift")
 
 
 def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[str, Any]]:
@@ -43,8 +46,8 @@ def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[s
             deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
             for dep_name, version in deps.items():
                 _add(dep_name, version, "package.json")
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.debug("Failed to parse %s: %s", "package.json", e, exc_info=True)
 
     req_path = os.path.join(repo_dir, "requirements.txt")
     if os.path.exists(req_path):
@@ -57,8 +60,8 @@ def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[s
                     name = line.split("==")[0].split(">=")[0].split("~=")[0].split("<")[0].strip().lower()
                     ver = line.split("==")[-1].strip() if "==" in line else "unknown"
                     _add(name, ver, "requirements.txt")
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.debug("Failed to parse %s: %s", "requirements.txt", e, exc_info=True)
 
     pyproj = os.path.join(repo_dir, "pyproject.toml")
     if os.path.exists(pyproj):
@@ -67,8 +70,11 @@ def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[s
                 txt = f.read()
             for m in re.finditer(r'["\']([a-zA-Z0-9_\-]+)["\']\s*=\s*["\']([^"\']+)["\']', txt):
                 _add(m.group(1).lower(), m.group(2), "pyproject.toml")
-        except Exception:
-            pass
+            for m in re.finditer(r'"([a-zA-Z0-9_\-\[\]]+)(?:[><=~!]+[^"]*)?"', txt):
+                name = m.group(1).split("[")[0].lower()
+                _add(name, "declared", "pyproject.toml")
+        except Exception as e:
+            _logger.debug("Failed to parse %s: %s", "pyproject.toml", e, exc_info=True)
 
     cargo = os.path.join(repo_dir, "Cargo.toml")
     if os.path.exists(cargo):
@@ -77,8 +83,10 @@ def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[s
                 txt = f.read()
             for m in re.finditer(r'^([a-zA-Z0-9_\-]+)\s*=\s*["\']([^"\']+)["\']', txt, re.MULTILINE):
                 _add(m.group(1), m.group(2), "Cargo.toml")
-        except Exception:
-            pass
+            for m in re.finditer(r'^([a-zA-Z0-9_\-]+)\s*=\s*\{[^}]*version\s*=\s*["\']([^"\']+)["\']', txt, re.MULTILINE):
+                _add(m.group(1), m.group(2), "Cargo.toml")
+        except Exception as e:
+            _logger.debug("Failed to parse %s: %s", "Cargo.toml", e, exc_info=True)
 
     for lockfile in ("package-lock.json", "yarn.lock", "pnpm-lock.yaml"):
         lp = os.path.join(repo_dir, lockfile)
@@ -91,8 +99,8 @@ def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[s
                     if registry.get(name):
                         _add(name, "locked", lockfile)
                         break
-            except Exception:
-                pass
+            except Exception as e:
+                _logger.debug("Failed to parse %s: %s", lockfile, e, exc_info=True)
 
     gomod = os.path.join(repo_dir, "go.mod")
     if os.path.exists(gomod):
@@ -105,8 +113,8 @@ def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[s
                     parts = line.split()
                     if len(parts) >= 2:
                         _add(parts[0].lower(), parts[1], "go.mod")
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.debug("Failed to parse %s: %s", "go.mod", e, exc_info=True)
 
     gemfile = os.path.join(repo_dir, "Gemfile")
     if os.path.exists(gemfile):
@@ -115,8 +123,8 @@ def detect_drift(repo_dir: str, provider_name: str | None = None) -> list[dict[s
                 txt = f.read()
             for m in re.finditer(r"gem\s+['\"]([^'\"]+)['\"]\s*(,\s*['\"]([^'\"]+)['\"])?", txt):
                 _add(m.group(1).lower(), m.group(3) or "unknown", "Gemfile")
-        except Exception:
-            pass
+        except Exception as e:
+            _logger.debug("Failed to parse %s: %s", "Gemfile", e, exc_info=True)
 
     seen = set()
     uniq = []

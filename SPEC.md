@@ -15,7 +15,7 @@ scope an incident to "everything that one run touched."
 This spec fixes that with something git already understands: commit trailers.
 
 No new tools are required to read these trailers. `git log`, GitHub, GitLab,
-and every code host render them today. Any tool - Sheepdog, your CI, someone
+and every code host render them today. Any tool - Koyote, your CI, someone
 else's agent harness - can write them. That's the point.
 
 ## Design rules

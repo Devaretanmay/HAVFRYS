@@ -52,7 +52,7 @@ When a pull request opens against a monitored repository, Koyote:
 
 1. **Checks out the exact PR head** (falls back to the tracked branch with a disclosed marker if the fetch fails).
 2. **Scans for contract impact** — dependency drift mapped to callsites, zero model calls.
-3. **Reasons and repairs** (Work) or **assesses and files an Issue** (Consult).
+3. **Reasons and repairs** (Work) or **assesses impact** (Consult: posts an advisory comment on the PR thread for PR-triggered events, and files a GitHub Issue on watch/scheduled drift events).
 4. **Verifies** — real test command, real exit code, zero unintended files, or no merge-ready claim.
 5. **Posts** the summary comment: header, findings with P0/P1 badges, change diagram, evidence, footer.
 
