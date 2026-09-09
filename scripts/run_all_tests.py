@@ -115,7 +115,10 @@ def main():
         print("Rust test suite passed:", summary[-1] if summary else "OK")
 
     print("\n=== 3. RUNNING PYTHON TEST SUITE ===")
-    env = dict(os.environ, PYTHONPATH=os.path.abspath("python"))
+    env = dict(os.environ)
+    has_local_core = os.path.exists("python/koyote") and any(f.startswith("_core") for f in os.listdir("python/koyote"))
+    if has_local_core:
+        env["PYTHONPATH"] = os.path.abspath("python")
     res_py = subprocess.run(["pytest", "tests/", "-q"], capture_output=True, text=True, env=env)
     if res_py.returncode != 0:
         print("Pytest failed!")
