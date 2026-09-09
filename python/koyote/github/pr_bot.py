@@ -20,18 +20,16 @@ import os
 import subprocess
 from typing import Any, Callable, Dict
 
-from koyote.ai_planner import AIPatchPlanner, build_reasoning_context
-from koyote.credentials import has_valid_credentials
+from koyote.ai_planner import AIPatchPlanner as AIPatchPlanner
 from koyote.github.client import GitHubAppClient
-from koyote.github.pr_render import render_consult_issue
-from koyote.intelligence import KoyoteIntelligence, resolve_migration
 from koyote.pipeline import (
     MaintenancePipeline,
     PipelinePolicy,
     TriggerContext,
-    analyze_trigger_context,
 )
 from koyote.audit import run_audit
+from koyote.github.howl_bot import HowlBot
+from koyote.github.hunt_bot import HuntBot
 from koyote.github.installations import (
     REPO_INDEXED, REPO_PENDING, REPO_READY, record_installation_event, set_repo_state,
 )
@@ -366,7 +364,10 @@ def handle_issue_comment_event(
 
     issue = payload.get("issue", {}) or {}
     number = issue.get("number")
-    if not repo or not number or not body or "@koyote" not in body.lower():
+    body_lower = body.lower()
+    if not repo or not number or not body:
+        return {"success": True, "event": event_type, "handled": False}
+    if not any(trigger in body_lower for trigger in ("@koyote", "@howl", "@hunt")):
         return {"success": True, "event": event_type, "handled": False}
     if sender == "bot" or not issue.get("pull_request"):
         return {"success": True, "event": event_type, "handled": False,
@@ -390,52 +391,27 @@ def handle_issue_comment_event(
         "repository": {"full_name": repo},
     }
 
-    if "@koyote explain" in body.lower():
-        if not has_valid_credentials():
-            return {"success": False, "error": "explain needs AI reasoning: no provider configured"}
-        files = [f.get("filename", "") for f in client.get_pull_request_files(repo, number)
-                 if f.get("filename")]
-        ctx = TriggerContext.from_pull_request_event(
-            payload_pr, workdir=workdir, changed_files=files)
-        analysis = analyze_trigger_context(ctx)
-        planner = AIPatchPlanner.from_env()
-        if planner is None:
-            return {"success": False, "error": "explain needs AI reasoning: no provider configured"}
-        intel = KoyoteIntelligence()
-        items = []
-        for finding in analysis.findings:
-            _from, _to, migration = resolve_migration(
-                finding.provider_name, finding.current_version, finding.target_version)
-            decision = intel.decide(ctx.workdir, finding.provider_name, _from, _to,
-                                    has_rewrites=bool(migration and migration.rewrites))
-            context = build_reasoning_context(
-                ctx.workdir, finding.provider_name, _from, _to,
-                finding.breaking_change, finding.migration_guide_url)
-            assessment = planner.assess(
-                repo_dir=ctx.workdir, provider_name=finding.provider_name,
-                from_version=_from, to_version=_to,
-                migration_details=finding.breaking_change,
-                changelog_url=finding.migration_guide_url,
-                affected_files=finding.affected_files, context=context)
-            items.append({
-                "display": finding.display_name,
-                "version_from": _from, "version_to": _to,
-                "breaking_change": finding.breaking_change,
-                "guide_url": finding.migration_guide_url,
-                "affected_files": finding.affected_files,
-                "assessment_body": assessment.get("body", ""),
-                "auto_repairable": decision.strategy in ("DIRECT", "AI"),
-                "confidence": assessment.get("confidence", "unknown"),
-            })
-        reply = render_consult_issue(items) if items else (
-            "Koyote checked this PR's external API touchpoints. "
-            "No contract impact to explain. No changes made.")
-        try:
-            client.post_pr_comment(repo, number, reply)
-        except Exception as e:
-            _logger.warning("failed to post explain reply: %s", e)
-        return {"success": True, "event_type": "issue_comment.explain",
-                "repository": repo, "pr_number": number, "comment_posted": True}
+    files = [f.get("filename", "") for f in client.get_pull_request_files(repo, number)
+             if f.get("filename")]
+    ctx = TriggerContext.from_pull_request_event(
+        payload_pr, workdir=workdir, changed_files=files)
+
+    # Route 1: Explicit Howl advisory trigger
+    if "@howl" in body_lower or "@koyote explain" in body_lower:
+        howl = HowlBot(client=client, policy=policy)
+        require_ai = "@koyote explain" in body_lower
+        res = howl.review_pull_request(ctx, require_ai=require_ai)
+        if not res.get("success"):
+            return res
+        return {"success": True, "event_type": "issue_comment.howl",
+                "repository": repo, "pr_number": number, "comment_posted": True, "result": res}
+
+    # Route 2: Explicit Hunt repair trigger
+    if "@hunt" in body_lower:
+        hunt = HuntBot(client=client, policy=policy)
+        res = hunt.execute_repair(ctx)
+        return {"success": True, "event_type": "issue_comment.hunt",
+                "repository": repo, "pr_number": number, "comment_posted": True, "result": res}
 
     pr_payload = dict(payload, **{"action": "synchronize", "pull_request": payload_pr["pull_request"]})
     return handle_pull_request_event(pr_payload, "pull_request.synchronize",

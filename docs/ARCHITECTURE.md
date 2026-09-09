@@ -11,45 +11,36 @@ change flows through detect → decide → verify → learn.
 ## 1. The loop
 
 ```text
-PUBLIC WORLD                          INTERNAL COMPANY SOFTWARE (future)
-Stripe / OpenAI / AWS / MCP / APIs    Service A → API → Service B → SDK → MCP → Service C
-│                                     │
-└──────────────┬──────────────────────┘
-               ▼
-      KOYOTE CHANGE RADAR (detect_changes: read-only, zero-token)
-               ▼
-      ┌────────────────────────┴────────────────────────┐
-      ↓                                                 ↓
+WEBHOOK EVENT (PR opened / synchronized / @howl / @hunt)
+│
+▼
+KOYOTE CHANGE RADAR (detect_changes: read-only, zero-token AST scan)
+▼
+┌────────────────────────┴────────────────────────┐
+↓                                                 ↓
 CODEBASE CONTEXT                              CHANGE CONTEXT
 graph · callsites · wrappers · tests       ChangeSource · migration · changelog
-      │                                                 │
-      └────────────────────────┬────────────────────────┘
-                               ▼
-                    AI REASONING (customer BYOK provider)
-                    impact · scope · minimal repair plan
-                               ▼
-              DETERMINISTIC TOOLS (internal optimization)
-              verified rewrites · KB patterns · SEARCH/REPLACE apply
-                               ▼
-              PATCH
-                               ▼
-      SANDBOX / REAL TESTS (fail closed — no suite means never merge-ready)
-                               ▼
-         GREEN → EVIDENCE (BLAKE3) → PR
-                               ▼
-      KNOWLEDGE CAPTURE (verified patterns only; failures quarantined separately)
+│                                                 │
+└────────────────────────┬────────────────────────┘
+                         ▼
+SEMANTIC KNOWLEDGE BASE (.koyote/knowledge/)
+Ground truth verified patterns fed to prompt to minimize token burn
+                         ▼
+AI REASONING & GENERATION (Customer BYOK Provider)
+The sole author of reviews, assessments, and code repairs
+┌────────────────────────┴────────────────────────┐
+↓                                                 ↓
+HOWL (ADVISOR BOT)                            HUNT (WORKER BOT)
+Read-only advisory review                     Surgical AI patch generation
+Explains risk & files Issue / comment         Kernel sandbox + real test suite
+Zero files touched                            Evidence (BLAKE3) & Trust PR
+```
 
-Insufficient confidence at any stage → loud refusal, zero files touched.
-The engine never asks the user to choose a strategy; `Decision`
-(DIRECT / AI / HYBRID / QUARANTINE) is internal cost accounting, not product.
+## 1b. The Two Distinct Bots: Howl vs Hunt
 
-## 1b. Authority modes: Consult vs Work
-
-One reasoning engine, two authorities. `Consult` runs the full pipeline through
-impact reasoning, then files a GitHub Issue and stops — the worktree is never
-touched. `Work` continues through repair, sandbox verification, and PR.
-`BotConfig.mode` sets the default; the CLI (`consult` vs `fix`) overrides per run.
-Adoption ladder: start in Consult, graduate to Work when the reasoning earns it.
+Instead of a monolithic reviewer, Koyote is split into two specialized bots:
+- **Howl (The Advisor)**: Always read-only. Reviews incoming PRs and upstream contract changes, assesses architectural risk, answers `@howl explain` queries, and files advisory GitHub Issues. Never commits code or opens PRs.
+- **Hunt (The Worker)**: The autonomous maintenance agent. Synthesizes surgical code repairs via the user's AI provider, tests inside the OS kernel sandbox (Linux Landlock / macOS Seatbelt), and delivers verified, merge-ready pull requests with BLAKE3 cryptographic receipts.
 
 ## 2. Core types
 

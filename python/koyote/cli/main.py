@@ -2644,9 +2644,27 @@ def main():
     maintain_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     maintain_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
 
-    consult_p = subparsers.add_parser("consult", help="Assess maintenance problems with AI reasoning, file a GitHub Issue, modify nothing")
+    howl_p = subparsers.add_parser("howl", help="Howl (Advisor bot): assess contract drift with AI reasoning, file Issue, modify nothing")
+    howl_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    howl_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for the Issue")
+
+    consult_p = subparsers.add_parser("consult", help="Alias for howl")
     consult_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
     consult_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for the Issue")
+
+    hunt_p = subparsers.add_parser("hunt", help="Hunt (Worker bot): autonomous AI repair loop, sandbox verification, and PR delivery")
+    hunt_p.add_argument("root_dir", nargs="?", default=".", help="Codebase directory (default: .)")
+    hunt_p.add_argument("--provider", default="auto", help="Target API provider (e.g. stripe, openai, anthropic, or auto)")
+    hunt_p.add_argument("--from", dest="from_version", default=None, help="Current dependency version")
+    hunt_p.add_argument("--to", dest="to_version", default=None, help="Target dependency version")
+    hunt_p.add_argument("--detect", action="store_true", help="Detect installed API providers in repository")
+    hunt_p.add_argument("--create-pr", action="store_true", help="Open GitHub Pull Request via API")
+    hunt_p.add_argument("--show-pr", action="store_true", help="Display the Trust PR body")
+    hunt_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for PR creation")
+    hunt_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+    hunt_p.add_argument("--model", default=None, help="BYOK LLM model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
+    hunt_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
+    hunt_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
 
     reviews_p = subparsers.add_parser("reviews", help="List past Koyote maintenance runs")
     reviews_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
@@ -2741,7 +2759,9 @@ def main():
         "fix": cmd_fix,
         "maintain": cmd_fix,
         "update": cmd_fix,
+        "hunt": cmd_fix,
         "consult": cmd_consult,
+        "howl": cmd_consult,
         "reviews": cmd_reviews,
         "onboard": cmd_onboard,
         "logout": cmd_logout,

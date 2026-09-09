@@ -40,9 +40,11 @@ PRs touching only `ignore_paths`, or carrying an `exclude_labels` label, are ski
 
 New installations start in `consult`: accurate Issues build trust in the reasoning before anyone grants repair authority. Flip one line to `work` when ready — the engine never changes.
 
-## 5. Bot identities
+## 5. Two Dedicated Bots: Howl & Hunt
 
-One engine, two voices. **Howl** hunts and warns — the watch loop and PR detection surfaces, and every Consult Issue, signed `— Howl, Consult bot`. **Hunt** repairs — every verified Trust PR is signed `— Hunt, Work bot`. The names mark authority, never intelligence: the reasoning behind both is identical.
+Koyote provides two distinct bot personalities, each with strict boundaries:
+- **Howl (The Advisor Bot)**: Listens to PR webhook events and `@howl` / `@howl explain` mentions. Performs deep contract and code review using your AI provider, explains breaking risk in PR comments or GitHub Issues, and **never modifies files**. Signed `— Howl, Advisory Bot`.
+- **Hunt (The Worker Bot)**: Listens to PR webhook events (when `mode: work`) or `@hunt` / `@hunt fix` comments. Synthesizes surgical AI repairs, runs test suites inside the kernel sandbox, enforces zero blast-radius, and delivers verified merge-ready PRs with BLAKE3 cryptographic receipts. Signed `— Hunt, Worker Bot`.
 
 ## 6. Anatomy of a review
 

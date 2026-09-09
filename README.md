@@ -38,26 +38,32 @@ Dependabot bumps version strings in lockfiles and leaves CI broken. Human engine
 ## The Core Loop
 
 ```text
-Install GitHub App → Select repo → Connect AI → Automatic index → READY
+Install GitHub App → Connect AI Provider → Zero-Token Index → READY
         ↓
-Check / background detection (free, zero-token, no AI key needed)
+PR Webhook Event (pull_request.opened / synchronized / @howl / @hunt)
         ↓
-AI reasons over codebase + change + maintenance memory; deterministic tools execute
+Zero-token AST Scan + Semantic Memory (.koyote/knowledge/)
         ↓
-Sandbox + real tests → Evidence → GitHub PR → Knowledge capture (next run is cheaper)
+AI Reasons & Generates (Sole author; customer's BYOK provider)
+        ↓
+┌─────────────────────────────────┬─────────────────────────────────┐
+│ Howl (Advisor Bot)              │ Hunt (Worker Bot)               │
+│ Explains drift & architectural  │ Synthesizes surgical patch      │
+│ risk. Zero code touched.        │ Kernel sandbox + real tests     │
+│ Posts PR reviews & Issues.      │ Delivers verified Trust PR      │
+└─────────────────────────────────┴─────────────────────────────────┘
 ```
 
 ```bash
-koyote auth              # BYOK provider — needed only for AI repair
+koyote auth              # Connect BYOK AI provider (Anthropic, OpenAI, Ollama)
 koyote doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
 koyote index .           # Zero-token static index
 koyote check .           # Read-only drift & impact audit
-koyote consult .         # AI assessment as a GitHub Issue, modifies nothing
-koyote fix .             # Repair, verify, report (refuses loudly when unsafe)
+koyote howl .            # Howl (Advisor): AI assessment as a GitHub Issue, modifies nothing
+koyote hunt .            # Hunt (Worker): AI repair, sandbox verification, and PR delivery
 ```
 
-Start in Consult to build trust in the reasoning, enable Work when ready —
-one engine, two voices: **Howl** warns, **Hunt** repairs.
+Two distinct bots for your team: **Howl** advises and warns, **Hunt** repairs.
 See [GitHub App behavior](docs/GITHUB_APP.md).
 
 ## The Core Pipeline
