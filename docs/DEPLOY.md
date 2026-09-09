@@ -55,3 +55,14 @@ koyote app serve --port 8080 --watch 300
   logs, or knowledge (covered by `tests/test_credential_scoping.py`).
 - Plaintext local credential files are operational storage, not enterprise
   encryption — say so in customer docs.
+
+## 7. Secrets policy
+
+- **Local CLI:** `~/.koyote/credentials.json` (0600) plus per-installation
+  scoped files. Operational convenience, explicitly not enterprise-grade.
+- **Hosted daemon:** environment-injected secrets only (`KOYOTE_WEBHOOK_SECRET`,
+  `GITHUB_TOKEN`/App credentials, provider keys). The resolver already checks
+  env first, files second — deploy with env and no credential files exist.
+- **Never:** secrets in Git, logs, knowledge entries, PR bodies, or evidence
+  bundles. A failing test (`test_credential_scoping.py`) guards the repo-state
+  half of this; treat any violation as a release blocker.
