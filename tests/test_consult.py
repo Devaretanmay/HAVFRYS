@@ -105,13 +105,13 @@ def test_consult_opens_issue_without_modifying(tmp_path, monkeypatch):
     _seed_repo(dst)
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-testkey1234567890")
+    monkeypatch.setenv("GITHUB_TOKEN", "tok")
     monkeypatch.setattr(cli_main.AIPatchPlanner, "from_env",
                         classmethod(lambda cls, **k: AIPatchPlanner(client=_mock_assess_client())))
     opened = {}
     monkeypatch.setattr(cli_main.GitHubAppClient, "create_issue",
                         lambda self, repo, title, body, labels=None: opened.update(
                             repo=repo, title=title, body=body) or {"html_url": "https://x/1"})
-    monkeypatch.setattr(cli_main.GitHubAppClient, "token", "tok", raising=False)
     args = MagicMock()
     args.path = dst
     args.repo = "acme/backend"
