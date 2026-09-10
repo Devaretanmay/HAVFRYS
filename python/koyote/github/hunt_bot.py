@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Hunt Bot: The Autonomous Worker & Repair Bot for Koyote.
 
 Hunt detects breaking drift, generates AI patches using the user's configured

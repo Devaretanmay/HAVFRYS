@@ -30,7 +30,6 @@ pub struct ProviderNode {
     pub migration_guide_url: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionNode {
     pub id: String,
     pub provider_id: String,
@@ -40,7 +39,6 @@ pub struct VersionNode {
     pub is_deprecated: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContractNode {
     pub id: String,
     pub provider_id: String,
@@ -53,7 +51,6 @@ pub struct ContractNode {
     pub change_description: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ManifestDepNode {
     pub id: String,
     pub manifest_path: String,
@@ -63,7 +60,6 @@ pub struct ManifestDepNode {
     pub package_manager: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WrapperNode {
     pub id: String,
     pub file_path: String,
@@ -71,7 +67,6 @@ pub struct WrapperNode {
     pub wraps_package: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CallsiteNode {
     pub id: String,
     pub file_path: String,
@@ -83,7 +78,6 @@ pub struct CallsiteNode {
     pub target_contract_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MigrationNode {
     pub id: String,
     pub provider_name: String,
@@ -94,7 +88,6 @@ pub struct MigrationNode {
     pub is_merge_ready: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ExternalDependencyGraph {
     pub providers: Vec<ProviderNode>,
     pub versions: Vec<VersionNode>,
@@ -106,7 +99,6 @@ pub struct ExternalDependencyGraph {
     pub edges: Vec<GraphEdge>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AtRiskItem {
     pub provider_name: String,
     pub package_name: String,
@@ -119,7 +111,6 @@ pub struct AtRiskItem {
     pub migration_guide_url: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WatchlistItem {
     pub provider_name: String,
     pub method_pattern: String,
@@ -129,7 +120,6 @@ pub struct WatchlistItem {
     pub documentation_url: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthyItem {
     pub provider_name: String,
     pub package_name: String,
@@ -138,7 +128,6 @@ pub struct HealthyItem {
     pub status_message: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DependencyAuditSummary {
     pub total_providers_detected: usize,
     pub total_callsites_mapped: usize,

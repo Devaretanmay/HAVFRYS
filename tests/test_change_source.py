@@ -1,12 +1,11 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """ChangeSource abstraction: kinds constructible, provider adapter round-trips."""
 
 import pytest
 
 from koyote.change_source import (
     ChangeSource, Detection, KINDS,
-    NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE,
+    NO_IMPACT, IMPACT_AI, IMPACT_QUARANTINE,
 )
 
 
@@ -36,7 +35,7 @@ def test_contract_hash_key_for_versionless_sources():
 
 def test_detection_outcomes_validated():
     s = ChangeSource.sdk("stripe")
-    for outcome in (NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE):
+    for outcome in (NO_IMPACT, IMPACT_AI, IMPACT_QUARANTINE):
         d = Detection(source=s, outcome=outcome)
         assert d.outcome == outcome
     with pytest.raises(ValueError):

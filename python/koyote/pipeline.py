@@ -50,12 +50,12 @@ from koyote.test_runner import (
     _detect_test_command,
     _run_tests,
     _compute_lockfile_hash,
-    _blake3_digest,
 )
+from blake3 import blake3
 from koyote.intelligence import KoyoteIntelligence, resolve_migration
 from koyote.knowledge import upsert_learned as kb_upsert
 from koyote.ai_planner import AIPatchPlanner, build_reasoning_context
-from koyote.maintenance_agents import ImpactAnalyst
+from koyote.maintenance_agents import analyze_impact
 from koyote.sandbox.snapshot import SnapshotManager
 
 _logger = logging.getLogger("koyote.pipeline")
@@ -686,7 +686,7 @@ def apply_fixes(
             if planner is None:
                 _logger.info("pipeline.quarantine provider=%s reason=no_credentials_for_ai", finding.provider_name)
                 continue
-            impact = ImpactAnalyst().analyze_impact(ctx.workdir, finding.provider_name)
+            impact = analyze_impact(ctx.workdir, finding.provider_name)
             target_files = impact.affected_files or finding.affected_files
             if not target_files:
                 continue
@@ -794,7 +794,7 @@ def generate_evidence(
 
     unified_diff = "\n".join(analysis.unified_diffs)
     lockfile_hash = _compute_lockfile_hash(ctx.workdir)
-    patch_hash = _blake3_digest(unified_diff.encode("utf-8"))
+    patch_hash = blake3(unified_diff.encode("utf-8")).hexdigest()
 
     if analysis.patched_callsites:
         impacted = analysis.patched_callsites

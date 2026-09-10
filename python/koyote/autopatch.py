@@ -15,10 +15,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-try:
-    from koyote import _core
-except ImportError:
-    _core = None
+from koyote import _core
 
 
 @dataclass
@@ -106,10 +103,10 @@ def run_inventory(repo_root: str = ".") -> dict[str, Any]:
     return {"repo_root": repo_root, "dependencies": [], "total_callsites": 0}
 
 
-def apply_patch(repo_root: str, plan: dict[str, Any], dry_run: bool = True) -> list[dict[str, Any]]:
-    """Apply surgical AST patches for plan targets."""
+def apply_patch(repo_root: str, plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Evaluate surgical AST patches for plan targets. Evaluate-only, never writes."""
     if _core is not None:
-        return json.loads(_core.patch_apply(repo_root, json.dumps(plan), dry_run))
+        return json.loads(_core.patch_apply(repo_root, json.dumps(plan), True))
     return []
 
 

@@ -206,7 +206,6 @@ pub fn parse_yarn_lock(content: &str, dep_name: &str) -> Result<String, String> 
     ))
 }
 
-/// Parse resolved version from package-lock.json.
 pub fn parse_package_lock_json(content: &str, dep_name: &str) -> Result<String, String> {
     let json: serde_json::Value = serde_json::from_str(content)
         .map_err(|e| format!("Failed to parse package-lock.json: {}", e))?;
@@ -234,7 +233,6 @@ pub fn parse_package_lock_json(content: &str, dep_name: &str) -> Result<String, 
     ))
 }
 
-/// Parse resolved version from Cargo.lock.
 pub fn parse_cargo_lock(content: &str, dep_name: &str) -> Result<String, String> {
     let mut in_target_pkg = false;
     for line in content.lines() {
@@ -261,7 +259,6 @@ pub fn parse_cargo_lock(content: &str, dep_name: &str) -> Result<String, String>
     ))
 }
 
-/// Resolve exact dependency details from a repository working directory.
 pub fn resolve_dependency(
     repo_dir: &Path,
     dep_name: &str,
@@ -330,11 +327,9 @@ pub fn resolve_dependency(
     })
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
     fn test_parse_package_json_manifest() {
         let pkg = r#"{
             "name": "taxonomy",
@@ -350,7 +345,6 @@ mod tests {
         assert!(parse_package_json_manifest(pkg, "openai").is_err());
     }
 
-    #[test]
     fn test_parse_pnpm_lock() {
         let pnpm_lock = r#"
 lockfileVersion: 5.4
@@ -365,7 +359,6 @@ packages:
         assert_eq!(parse_pnpm_lock(pnpm_lock, "stripe").unwrap(), "11.18.0");
     }
 
-    #[test]
     fn test_parse_yarn_lock() {
         let yarn_lock = r#"
 "stripe@^11.18.0":
@@ -376,7 +369,6 @@ packages:
         assert_eq!(parse_yarn_lock(yarn_lock, "stripe").unwrap(), "11.18.0");
     }
 
-    #[test]
     fn test_parse_package_lock_json() {
         let npm_lock = r#"{
             "name": "app",
@@ -392,7 +384,6 @@ packages:
         assert_eq!(parse_package_lock_json(npm_lock, "stripe").unwrap(), "11.18.0");
     }
 
-    #[test]
     fn test_parse_cargo_lock() {
         let cargo_lock = r#"
 version = 3

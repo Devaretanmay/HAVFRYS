@@ -28,7 +28,6 @@ impl Schema {
     }
 }
 
-#[derive(Debug, Clone)]
 pub enum CellValue {
     Scalar(Value),
     Nested(Box<Compaction>),
@@ -40,7 +39,6 @@ pub enum CellValue {
     Missing,
 }
 
-#[derive(Debug, Clone)]
 pub struct Row(pub Vec<CellValue>);
 
 impl Row {
@@ -48,25 +46,21 @@ impl Row {
         Self(cells)
     }
 
-    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct Bucket {
     pub key: Value,
     pub schema: Schema,
     pub rows: Vec<Row>,
 }
 
-#[derive(Debug, Clone)]
 pub enum Compaction {
     Table {
         schema: Schema,
@@ -78,7 +72,6 @@ pub enum Compaction {
         buckets: Vec<Bucket>,
         original_count: usize,
     },
-    #[allow(dead_code)]
     OpaqueRef {
         ccr_hash: String,
         byte_size: usize,
@@ -95,7 +88,6 @@ impl Compaction {
         )
     }
 
-    #[allow(dead_code)]
     pub fn kept_row_count(&self) -> usize {
         match self {
             Compaction::Table { rows, .. } => rows.len(),
@@ -104,7 +96,6 @@ impl Compaction {
         }
     }
 
-    #[allow(dead_code)]
     pub fn original_row_count(&self) -> usize {
         match self {
             Compaction::Table { original_count, .. } => *original_count,
@@ -114,12 +105,10 @@ impl Compaction {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
 
-    #[test]
     fn schema_field_names_returns_in_order() {
         let s = Schema {
             fields: vec![
@@ -138,7 +127,6 @@ mod tests {
         assert_eq!(s.field_names(), vec!["id", "name"]);
     }
 
-    #[test]
     fn untouched_is_not_compacted() {
         let c = Compaction::Untouched(json!([1, 2, 3]));
         assert!(!c.was_compacted());
@@ -146,7 +134,6 @@ mod tests {
         assert_eq!(c.original_row_count(), 0);
     }
 
-    #[test]
     fn table_row_counts() {
         let c = Compaction::Table {
             schema: Schema { fields: vec![] },
@@ -158,7 +145,6 @@ mod tests {
         assert_eq!(c.original_row_count(), 5);
     }
 
-    #[test]
     fn buckets_aggregate_row_counts() {
         let c = Compaction::Buckets {
             discriminator: "type".into(),
@@ -180,7 +166,6 @@ mod tests {
         assert_eq!(c.original_row_count(), 10);
     }
 
-    #[test]
     fn cell_missing_distinct_from_scalar_null() {
         let m = CellValue::Missing;
         let n = CellValue::Scalar(Value::Null);

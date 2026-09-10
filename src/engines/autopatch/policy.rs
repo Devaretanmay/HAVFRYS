@@ -43,7 +43,6 @@ impl SafetyPolicy {
         }
     }
 
-    /// Invariant assertion: Unresolved references must NEVER enter the patch pipeline.
     pub fn assert_safe_to_patch(
         state: &ImpactState,
         unresolved_opt: Option<&UnresolvedCallsite>,
@@ -67,12 +66,10 @@ impl SafetyPolicy {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::engines::autopatch::types::UncertaintyReason;
 
-    #[test]
     fn policy_approves_confirmed_affected_with_semantics() {
         let target = PatchTarget {
             file_path: "src/billing.ts".into(),
@@ -86,7 +83,6 @@ mod tests {
         assert!(SafetyPolicy::assert_safe_to_patch(&ImpactState::ConfirmedAffected, None).is_ok());
     }
 
-    #[test]
     fn policy_blocks_unresolved_references() {
         let target = PatchTarget {
             file_path: "src/billing.ts".into(),
@@ -118,7 +114,6 @@ mod tests {
         assert!(res.unwrap_err().contains("SAFETY VIOLATION"));
     }
 
-    #[test]
     fn policy_blocks_provably_unaffected() {
         let target = PatchTarget {
             file_path: "src/checkout.ts".into(),

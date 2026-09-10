@@ -1,8 +1,7 @@
-from koyote.maintenance_agents import ImpactAnalyst
+from koyote.maintenance_agents import analyze_impact
 
 
 def test_impact_analyst_dummy(tmp_path):
-    analyst = ImpactAnalyst()
-    res = analyst.analyze_impact(str(tmp_path), "stripe")
+    res = analyze_impact(str(tmp_path), "stripe")
     assert res.provider == "stripe"
     assert isinstance(res.affected_files, list)

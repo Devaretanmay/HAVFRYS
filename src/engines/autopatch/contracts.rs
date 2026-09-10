@@ -31,7 +31,6 @@ pub enum AssertionType {
 }
 
 /// A complete contract test suite generated from verification specs.
-#[derive(Debug, Clone)]
 pub struct ContractTestSuite {
     pub api_name: String,
     pub old_version: String,
@@ -48,7 +47,6 @@ impl ContractTestSuite {
         self.tests.iter().map(|t| t.assertions.len()).sum()
     }
 
-    /// Render the test suite as executable TypeScript test code.
     pub fn render_typescript(&self) -> String {
         let mut out = String::new();
         out.push_str(&format!(
@@ -105,7 +103,6 @@ impl ContractTestSuite {
         out
     }
 
-    /// Render the test suite as executable Python test code.
     pub fn render_python(&self) -> String {
         let mut out = String::new();
         out.push_str(&format!(
@@ -169,7 +166,6 @@ impl ContractTestSuite {
     }
 }
 
-/// Synthesize a contract test suite from a set of verification specs.
 pub fn synthesize_contract_tests(
     api_name: &str,
     old_version: &str,
@@ -182,7 +178,6 @@ pub fn synthesize_contract_tests(
         let mut assertions = Vec::new();
 
         for field_path in &spec.fields_to_verify {
-            // Determine what kind of assertion based on the field path prefix.
             if field_path.starts_with("parameters.") {
                 let param_name = field_path
                     .strip_prefix("parameters.")
@@ -274,7 +269,6 @@ fn python_type(json_type: &str) -> &str {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -291,7 +285,6 @@ mod tests {
         }]
     }
 
-    #[test]
     fn contracts_synthesize_produces_tests() {
         let suite =
             synthesize_contract_tests("Payments", "2024-06-01", "2026-02-15", &sample_specs());
@@ -299,7 +292,6 @@ mod tests {
         assert_eq!(suite.assertion_count(), 4);
     }
 
-    #[test]
     fn contracts_synthesize_classifies_param_assertions() {
         let suite =
             synthesize_contract_tests("Payments", "2024-06-01", "2026-02-15", &sample_specs());
@@ -312,7 +304,6 @@ mod tests {
         assert_eq!(param_assertions.len(), 2);
     }
 
-    #[test]
     fn contracts_synthesize_classifies_response_assertions() {
         let suite =
             synthesize_contract_tests("Payments", "2024-06-01", "2026-02-15", &sample_specs());
@@ -325,7 +316,6 @@ mod tests {
         assert_eq!(field_assertions.len(), 2);
     }
 
-    #[test]
     fn contracts_render_typescript_contains_describe() {
         let suite =
             synthesize_contract_tests("Payments", "2024-06-01", "2026-02-15", &sample_specs());
@@ -335,7 +325,6 @@ mod tests {
         assert!(ts.contains("import { describe, it, expect }"));
     }
 
-    #[test]
     fn contracts_render_python_contains_class() {
         let suite =
             synthesize_contract_tests("Payments", "2024-06-01", "2026-02-15", &sample_specs());
@@ -345,14 +334,12 @@ mod tests {
         assert!(py.contains("import pytest"));
     }
 
-    #[test]
     fn contracts_empty_specs_produces_empty_suite() {
         let suite = synthesize_contract_tests("API", "1", "2", &[]);
         assert_eq!(suite.test_count(), 0);
         assert_eq!(suite.assertion_count(), 0);
     }
 
-    #[test]
     fn contracts_render_typescript_empty_is_valid() {
         let suite = synthesize_contract_tests("API", "1", "2", &[]);
         let ts = suite.render_typescript();
@@ -360,7 +347,6 @@ mod tests {
         assert!(!ts.contains("describe("));
     }
 
-    #[test]
     fn contracts_render_python_empty_is_valid() {
         let suite = synthesize_contract_tests("API", "1", "2", &[]);
         let py = suite.render_python();

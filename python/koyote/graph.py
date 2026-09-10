@@ -1,15 +1,10 @@
-# Copyright 2026 Koyote Authors; SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
 import json
 from typing import Any
 
-try:
-    from koyote._core import dependency_graph_build, dependency_graph_audit
-except ImportError:
-    dependency_graph_build = None
-    dependency_graph_audit = None
+from koyote._core import dependency_graph_build, dependency_graph_audit
 
 
 def build_dependency_graph(repo_root: str = ".") -> dict[str, Any]:

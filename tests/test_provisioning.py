@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Provisioning: clone-on-install, pull-on-sighting, payload resolution. No network."""
 
 import os
@@ -32,7 +31,6 @@ def test_clone_and_cached_path(tmp_path, monkeypatch):
     dest = ensure_repo_checkout("acme/backend")
     assert dest == cached_path("acme/backend")
     assert os.path.isfile(os.path.join(dest, "package.json"))
-    # second sighting reuses cache
     assert ensure_repo_checkout("acme/backend") == dest
 
 

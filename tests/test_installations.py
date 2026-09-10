@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Installation persistence: record → index → READY survives restarts."""
 
 import os
@@ -22,7 +21,6 @@ def test_record_round_trips(tmp_path, monkeypatch):
     assert rec["installation_id"] == "42"
     loaded = load_installation("42")
     assert loaded["repos"]["acme/backend"]["state"] == REPO_PENDING
-    # restrictive permissions, no secrets inside
     mode = os.stat(tmp_path / "inst" / "42.json").st_mode & 0o777
     assert mode == 0o600
 

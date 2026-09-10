@@ -11,7 +11,6 @@ Ponytail: single purpose, tiny surface, explicit file format.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -21,14 +20,11 @@ from typing import Any, Dict, List
 
 from koyote.providers.registry import RewriteRule
 
-try:
-    import blake3
+import blake3
 
-    def _pattern_hash(pattern: str) -> str:
-        return blake3.blake3(pattern.encode("utf-8")).hexdigest()[:16]
-except ImportError:
-    def _pattern_hash(pattern: str) -> str:
-        return hashlib.blake2b(pattern.encode("utf-8"), digest_size=8).hexdigest()
+
+def _pattern_hash(pattern: str) -> str:
+    return blake3.blake3(pattern.encode("utf-8")).hexdigest()[:16]
 
 
 def _norm_version(v: str) -> str:

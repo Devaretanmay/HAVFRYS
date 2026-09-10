@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """GitHub push webhook ingestion: observation, never alert.
 
 Phase 1 only: normalize a push payload into a plain observation dict.

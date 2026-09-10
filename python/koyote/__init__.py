@@ -11,11 +11,8 @@ from . import maintenance_agents as maintenance_agents
 from . import pipeline as pipeline
 from . import github as github
 
-try:
-    from importlib.metadata import version as _package_version
-    __version__ = _package_version("koyote")
-except Exception:
-    __version__ = "unknown"
+from importlib.metadata import version as _package_version
+__version__ = _package_version("koyote")
 
 __all__ = [
     "Koyote",

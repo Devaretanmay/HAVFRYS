@@ -98,14 +98,14 @@ def test_ai_repair_completion_for_untouched_files(tmp_path, monkeypatch):
     with open(target, "w") as f:
         f.write("// stripe usage below\nconst v = 1;\n")
 
-    real_impact = mnt.ImpactAnalyst().analyze_impact(dst, "stripe")
+    real_impact = mnt.analyze_impact(dst, "stripe")
     assert "src/unusual.ts" not in real_impact.affected_files
 
     class _Impact:
         affected_files = list(real_impact.affected_files) + ["src/unusual.ts"]
 
-    monkeypatch.setattr(mnt.ImpactAnalyst, "analyze_impact",
-                        lambda self, r, p: _Impact())
+    monkeypatch.setattr(mnt, "analyze_impact",
+                        lambda r, p: _Impact())
     mock_client = MagicMock(spec=LLMClient)
     mock_client.complete.return_value = LLMResponse(
         content="<<<<<<< SEARCH\nconst v = 1;\n=======\nconst v = 2;\n>>>>>>> REPLACE",

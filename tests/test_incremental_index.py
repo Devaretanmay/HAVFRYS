@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Incremental indexing: fresh-skip, change detection, discovery deltas."""
 
 import os
@@ -48,7 +47,6 @@ def test_new_file_detected_and_manifests_flagged(tmp_path):
     assert info["fresh"] is False
     assert any("refunds.ts" in c for c in info["changed_files"])
     assert "package.json" in info["manifests_changed"]
-    # re-index refreshes state back to fresh
     run_audit(dst, output_format="json", write_graph=True)
     assert changed_since_index(dst)["fresh"] is True
 

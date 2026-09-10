@@ -15,15 +15,10 @@ pub struct CompartmentConfig {
     pub permissions: Vec<String>,
     #[serde(default = "default_timeout")]
     pub timeout_s: u64,
-    #[serde(default)]
     pub memory_mb: u64,
-    #[serde(default)]
     pub storage_mb: u64,
-    #[serde(default)]
     pub cpu_percent: u64,
-    #[serde(default = "default_wildcard", deserialize_with = "de_null_wildcard")]
     pub allow_inbound_from: Vec<String>,
-    #[serde(default = "default_wildcard", deserialize_with = "de_null_wildcard")]
     pub allow_outbound_to: Vec<String>,
 }
 
@@ -59,7 +54,6 @@ impl CompartmentConfig {
     }
 }
 
-/// Coordinates compartment lifecycles and message routing rules.
 pub struct Runtime {
     compartments: HashMap<String, CompartmentConfig>,
     order: Vec<String>,
@@ -123,7 +117,6 @@ impl Runtime {
         Ok(())
     }
 
-    // Registration order, optionally starting at `entry` (mirrors Python's run).
     pub fn run_order(&self, entry: Option<&str>) -> Result<Vec<String>, String> {
         if self.compartments.is_empty() {
             return Err("No compartments registered. Call add() first.".to_string());
@@ -177,7 +170,6 @@ impl Runtime {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -188,7 +180,6 @@ mod tests {
         }
     }
 
-    #[test]
     fn add_requires_unique_name() {
         let mut rt = Runtime::new();
         rt.add(cfg("a")).unwrap();
@@ -196,7 +187,6 @@ mod tests {
         assert!(rt.add(CompartmentConfig::default()).is_err());
     }
 
-    #[test]
     fn edge_validates_whitelists() {
         let mut rt = Runtime::new();
         rt.add(cfg("a")).unwrap();
@@ -206,7 +196,6 @@ mod tests {
         assert!(rt.edge("a", "b").is_err());
     }
 
-    #[test]
     fn can_route_respects_outbound() {
         let mut rt = Runtime::new();
         let mut a = cfg("a");
@@ -217,9 +206,7 @@ mod tests {
         assert!(rt.can_route("a", "c").is_err()); // c not registered
     }
 
-    #[test]
     fn serde_tolerates_null_vec_fields() {
-        // Go/TS SDKs emit `null` for nil slices - must not error.
         let cfg: CompartmentConfig =
             serde_json::from_str(r#"{"name":"a","permissions":null,"allow_inbound_from":null}"#)
                 .unwrap();

@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Watch loop: polls READY checkouts, fires pipeline only on new findings."""
 
 import os

@@ -14,33 +14,32 @@ class ImpactAnalysisResult:
     callsites: list[dict[str, Any]] = field(default_factory=list)
 
 
-class ImpactAnalyst:
-    def analyze_impact(self, repo_dir: str, provider_name: str) -> ImpactAnalysisResult:
-        """Identity match against wrapper metadata, callsite patterns, and file paths."""
-        source = ChangeSource.sdk(provider_name)
-        identity = (getattr(source, "identity", "") or "").lower()
-        provider_name = (getattr(source, "provider", "") or identity) or ""
-        graph = build_dependency_graph(repo_dir)
-        affected_files = set()
-        wrappers = []
-        matched_callsites = []
+def analyze_impact(repo_dir: str, provider_name: str) -> ImpactAnalysisResult:
+    """Identity match against wrapper metadata, callsite patterns, and file paths."""
+    source = ChangeSource.sdk(provider_name)
+    identity = (getattr(source, "identity", "") or "").lower()
+    provider_name = (getattr(source, "provider", "") or identity) or ""
+    graph = build_dependency_graph(repo_dir)
+    affected_files = set()
+    wrappers = []
+    matched_callsites = []
 
-        for w in graph.get("wrappers", []):
-            hay = f"{w.get('wrapper_file', '')} {w.get('wraps_provider', '')}".lower()
-            if identity and identity in hay:
-                wrappers.append(w.get("wrapper_file"))
-                affected_files.add(w.get("wrapper_file"))
+    for w in graph.get("wrappers", []):
+        hay = f"{w.get('wrapper_file', '')} {w.get('wraps_provider', '')}".lower()
+        if identity and identity in hay:
+            wrappers.append(w.get("wrapper_file"))
+            affected_files.add(w.get("wrapper_file"))
 
-        for c in graph.get("callsites", []):
-            hay = f"{c.get('function_name', '')} {c.get('matched_pattern', '')} {c.get('file_path', '')}".lower()
-            if identity and identity in hay:
-                matched_callsites.append(c)
-                affected_files.add(c.get("file_path"))
+    for c in graph.get("callsites", []):
+        hay = f"{c.get('function_name', '')} {c.get('matched_pattern', '')} {c.get('file_path', '')}".lower()
+        if identity and identity in hay:
+            matched_callsites.append(c)
+            affected_files.add(c.get("file_path"))
 
-        return ImpactAnalysisResult(
-            provider=provider_name,
-            affected_files=sorted(list(affected_files)),
-            callsites_count=len(matched_callsites),
-            wrapper_files=wrappers,
-            callsites=matched_callsites,
-        )
+    return ImpactAnalysisResult(
+        provider=provider_name,
+        affected_files=sorted(list(affected_files)),
+        callsites_count=len(matched_callsites),
+        wrapper_files=wrappers,
+        callsites=matched_callsites,
+    )

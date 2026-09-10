@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Phase 1: push is an observation, never an alert."""
 
 import time
@@ -42,7 +41,6 @@ def test_candidate_grouping_and_reeval(tmp_path, monkeypatch):
     c2 = work_graph.record_push(parse_push_payload(_push(after="bbb")))
     assert c2["candidate_id"] == c1["candidate_id"]
     assert len(c2["pushes"]) == 2
-    # stable/confirmed under active editing returns to POTENTIAL
     work_graph.set_candidate_status("acme/api-service", "feature/payments", work_graph.STABLE)
     c3 = work_graph.record_push(parse_push_payload(_push(after="ccc")))
     assert c3["status"] == work_graph.POTENTIAL

@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Credential scoping: env → scoped file → global file; secrets never leak to repo state."""
 
 import os

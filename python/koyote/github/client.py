@@ -12,10 +12,7 @@ from typing import Any, Dict, List
 import urllib.error
 import urllib.request
 
-try:
-    import jwt
-except ImportError:
-    jwt = None
+import jwt
 
 _logger = logging.getLogger("koyote.github.client")
 

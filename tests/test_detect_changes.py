@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 """Detection-vs-repair split: detect_changes classifies without patching."""
 
 import os

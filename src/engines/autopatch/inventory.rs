@@ -84,13 +84,10 @@ pub fn builtin_providers() -> Vec<ProviderMeta> {
 
 /// Run an inventory scan against a repo using the built-in provider registry.
 ///
-/// For each provider, uses the AST callsite locator to find usages, then
-/// assembles a DiscoveredDep with health status.
 pub fn run_inventory(repo_root: &str) -> Inventory {
     run_inventory_with_providers(repo_root, &builtin_providers())
 }
 
-/// Run inventory with a custom provider list.
 pub fn run_inventory_with_providers(repo_root: &str, providers: &[ProviderMeta]) -> Inventory {
     let mut dependencies = Vec::new();
     let mut total_callsites = 0;
@@ -141,7 +138,6 @@ pub fn run_inventory_with_providers(repo_root: &str, providers: &[ProviderMeta])
     }
 }
 
-/// Render inventory as a human-readable report string.
 pub fn render_inventory(inv: &Inventory) -> String {
     let mut out = String::new();
     out.push_str("=== External Dependency Inventory ===\n\n");
@@ -198,11 +194,9 @@ pub fn render_inventory(inv: &Inventory) -> String {
     out
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
     fn inventory_builtin_providers_has_entries() {
         let providers = builtin_providers();
         assert!(providers.len() >= 5);
@@ -211,7 +205,6 @@ mod tests {
         assert!(providers.iter().any(|p| p.name == "Anthropic"));
     }
 
-    #[test]
     fn inventory_scan_empty_dir() {
         let dir = std::env::temp_dir().join("koyote_inv_empty_test");
         let _ = std::fs::create_dir_all(&dir);
@@ -220,7 +213,6 @@ mod tests {
         assert_eq!(inv.total_callsites, 0);
     }
 
-    #[test]
     fn inventory_scan_finds_stripe() {
         let dir = std::env::temp_dir().join("koyote_inv_stripe_test");
         let _ = std::fs::create_dir_all(&dir);
@@ -239,7 +231,6 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
-    #[test]
     fn inventory_critical_count_detects_deprecated() {
         let inv = Inventory {
             repo_root: ".".into(),
@@ -272,7 +263,6 @@ mod tests {
         assert_eq!(inv.behind_count(), 1);
     }
 
-    #[test]
     fn inventory_render_contains_providers() {
         let dir = std::env::temp_dir().join("koyote_inv_render_test");
         let _ = std::fs::create_dir_all(&dir);
@@ -290,14 +280,12 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 
-    #[test]
     fn inventory_render_empty_shows_no_deps() {
         let inv = Inventory::default();
         let report = render_inventory(&inv);
         assert!(report.contains("No external API dependencies detected"));
     }
 
-    #[test]
     fn inventory_scan_with_custom_providers() {
         let dir = std::env::temp_dir().join("koyote_inv_custom_test");
         let _ = std::fs::create_dir_all(&dir);

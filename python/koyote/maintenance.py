@@ -13,7 +13,7 @@ from koyote.drift import detect_drift  # noqa: F401
 from koyote.formatters import run_style_formatter
 from koyote.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 from koyote.git_ops import git_commit_and_push, gh_create_pr
-from koyote.maintenance_agents import ImpactAnalyst
+from koyote.maintenance_agents import analyze_impact
 from koyote.patch_writer import (
     discover_aliases, instantiate_alias_rules, PatchResult,
 )
@@ -23,12 +23,12 @@ from koyote.sandbox.snapshot import SnapshotManager, _file_hash
 from koyote.intelligence import KoyoteIntelligence, resolve_migration
 from koyote.knowledge import direct_rewrites_for, record_failure, upsert_learned as kb_upsert
 from koyote.test_runner import (
-    _blake3_digest,
     _detect_test_command,
     _compute_lockfile_hash,
     _run_install,
     _run_tests,
 )
+from blake3 import blake3
 
 @dataclass
 class MaintenanceRunReport:
@@ -136,7 +136,7 @@ def run_maintenance_cycle(
                 "Run `koyote auth` or set GROQ_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY."
             )
         else:
-            impact = ImpactAnalyst().analyze_impact(repo_dir, provider_name)
+            impact = analyze_impact(repo_dir, provider_name)
             target_files = set(impact.affected_files)
             if not target_files:
                 for dirpath, dirnames, filenames in os.walk(repo_dir):
@@ -274,7 +274,7 @@ def run_maintenance_cycle(
 
     snapshotter.cleanup()
     lockfile_hash = _compute_lockfile_hash(repo_dir)
-    patch_hash = _blake3_digest(unified_diff.encode("utf-8"))
+    patch_hash = blake3(unified_diff.encode("utf-8")).hexdigest()
 
     all_rules = [desc for r in patch_results for desc in r.rules_applied]
     meta = TrustPRMetadata(

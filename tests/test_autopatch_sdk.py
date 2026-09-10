@@ -175,8 +175,9 @@ def test_workflow_validate_and_order():
 def test_apply_patch_sdk():
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = os.path.join(tmpdir, "billing.ts")
+        original = "import Stripe from 'stripe';\nconst c = stripe.charges.create({\n  amount: 2000,\n  currency: 'usd',\n});\n"
         with open(file_path, "w") as f:
-            f.write("import Stripe from 'stripe';\nconst c = stripe.charges.create({\n  amount: 2000,\n  currency: 'usd',\n});\n")
+            f.write(original)
 
         plan = {
             "status": "ActionRequired",
@@ -196,13 +197,13 @@ def test_apply_patch_sdk():
             "verification_specs": [],
         }
 
-        patches = autopatch.apply_patch(tmpdir, plan, dry_run=False)
+        patches = autopatch.apply_patch(tmpdir, plan)
         assert len(patches) == 1
         assert patches[0]["success"]
         assert "amount: String(2000)" in patches[0]["patched_content"]
         with open(file_path) as f:
             content = f.read()
-            assert "amount: String(2000)" in content
+            assert content == original
 
 
 def test_false_positive_regressions():

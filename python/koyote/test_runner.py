@@ -9,10 +9,6 @@ from blake3 import blake3
 _logger = logging.getLogger("koyote.test_runner")
 
 
-def _blake3_digest(data: bytes) -> str:
-    return blake3(data).hexdigest()
-
-
 def _detect_test_command(repo_dir: str) -> str:
     if os.path.exists(os.path.join(repo_dir, "test", "run.js")):
         return "node test/run.js"
@@ -51,10 +47,10 @@ def _compute_lockfile_hash(repo_dir: str) -> str:
         if os.path.isfile(fp):
             try:
                 with open(fp, "rb") as f:
-                    return _blake3_digest(f.read())
+                    return blake3(f.read()).hexdigest()
             except Exception as e:
                 _logger.warning("Failed to hash lockfile %s: %s", fp, e)
-    return _blake3_digest(repo_dir.encode("utf-8"))
+    return blake3(repo_dir.encode("utf-8")).hexdigest()
 
 
 def _run_install(repo_dir: str, timeout: int = 120) -> subprocess.CompletedProcess:

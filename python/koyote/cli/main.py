@@ -1875,70 +1875,6 @@ def cmd_inventory(args):
 
 
 
-def cmd_analyze(args):
-    """Analyze contract drift impact without making changes."""
-    with open(args.old, "r", encoding="utf-8") as f:
-        old_spec = f.read()
-    with open(args.new, "r", encoding="utf-8") as f:
-        new_spec = f.read()
-
-    cfg = autopatch.ScanConfig(
-        sdk_names=args.sdk.split(",") if args.sdk else [],
-        api_base_urls=args.url.split(",") if args.url else [],
-        method_patterns=args.method.split(",") if args.method else [],
-    )
-
-    plan = autopatch.generate_maintenance_plan(old_spec, new_spec, args.root_dir, cfg)
-
-    if getattr(args, "json", False):
-        print(json.dumps(plan, indent=2))
-        return
-
-    print(autopatch.render_trust_report(plan))
-
-
-def cmd_patch(args):
-    """Evaluate patch plan targets (dry-run only — AI must author all source changes)."""
-    with open(args.plan, "r", encoding="utf-8") as f:
-        plan = json.load(f)
-
-    results = autopatch.apply_patch(args.root_dir, plan, dry_run=True)
-
-    if getattr(args, "json", False):
-        print(json.dumps(results, indent=2))
-        return
-
-    print("[DRY-RUN] Deterministic source modification is disabled. AI must author all source changes.")
-    print(f"Evaluated {len(results)} patch targets across {len(set(r.get('file_path') for r in results))} files.")
-    for r in results:
-        status = "[OK]" if r.get("success") else "[FAIL]"
-        print(f"  {status} {r.get('file_path')}: {r.get('transforms_applied', 0)} transformations evaluated.")
-        if r.get("unified_diff"):
-            print("  --- Diff Preview (not applied) ---")
-            for line in r["unified_diff"].splitlines()[:10]:
-                print(f"    {line}")
-
-
-
-def cmd_verify(args):
-    """Run behavioral verification and contract validation on patched files."""
-    with open(args.plan, "r", encoding="utf-8") as f:
-        plan = json.load(f)
-
-    targets = plan.get("patch_targets", [])
-    print("================================================================================")
-    print("                    KOYOTE AUTOPATCH: BEHAVIORAL VERIFIER                      ")
-    print("================================================================================\n")
-    print(f"Target API:              {plan.get('api_name', 'Unknown')}")
-    print(f"Version Drift:           {plan.get('old_version')} -> {plan.get('new_version')}")
-    print(f"Verified Patch Targets:  {len(targets)}")
-    print("Blast-radius check:      PASS (Zero unintended files touched)")
-    print("Compilation / Typecheck: PASS")
-    print("Contract Preservation:   PASS")
-    print("Mergeable PR Status:     APPROVED [STATUS: MERGE_READY]\n")
-    print("================================================================================")
-
-
 def cmd_explain(args):
     """Explain why a callsite or pattern was classified."""
     fid = args.finding_id.lower()
@@ -2760,25 +2696,6 @@ def main():
 
 
 
-    analyze_p = subparsers.add_parser("analyze", help="Show dependency and contract impact analysis without modifying code")
-    analyze_p.add_argument("--old", required=True, help="Old OpenAPI JSON spec file path")
-    analyze_p.add_argument("--new", required=True, help="New OpenAPI JSON spec file path")
-    analyze_p.add_argument("--root-dir", default=".", help="Codebase directory to scan")
-    analyze_p.add_argument("--sdk", default=None, help="Comma-separated SDK package names")
-    analyze_p.add_argument("--method", default=None, help="Comma-separated method patterns")
-    analyze_p.add_argument("--url", default=None, help="Comma-separated base URLs")
-    analyze_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
-
-    patch_p = subparsers.add_parser("patch", help="Evaluate patch plan targets (dry-run only, AI must author changes)")
-    patch_p.add_argument("--plan", required=True, help="Maintenance plan JSON file")
-    patch_p.add_argument("--root-dir", default=".", help="Codebase directory")
-    patch_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
-
-    verify_p = subparsers.add_parser("verify", help="Run behavioral verification on patched files")
-    verify_p.add_argument("--plan", required=True, help="Maintenance plan JSON file")
-    verify_p.add_argument("--root-dir", default=".", help="Codebase directory")
-    verify_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
-
     explain_p = subparsers.add_parser("explain", help="Explain why Koyote classified a finding as affected, unaffected, or unresolved")
     explain_p.add_argument("finding_id", help="Finding or pattern identifier")
 
@@ -2961,9 +2878,6 @@ def main():
         "autopatch": cmd_autopatch,
         "workflow-order": cmd_workflow_order,
         "inventory": cmd_inventory,
-        "analyze": cmd_analyze,
-        "patch": cmd_patch,
-        "verify": cmd_verify,
         "explain": cmd_explain,
         "app": cmd_app,
         "check": cmd_check,

@@ -1,5 +1,4 @@
 # Copyright 2026 Koyote Authors
-# SPDX-License-Identifier: Apache-2.0
 
 from koyote.graph import build_dependency_graph, audit_dependency_graph
 from koyote.audit import render_audit_cli, render_audit_github_issue, run_audit

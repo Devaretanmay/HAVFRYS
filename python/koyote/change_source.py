@@ -25,7 +25,6 @@ KINDS = (
 )
 
 NO_IMPACT = "NO_IMPACT"
-IMPACT_DIRECT = "IMPACT_DIRECT"
 IMPACT_AI = "IMPACT_AI"
 IMPACT_QUARANTINE = "IMPACT_QUARANTINE"
 
@@ -83,6 +82,6 @@ class Detection:
     confidence: float = 0.0
 
     def __post_init__(self):
-        valid = (NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE)
+        valid = (NO_IMPACT, IMPACT_AI, IMPACT_QUARANTINE)
         if self.outcome not in valid:
             raise ValueError(f"Unknown detection outcome: {self.outcome!r}")

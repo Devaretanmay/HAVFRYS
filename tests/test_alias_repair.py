@@ -18,7 +18,6 @@ def test_instantiate_alias_rules_exact_identifier_only():
     out = instantiate_alias_rules(rules, {"s": "stripe"})
     assert len(out) == 1
     assert out[0].pattern == r"s\.subscriptions\.del\("
-    # Receiver preserved: rewriting `s.` must not introduce an undefined `stripe` reference.
     assert out[0].replacement == "s.subscriptions.cancel("
     assert "(alias s)" in out[0].description
 

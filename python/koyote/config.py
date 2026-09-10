@@ -12,11 +12,9 @@ import warnings
 from dataclasses import dataclass, field
 from typing import Any
 
-try:
-    import yaml
-    _YAML_AVAILABLE = True
-except ImportError:
-    _YAML_AVAILABLE = False
+import yaml
+
+_YAML_AVAILABLE = True
 
 
 @dataclass

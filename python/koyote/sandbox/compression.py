@@ -4,12 +4,9 @@ import json
 import logging
 from typing import Any
 
-_logger = logging.getLogger("koyote.compression")
+from koyote._core import route_and_compress as _compress
 
-try:
-    from koyote._core import route_and_compress as _compress
-except ImportError:
-    _compress = None
+_logger = logging.getLogger("koyote.compression")
 
 
 class OutputCompressor:

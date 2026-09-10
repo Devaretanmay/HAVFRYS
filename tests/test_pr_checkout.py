@@ -28,7 +28,6 @@ def _seed_repo_with_pr_ref(tmp_path):
     subprocess.run(["git", "-C", work, "commit", "-qam", "pr"], check=True)
     sha = subprocess.run(["git", "-C", work, "rev-parse", "HEAD"],
                          capture_output=True, text=True, check=True).stdout.strip()
-    # Simulate GitHub exposing refs/pull/N/head on the base repo.
     subprocess.run(["git", "-C", work, "push", "-q", "origin",
                     f"{sha}:refs/pull/42/head"], check=True)
     return remote, sha

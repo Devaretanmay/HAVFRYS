@@ -1,4 +1,3 @@
-#[derive(Debug, Clone)]
 pub struct TextCrusherConfig {
     pub target_ratio: f64,
     pub w_recency: f64,

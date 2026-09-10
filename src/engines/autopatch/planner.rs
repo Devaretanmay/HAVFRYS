@@ -409,7 +409,6 @@ mod tests {
         }
     }
 
-    #[test]
     fn autopatch_plan_from_diff_action_required() {
         let old = parse_spec(old_spec()).unwrap();
         let new = parse_spec(new_spec()).unwrap();
@@ -424,7 +423,6 @@ mod tests {
         assert!(!plan.impacted_endpoints.is_empty());
     }
 
-    #[test]
     fn autopatch_plan_generates_patch_targets() {
         let old = parse_spec(old_spec()).unwrap();
         let new = parse_spec(new_spec()).unwrap();
@@ -437,14 +435,12 @@ mod tests {
             !plan.patch_targets.is_empty(),
             "should generate patch targets"
         );
-        // Every patch target should have a non-empty reason.
         for pt in &plan.patch_targets {
             assert!(!pt.reason.is_empty());
             assert!(!pt.line_numbers.is_empty());
         }
     }
 
-    #[test]
     fn autopatch_plan_generates_verification_specs() {
         let old = parse_spec(old_spec()).unwrap();
         let new = parse_spec(new_spec()).unwrap();
@@ -462,7 +458,6 @@ mod tests {
         }
     }
 
-    #[test]
     fn autopatch_clean_when_no_breaking_changes() {
         let spec = parse_spec(old_spec()).unwrap();
         let diff = diff_specs(&spec, &spec);
@@ -473,7 +468,6 @@ mod tests {
         assert_eq!(plan.breaking_changes, 0);
     }
 
-    #[test]
     fn autopatch_no_impact_when_no_callsites() {
         let old = parse_spec(old_spec()).unwrap();
         let new = parse_spec(new_spec()).unwrap();
@@ -481,14 +475,12 @@ mod tests {
         let empty_scan = ScanResult::default();
 
         let plan = plan_from_diff_and_scan(&diff, &empty_scan);
-        // With breaking changes but no callsites, status should reflect the situation.
         assert!(
             plan.status == PlanStatus::NoImpact || plan.status == PlanStatus::ActionRequired,
             "status should be NoImpact or ActionRequired depending on fallback"
         );
     }
 
-    #[test]
     fn autopatch_plan_serializes_to_json() {
         let old = parse_spec(old_spec()).unwrap();
         let new = parse_spec(new_spec()).unwrap();
