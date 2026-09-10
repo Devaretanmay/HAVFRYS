@@ -27,6 +27,7 @@ from koyote.pipeline import (
     PipelinePolicy,
     TriggerContext,
 )
+from koyote.repo_identity import STATE_ACTIVE, set_bot_state
 from koyote.audit import run_audit
 from koyote.github.howl_bot import HowlBot
 from koyote.github.hunt_bot import HuntBot
@@ -398,9 +399,9 @@ def handle_issue_comment_event(
 
     # Route 1: Consult mode trigger (@howl, @consult, @koyote explain)
     if any(t in body_lower for t in ("@howl", "@consult", "@koyote explain")):
+        set_bot_state(repo, "howl", STATE_ACTIVE)
         howl = HowlBot(client=client, policy=policy)
-        require_ai = any(t in body_lower for t in ("@koyote explain", "@howl explain", "@consult"))
-        res = howl.explain_pull_request(ctx, require_ai=require_ai)
+        res = howl.explain_pull_request(ctx, require_ai=True)
         if not res.get("success"):
             return res
         return {"success": True, "event_type": "issue_comment.howl",
@@ -408,6 +409,7 @@ def handle_issue_comment_event(
 
     # Route 2: Work mode trigger (@hunt, @work)
     if any(t in body_lower for t in ("@hunt", "@work")):
+        set_bot_state(repo, "hunt", STATE_ACTIVE)
         hunt = HuntBot(client=client, policy=policy)
         res = hunt.execute_repair(ctx)
         return {"success": True, "event_type": "issue_comment.hunt",

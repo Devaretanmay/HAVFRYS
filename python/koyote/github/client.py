@@ -157,6 +157,19 @@ class GitHubAppClient:
                 "success": False,
             }
 
+    def list_repositories(self) -> list[dict[str, Any]]:
+        """List repositories accessible to the user or GitHub App installation."""
+        if self.app_id and self.private_key:
+            res = self._request("GET", "installation/repositories")
+            if isinstance(res, dict) and "repositories" in res:
+                return res["repositories"]
+        res = self._request("GET", "user/repos?per_page=100&sort=updated")
+        if isinstance(res, list):
+            return res
+        if isinstance(res, dict) and "repositories" in res:
+            return res["repositories"]
+        return []
+
     def get_repo(self, repo: str) -> dict[str, Any]:
         """Get repository details."""
         return self._request("GET", f"repos/{repo}")

@@ -242,20 +242,24 @@ class AIPatchPlanner:
                 migration_details, changelog_url)
 
         prompt = (
-            "Assess, do not modify. Answer in markdown:\n"
-            "1. What changed upstream and why it matters here.\n"
-            "2. Affected callsites (file:line), and which inherit a wrapper fix.\n"
-            "3. What must NOT be touched.\n"
-            "4. Recommended migration and its test impact.\n"
+            "Assess, do not modify. Answer in markdown addressing these exact questions:\n"
+            "1. What changed upstream and why it matters in this repository?\n"
+            "2. Which callsites are truly affected (file:line), and which inherit the fix via a wrapper?\n"
+            "3. Which apparently similar callsites are actually unaffected?\n"
+            "4. What must NOT be touched?\n"
+            "5. What evidence supports this affected-set determination?\n"
+            "6. What existing repository conventions and test commands constrain the solution?\n"
+            "7. Strict Rule: Never invent identifiers, APIs, or configuration. Reference only existing symbols.\n"
             'End with exactly one line: "Confidence: high|medium|low".'
         )
         messages = [{"role": "user", "content": prompt + "\n\n" + self._context_text(
             repo_dir, provider_name, from_version, to_version, context)}]
         try:
             resp = self.client.complete(messages=messages, system_prompt=(
-                "You are an autonomous software maintenance engineer. "
-                "Diagnose the impact of a dependency/contract change. "
-                "Never output code patches; explain only."))
+                "You are Howl, Koyote's autonomous software maintenance reasoning agent. "
+                "Diagnose the semantic impact of a dependency or contract change. "
+                "You have read authority only. Never output code patches; explain only. "
+                "Never hallucinate or invent nonexistent identifiers or APIs."))
         except Exception as exc:
             return {"body": "", "affected_files": affected_files or [],
                     "confidence": "unknown", "error": f"LLM call failed: {exc}"}
@@ -306,23 +310,24 @@ class AIPatchPlanner:
     ) -> PatchResult | None:
         context = context or {}
         system_prompt = (
-            "You are an autonomous software maintenance engineer. A system your "
-            "software depends on changed; determine what must change in this "
-            "repository and repair exactly that — nothing more.\n"
+            "You are Hunt, Koyote's autonomous software maintenance repair agent. "
+            "A system your software depends on changed; determine what must change "
+            "in this repository and repair exactly that — nothing more.\n"
             "Reason first about impact: which callsites are truly affected, which "
             "abstractions or wrappers must change first, which occurrences inherit "
-            "the fix, and which unrelated code must not be touched.\n"
-            "Then emit surgical code updates as search-and-replace blocks:\n"
+            "the fix, and which unrelated code must NOT be touched.\n"
+            "Strict Invariants:\n"
+            "1. Only modify lines directly affected by the change.\n"
+            "2. Preserve exact formatting, indentation, and unrelated logic.\n"
+            "3. NEVER invent identifiers, files, symbols, APIs, or configuration.\n"
+            "4. A nonexistent identifier is a reasoning failure.\n"
+            "Emit surgical updates as search-and-replace blocks:\n"
             "<<<<<<< SEARCH\n"
             "exact lines to replace\n"
             "=======\n"
             "replacement lines\n"
             ">>>>>>> REPLACE\n"
-            "Rules:\n"
-            "1. Only modify lines directly affected by the change.\n"
-            "2. Preserve exact formatting, indentation, and unrelated logic.\n"
-            "3. Never reference identifiers that do not exist in the file.\n"
-            "4. Do not include markdown commentary outside the blocks."
+            "Do not include markdown commentary outside the blocks."
         )
 
         if migration_details and migration_details != context.get("migration_details"):

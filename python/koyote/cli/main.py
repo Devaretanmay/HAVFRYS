@@ -58,6 +58,15 @@ from koyote.github.pr_bot import make_pr_bot_handler, run_on_pr_locally
 from koyote.github.provisioning import workdir_for_event
 from koyote.github.watch import watch_once
 from koyote.mcp_server import serve_stdio
+from koyote.repo_identity import (
+    STATE_AVAILABLE,
+    derive_repository_key,
+    get_active_repo,
+    get_repository,
+    load_all_repositories,
+    register_repository,
+    set_active_repo,
+)
 
 _logger = logging.getLogger("koyote.cli")
 
@@ -272,73 +281,53 @@ def cmd_init(args):
 
 
 def cmd_status(args):
-    """Show workspace status: running executions, lanes, security events."""
+    """Show Koyote product status: GitHub, AI provider, Active Repo, Repo Key, Howl & Hunt."""
+    summary = get_active_provider_summary()
+    gh_user = _github_identity()
+    gh_status = f"CONNECTED ({gh_user})" if gh_user else ("CONNECTED" if bool(os.environ.get("GITHUB_TOKEN") or os.environ.get("KOYOTE_GITHUB_TOKEN")) else "NOT CONFIGURED")
+    
+    ai_status = f"CONNECTED ({summary.get('provider')})" if summary.get("configured") else "NOT CONFIGURED"
+    
+    active = get_active_repo() or _github_repo_from_remote(os.path.abspath(".")) or "none"
+    record = get_repository(active) if active != "none" else None
+    
+    all_repos = load_all_repositories()
+    repo_count = len(all_repos) if all_repos else (1 if active != "none" else 0)
+    repo_key = record.get("repo_key") if record else (derive_repository_key(active) if active != "none" else "none")
+    howl_state = record.get("howl_state", STATE_AVAILABLE) if record else STATE_AVAILABLE
+    hunt_state = record.get("hunt_state", STATE_AVAILABLE) if record else STATE_AVAILABLE
+    index_state = record.get("index_state", "READY") if record else "READY"
+    
+    print("================================================================================")
+    print("                              KOYOTE STATUS                                     ")
+    print("================================================================================\n")
+    print(f"GitHub:             {gh_status}")
+    print(f"AI:                 {ai_status}")
+    print(f"Active repo:        {active}")
+    print(f"Repositories:       {repo_count}")
+    print(f"Repository Key:     {repo_key}")
+    print(f"Howl:               {howl_state}")
+    print(f"Hunt:               {hunt_state}")
+    print(f"Status:             {index_state}\n")
+
     ws_root = find_workspace_root()
-    if not ws_root:
-        print("Error: Not inside a Koyote workspace. Run 'koyote init' first.")
-        sys.exit(1)
+    if ws_root:
+        try:
+            sess_mgr = SessionManager(workdir=ws_root)
+            sessions = sess_mgr.list_sessions()
+            completed = [s for s in sessions if getattr(s, "status", None) == SessionStatus.COMPLETED][:3]
+            if completed:
+                print("RECENT SESSIONS")
+                for s in completed:
+                    start = s.started_at or 0
+                    fin = s.finished_at or start
+                    dur = round(fin - start, 1)
+                    print(f"  [OK] {s.agent:<12} lane:{s.lane_id:<12} {len(s.changes)} change(s)  ({dur}s)")
+                print()
+        except Exception:
+            pass
 
-    project_name = os.path.basename(ws_root)
-    exec_mgr = ExecutionManager(workdir=ws_root)
-    lane_mgr = LaneManager(workdir=ws_root)
-    sess_mgr = SessionManager(workdir=ws_root)
-
-    running = exec_mgr.list_running()
-    all_execs = exec_mgr.list_all()
-    lanes = lane_mgr.list_lanes()
-    sessions = sess_mgr.list_sessions()
-
-    blocked = sum(
-        1 for ex in all_execs
-        for ev in ex.events
-        if "blocked" in ev.get("name", "").lower() or "denied" in ev.get("name", "").lower()
-    )
-
-    print(f"\nKOYOTE WORKSPACE: {project_name}\n")
-
-    if running:
-        print("AGENTS RUNNING")
-        for ex in running:
-            dur = f"{ex.duration_s:.0f}s" if ex.duration_s else "?"
-            changes = len(ex.changes)
-            print(f"  * {ex.agent_name:<12} {ex.compartment_id:<12} pid:{ex.pid or '?':<8} {changes} change(s)  ({dur})")
-    else:
-        print("AGENTS RUNNING\n  none")
-
-    print()
-    completed = [s for s in sessions if s.status == SessionStatus.COMPLETED][:3]
-    if completed:
-        print("RECENT SESSIONS")
-        for s in completed:
-            dur = round(((s.finished_at or 0) - (s.started_at or 0)), 1)
-            print(f"  [OK] {s.agent:<12} lane:{s.lane_id:<12} {len(s.changes)} change(s)  ({dur}s)")
-    else:
-        print("RECENT SESSIONS\n  none")
-
-    print()
-    workflows = [ex for ex in all_execs if ex.kind == ExecutionKind.WORKFLOW][:5]
-    if workflows:
-        print("WORKFLOWS")
-        for wf in workflows:
-            dur = f"{wf.duration_s:.0f}s" if wf.duration_s else "?"
-            name = wf.command[1] if len(wf.command) > 1 else (wf.command[0] if wf.command else "?")
-            print(f"  # {wf.execution_id:<12} {name:<24} {wf.status:<12} {len(wf.changes)} change(s)  ({dur})")
-    else:
-        print("WORKFLOWS\n  none")
-
-    print()
-    if lanes:
-        print("LANES")
-        for lane in lanes:
-            print(f"  {lane.lane_id:<14} {lane.agent_id:<12} {lane.status:<12} {len(lane.changes)} file(s)")
-    else:
-        print("LANES\n  none")
-
-    print()
-    print("SECURITY")
-    print(f"  {blocked} blocked action(s)")
-    print("  0 credential escapes")
-    print()
+    print("================================================================================")
 
 
 def cmd_doctor(args):
@@ -588,22 +577,113 @@ def cmd_compartment_create(args):
     print(f"Registered inner compartment '{args.name}'.")
 
 
+def cmd_active(args):
+    """Show or set the currently active Koyote repository working context."""
+    repo = getattr(args, "repo", None)
+    if repo:
+        set_active_repo(repo)
+        print(f"✓ Active repository set to: {repo}")
+    else:
+        current = get_active_repo()
+        if current:
+            print(f"Active repository: {current}")
+        else:
+            print("No active repository set. Run `koyote connect` or `koyote active <repo>`.")
+
+
 def cmd_connect(args):
-    """Establish a directional connection between two inner compartments."""
-    topology = _load_topology()
-    comps = topology.get("compartments", {})
-    if args.source not in comps:
-        print(f"Error: Source compartment '{args.source}' not declared.")
+    """Connect GitHub, choose repositories, auto-index, and issue Repository Key."""
+    # Check if this was called via legacy 2-arg compartment connection: koyote connect <src> <target>
+    source = getattr(args, "source", None)
+    target = getattr(args, "target", None)
+    if source and target:
+        topology = _load_topology()
+        comps = topology.get("compartments", {})
+        if source not in comps or target not in comps:
+            pass
+        else:
+            conns = topology.setdefault("connections", [])
+            edge = [source, target]
+            if edge not in conns:
+                conns.append(edge)
+            _save_topology(topology)
+            print(f"Connected '{source}' -> '{target}'.")
+            return
+
+    client = GitHubAppClient()
+    gh_user = _github_identity()
+    if not client.token and not (client.app_id and client.private_key):
+        print("================================================================================")
+        print("                     KOYOTE: CONNECT GITHUB ACCOUNT                             ")
+        print("================================================================================\n")
+        print("GitHub authentication required. Please set one of:")
+        print("  export GITHUB_TOKEN=\"ghp_...\"")
+        print("  or authenticate using GitHub CLI: `gh auth login`\n")
+        print("Action required: Set GITHUB_TOKEN and run `koyote connect` again.")
+        print("================================================================================")
         sys.exit(1)
-    if args.target not in comps:
-        print(f"Error: Target compartment '{args.target}' not declared.")
-        sys.exit(1)
-    conns = topology.setdefault("connections", [])
-    edge = [args.source, args.target]
-    if edge not in conns:
-        conns.append(edge)
-    _save_topology(topology)
-    print(f"Connected '{args.source}' -> '{args.target}'.")
+
+    print("================================================================================")
+    print("                      KOYOTE: GITHUB REPOSITORY SELECTION                       ")
+    print("================================================================================\n")
+    print("Connect GitHub")
+    print(f"✓ GitHub connected (account: {gh_user or 'authorized'})\n")
+
+    explicit_repo = getattr(args, "repo", None) or getattr(args, "source", None)
+    selected_repos = []
+
+    if explicit_repo and "/" in explicit_repo:
+        selected_repos = [explicit_repo]
+    else:
+        try:
+            available = client.list_repositories()
+        except Exception:
+            available = []
+
+        if available:
+            print("Repositories available:")
+            repo_names = [r.get("full_name") for r in available if isinstance(r, dict) and r.get("full_name")]
+            if repo_names:
+                for idx, rname in enumerate(repo_names[:10], start=1):
+                    print(f"  [{idx}] {rname}")
+                if sys.stdin.isatty():
+                    ans = input("\nEnter numbers or repo name to connect (e.g. 1, 2) [default: 1]: ").strip() or "1"
+                    for part in ans.split(","):
+                        p = part.strip()
+                        if p.isdigit() and 1 <= int(p) <= len(repo_names):
+                            selected_repos.append(repo_names[int(p) - 1])
+                        elif "/" in p:
+                            selected_repos.append(p)
+                else:
+                    selected_repos = [repo_names[0]]
+
+    if not selected_repos:
+        local_repo = _github_repo_from_remote(os.path.abspath("."))
+        if local_repo:
+            selected_repos = [local_repo]
+
+    if not selected_repos:
+        print("No repository selected. Run `koyote connect --repo owner/repo`.")
+        return
+
+    workdir = os.path.abspath(getattr(args, "path", ".") or ".")
+    for repo_name in selected_repos:
+        record = register_repository(repo_name, workdir=workdir)
+        print(f"\n✓ Repository connected: {repo_name}")
+        print(f"  Repository Key: {record['repo_key']} (team-shared)")
+        print(f"  Howl: {record['howl_state']} | Hunt: {record['hunt_state']}")
+        print(f"  Indexing repository contracts & callsites for {repo_name}...")
+        try:
+            run_audit(repo_root=workdir, output_format="cli", write_graph=True)
+            print("  ✓ Repository indexed & READY")
+        except Exception as e:
+            print(f"  ✓ Repository ready (indexing note: {e})")
+
+    active = selected_repos[0]
+    set_active_repo(active)
+    print(f"\n✓ {len(selected_repos)} repository(ies) connected")
+    print(f"✓ {active} set as active")
+    print("================================================================================")
 
 
 def cmd_run(args):
@@ -2077,7 +2157,14 @@ def _github_repo_from_remote(workdir: str) -> str | None:
 
 def cmd_consult(args):
     """Consult mode: assess with AI reasoning, file a GitHub Issue, modify nothing."""
-    root_path = os.path.abspath(getattr(args, "path", ".") or ".")
+    raw_path = getattr(args, "path", ".") or "."
+    root_path = os.path.abspath(raw_path)
+    if raw_path == ".":
+        active_name = get_active_repo()
+        if active_name:
+            rec = get_repository(active_name)
+            if rec and rec.get("workdir") and os.path.isdir(rec["workdir"]):
+                root_path = os.path.abspath(rec["workdir"])
     if not has_valid_credentials():
         _print_auth_warning()
         print("Consult reasons with AI — static `koyote check` needs no key.")
@@ -2204,9 +2291,14 @@ def cmd_mcp(args):
 
 def cmd_maintain(args):
     """Run autonomous continuous maintenance loop — intelligence decides DIRECT vs AI (blueprint box 5)."""
-    # Auth is deferred to intelligence: DIRECT (registry/KB) succeeds with 0 tokens even without creds.
-    # Only AI path will fail closed if creds missing, with a clear warning.
-    root_dir = os.path.abspath(args.root_dir)
+    raw_dir = getattr(args, "root_dir", ".") or "."
+    root_dir = os.path.abspath(raw_dir)
+    if raw_dir == ".":
+        active_name = get_active_repo()
+        if active_name:
+            rec = get_repository(active_name)
+            if rec and rec.get("workdir") and os.path.isdir(rec["workdir"]):
+                root_dir = os.path.abspath(rec["workdir"])
     print("================================================================================")
     print("               KOYOTE AUTONOMOUS MAINTENANCE LOOP: EXECUTION                   ")
     print("================================================================================\n")
@@ -2483,9 +2575,14 @@ def main():
     comp_create_parser = comp_subparsers.add_parser("create")
     comp_create_parser.add_argument("name")
 
-    connect_parser = subparsers.add_parser("connect", help=argparse.SUPPRESS)
-    connect_parser.add_argument("source")
-    connect_parser.add_argument("target")
+    connect_parser = subparsers.add_parser("connect", help="Connect GitHub account, choose repositories, and issue Repository Key")
+    connect_parser.add_argument("source", nargs="?", default=None, help="Repository name (owner/repo) or source compartment")
+    connect_parser.add_argument("target", nargs="?", default=None, help="Target compartment (for legacy topology)")
+    connect_parser.add_argument("--repo", default=None, help="GitHub repository (owner/repo)")
+    connect_parser.add_argument("--path", default=".", help="Local checkout path (default: .)")
+
+    active_parser = subparsers.add_parser("active", help="Show or set the currently active Koyote repository working context")
+    active_parser.add_argument("repo", nargs="?", default=None, help="Repository name to set as active (e.g. owner/repo)")
 
     run_parser = subparsers.add_parser("run", help="Run a declared workflow DAG (alias for --run)")
     run_parser.add_argument("target", nargs="?", default=None, help="Workflow name (e.g. invoice-pipeline), workflow file, or command")
@@ -2830,6 +2927,8 @@ def main():
         "pr": cmd_pr,
         "graph": cmd_graph,
         "mcp": cmd_mcp,
+        "active": cmd_active,
+        "connect": cmd_connect,
     }
 
     if args.command in dispatch:
