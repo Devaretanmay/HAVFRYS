@@ -19,7 +19,7 @@ pip install koyote
 ```bash
 cd my-project
 
-koyote init              # Detects repo, checks GitHub & AI, warms zero-token index
+koyote init              # Detects repo, checks GitHub & AI, runs AST evidence scan
 koyote auth              # Connect your BYOK AI provider (Anthropic, OpenAI, Ollama)
 ```
 
@@ -73,7 +73,7 @@ See [GitHub App behavior](GITHUB_APP.md) for modes, triggers, and bot config.
 ## 5. Autonomous Continuous Maintenance
 
 Run autonomous maintenance on external providers (e.g. Stripe, OpenAI, Anthropic, Clerk, AWS).
-Koyote's AI reasons about the change against your repository and repairs with deterministic tools —
+Koyote's AI reasons about the change against your repository and authors verified repairs —
 there is no engine flag to choose. Unsafe repairs refuse loudly with zero files touched:
 
 ```bash
@@ -106,7 +106,7 @@ koyote commit  # Commit to Git with verified provenance trailers
 ## 7. Key Guarantees
 
 - **External Intelligence**: Full-codebase AST mapping of providers, contracts, wrappers, and callsites.
-- **Continuous Maintenance**: Surgical AST patching with local formatter matching and automated Developer Trust PRs.
+- **Continuous Maintenance**: AI-authored repairs with local formatter matching and automated Developer Trust PRs.
 - **Kernel Enforcement**: Built on native OS isolation (macOS Seatbelt / Linux Landlock).
 - **Credential Protection**: `~/.ssh`, `~/.aws`, `~/.config/gcloud`, git credentials, and keychains are denied by default.
 - **Instant Rollback**: Hash-based BLAKE3 file snapshots allow physical restoration of modified and deleted files in 2ms.

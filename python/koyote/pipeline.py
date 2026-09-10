@@ -53,10 +53,9 @@ from koyote.test_runner import (
     _blake3_digest,
 )
 from koyote.intelligence import KoyoteIntelligence, resolve_migration
-from koyote.knowledge import direct_rewrites_for, upsert_learned as kb_upsert
-from koyote.ai_planner import AIPatchPlanner, ai_followup_for_missed, build_reasoning_context
+from koyote.knowledge import upsert_learned as kb_upsert
+from koyote.ai_planner import AIPatchPlanner, build_reasoning_context
 from koyote.maintenance_agents import ImpactAnalyst
-from koyote.patch_writer import apply_rewrites, discover_aliases, instantiate_alias_rules
 from koyote.sandbox.snapshot import SnapshotManager
 
 _logger = logging.getLogger("koyote.pipeline")
@@ -662,7 +661,7 @@ def apply_fixes(
     analysis: AnalysisResult,
     policy: PipelinePolicy,
 ) -> AnalysisResult:
-    """Apply fixes via Koyote Intelligence: DIRECT (registry+KB) or AI fallback. Single router."""
+    """Apply fixes via Koyote Intelligence: AI-authored repair with contract context."""
     modified_files: list[str] = []
     unified_diffs: list[str] = []
 
@@ -682,34 +681,6 @@ def apply_fixes(
         if decision.strategy == "QUARANTINE":
             _logger.info("pipeline.quarantine provider=%s reason=%s", finding.provider_name, decision.reason)
             continue
-        if decision.strategy == "DIRECT":
-            kb_rules = direct_rewrites_for(ctx.workdir, finding.provider_name, _from, _to)
-            seen = {r.pattern for r in rewrites}
-            combined = list(rewrites) + [r for r in kb_rules if r.pattern not in seen]
-            for ar in instantiate_alias_rules(combined, discover_aliases(ctx.workdir, finding.provider_name)):
-                if ar.pattern not in seen:
-                    seen.add(ar.pattern)
-                    combined.append(ar)
-            if not combined:
-                continue
-            results = apply_rewrites(ctx.workdir, combined, dry_run=False)
-            touched = [os.path.abspath(r.file_path) for r in results if r.success]
-            missed, _ = ai_followup_for_missed(
-                ctx.workdir, finding.provider_name, _from, _to, touched,
-                finding.affected_files, finding.breaking_change,
-                finding.migration_guide_url)
-            results.extend(missed)
-            for r in results:
-                if r.success:
-                    modified_files.append(r.file_path)
-                    if r.unified_diff:
-                        unified_diffs.append(r.unified_diff)
-                    rel_p = os.path.relpath(r.file_path, ctx.workdir) if os.path.isabs(r.file_path) else r.file_path
-                    for rule_desc in r.rules_applied:
-                        patched_callsites.append({
-                            "file_path": rel_p,
-                            "description": rule_desc,
-                        })
         elif decision.strategy == "AI":
             planner = AIPatchPlanner.from_env()
             if planner is None:

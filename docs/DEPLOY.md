@@ -18,7 +18,7 @@
 |---|---|---|
 | `KOYOTE_WEBHOOK_SECRET` | **yes** | HMAC validation. The daemon refuses to serve without it (`--no-secret` is local-debug only). |
 | `GITHUB_TOKEN` or App `KOYOTE_GITHUB_APP_ID` + `KOYOTE_GITHUB_PRIVATE_KEY` | yes for private repos / PR writes | Clone auth and PR comments. Public repos work anonymously for clones. |
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | only for AI repair | Deterministic repairs and checks run without any key. |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GROQ_API_KEY` | required for code repair | AI is the exclusive patch author. Read-only checks work without a key. |
 | `PORT` | no (default 8080) | Listen port. |
 | `KOYOTE_REPOS_DIR`, `KOYOTE_INSTALLATIONS_DIR` | no | Managed checkouts and install records. Persist both (volume `/data`). |
 

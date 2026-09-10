@@ -14,7 +14,7 @@ change flows through detect → decide → verify → learn.
 ANY CHANGESOURCE (Dependency release, vendor changelog, scheduled check, registry drift, PR event)
 │
 ▼
-KOYOTE CHANGE RADAR (detect_changes: read-only, zero-token AST scan)
+KOYOTE CHANGE RADAR (detect_changes: read-only AST evidence scan)
 ▼
 ┌────────────────────────┴────────────────────────┐
 ↓                                                 ↓
@@ -49,15 +49,15 @@ Koyote cleanly separates **Consult** and **Work** as its primary product abstrac
 | Type | Module | Role |
 |---|---|---|
 | `ChangeSource` | `koyote.change_source` | Names the depended-upon system: `kind` (`sdk`, `external_api`, `openapi`, `graphql`, `protobuf`, `webhook`, `mcp_server`, `internal_service`), `identity`, versions or `contract_hash` |
-| `Detection` | `koyote.change_source` | Read-only outcome: `NO_IMPACT`, `IMPACT_DIRECT`, `IMPACT_AI`, `IMPACT_QUARANTINE` (+ `ai_dependent` flag for checks needing reasoning) |
-| `Decision` | `koyote.intelligence` | Internal routing: `DIRECT / AI / HYBRID / QUARANTINE` + `confidence`, `estimated_tokens` (`0` = verified zero-token, `None` = unknown), `expected_blast_radius`, `verification_required`. Never a CLI flag |
+| `Detection` | `koyote.change_source` | Read-only outcome: `NO_IMPACT`, `IMPACT_AI`, `IMPACT_QUARANTINE` (+ `ai_dependent` flag for checks needing reasoning). `IMPACT_DIRECT` accepted for backward compat but never emitted |
+| `Decision` | `koyote.intelligence` | Internal routing: `AI / QUARANTINE` + `confidence`, `estimated_tokens`, `expected_blast_radius`, `verification_required`. AI is the exclusive patch author. Never a CLI flag |
 | `KBEntry` | `koyote.knowledge` | Repository memory at `.koyote/knowledge/{kind}/{identity}/{contract}.json` (legacy provider paths still read). Executable patterns + test recipes + evidence + quarantined `failed_patterns` |
 
 ## 3. State on disk (per repository)
 
 ```text
 .koyote/
-  graph.json            Full dependency graph (Rust AST engine, zero-token)
+  graph.json            Full dependency graph (Rust AST engine)
   index_state.json      commit SHA + file mtimes + discovery counts (incremental re-index)
   knowledge/            Verified repair patterns + test recipes (the flywheel)
   history.json          Auditable migration ledger

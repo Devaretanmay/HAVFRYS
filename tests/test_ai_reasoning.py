@@ -10,6 +10,7 @@ from koyote.ai_planner import (
 )
 from koyote.knowledge import upsert_learned, record_failure
 from koyote.llm import LLMClient, LLMResponse
+import koyote.maintenance as mnt
 
 
 def _seed_repo(dst: str):
@@ -89,9 +90,8 @@ def test_prompt_carries_reasoning_and_memory(tmp_path):
     assert "Repo verification" in seen["user"]
 
 
-def test_hybrid_completion_for_untouched_files(tmp_path, monkeypatch):
-    """Registry rewrites miss unusual.ts (version bump still fires elsewhere); AI must complete it."""
-    import koyote.maintenance as mnt
+def test_ai_repair_completion_for_untouched_files(tmp_path, monkeypatch):
+    """AI repairs code including unusual files detected by impact analysis."""
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     target = os.path.join(dst, "src", "unusual.ts")
@@ -112,14 +112,12 @@ def test_hybrid_completion_for_untouched_files(tmp_path, monkeypatch):
         model="m")
     monkeypatch.setattr(mnt.AIPatchPlanner, "from_env",
                         classmethod(lambda cls, **k: AIPatchPlanner(client=mock_client)))
-    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY"):
-        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test123")
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
 
     report = mnt.run_maintenance_cycle(dst, "stripe", from_version="11.18.0", to_version="13.0.0")
     assert report.success
     assert "const v = 2;" in open(target).read()
-    assert '"stripe": "^13.0.0"' in open(os.path.join(dst, "package.json")).read()
     history = mnt.get_migration_history(dst)
-    assert history and history[-1]["strategy"] == "HYBRID"
-    assert report.repair_path == "hybrid"
+    assert history and history[-1]["strategy"] == "AI"
+    assert report.repair_path == "ai-reasoning"

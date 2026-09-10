@@ -53,11 +53,13 @@ class GitHubAppClient:
         app_id: str | None = None,
         private_key: str | None = None,
         api_base_url: str = "https://api.github.com",
+        readonly: bool = False,
     ):
         self.token = token or os.environ.get("GITHUB_TOKEN") or os.environ.get("KOYOTE_GITHUB_TOKEN") or _get_gh_cli_token()
         self.app_id = app_id or os.environ.get("KOYOTE_GITHUB_APP_ID")
         self.private_key = private_key or os.environ.get("KOYOTE_GITHUB_PRIVATE_KEY")
         self.api_base_url = api_base_url.rstrip("/")
+        self.readonly = readonly
 
     def generate_jwt(self, expiration_seconds: int = 600) -> str | None:
         """Generate a GitHub App JWT from app_id and private_key."""
@@ -180,6 +182,8 @@ class GitHubAppClient:
 
     def create_branch(self, repo: str, base_branch: str, new_branch: str) -> dict[str, Any]:
         """Create a new git branch from base_branch."""
+        if self.readonly:
+            raise PermissionError("Howl client has read-only authority; cannot modify repository files or create PRs")
         ref_info = self.get_branch_ref(repo, base_branch)
         if not ref_info.get("object", {}).get("sha"):
             return {"error": f"Base branch {base_branch} not found", "success": False}
@@ -201,6 +205,8 @@ class GitHubAppClient:
         sha: str | None = None,
     ) -> dict[str, Any]:
         """Commit a file change to a branch."""
+        if self.readonly:
+            raise PermissionError("Howl client has read-only authority; cannot modify repository files or create PRs")
         data = {
             "message": commit_message,
             "content": base64.b64encode(content.encode("utf-8")).decode("utf-8"),
@@ -220,6 +226,8 @@ class GitHubAppClient:
         labels: List[str] | None = None,
     ) -> dict[str, Any]:
         """Create a Pull Request and optionally attach labels."""
+        if self.readonly:
+            raise PermissionError("Howl client has read-only authority; cannot modify repository files or create PRs")
         data = {
             "title": title,
             "body": body,
@@ -322,6 +330,8 @@ class GitHubAppClient:
         head_ref: str | None = None,
     ) -> dict[str, Any]:
         """Update a pull request (e.g., auto-merge state)."""
+        if self.readonly:
+            raise PermissionError("Howl client has read-only authority; cannot modify repository files or create PRs")
         data: dict[str, Any] = {}
         if state is not None:
             data["state"] = state

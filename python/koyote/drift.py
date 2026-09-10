@@ -8,7 +8,7 @@ import re
 from typing import Any
 from koyote.autopatch import ScanConfig, scan_callsites
 from koyote.change_source import (
-    Detection, ChangeSource, NO_IMPACT, IMPACT_DIRECT, IMPACT_AI, IMPACT_QUARANTINE,
+    Detection, ChangeSource, NO_IMPACT, IMPACT_AI, IMPACT_QUARANTINE,
 )
 from koyote.credentials import has_valid_credentials
 from koyote.intelligence import resolve_migration
@@ -172,12 +172,10 @@ def detect_changes(repo_dir: str, provider_name: str | None = None) -> list[Dete
             source.metadata["breaking_change"] = migration.description
             source.metadata["migration_guide_url"] = migration.changelog_url
         has_pat = bool(migration and migration.rewrites) or len(direct_rewrites_for(repo_dir, d["provider"], _from, _to)) > 0
-        if has_pat:
-            outcome, ai_dep, conf = IMPACT_DIRECT, False, 0.95
-            reason = "DIRECT: known_pattern_contract"
-        elif has_valid_credentials():
-            outcome, ai_dep, conf = IMPACT_AI, True, 0.7
-            reason = "AI: novel_drift_ai_reasoning"
+        if has_valid_credentials():
+            outcome, ai_dep = IMPACT_AI, True
+            conf = 0.95 if has_pat else 0.75
+            reason = "AI: contract_evidence_ai_reasoning" if has_pat else "AI: novel_drift_ai_reasoning"
         else:
             outcome, ai_dep, conf = IMPACT_QUARANTINE, False, 0.0
             reason = "QUARANTINE: no_credentials_for_ai"

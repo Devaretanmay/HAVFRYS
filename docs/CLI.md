@@ -9,18 +9,23 @@ Koyote is autonomous software maintenance for systems that change. It detects co
 ## The Public CLI Contract
 
 ```text
-Maintenance product (normal flow: auth → doctor → index → check → consult / work)
-  koyote auth                     Connect BYOK AI provider (needed only for AI repair)
-  koyote doctor                   Product readiness: GitHub, AI, index, knowledge, tests
-  koyote index [path]             Index repository contracts & callsites (free, zero-token)
-  koyote check [path]             Detect contract changes & impact (read-only; needs no AI key)
+Core Maintenance Commands:
+  koyote auth                     Connect & configure BYOK AI provider (needed for AI repair)
+  koyote connect [owner/repo]     Connect GitHub account, choose repository, and issue Repository Key
+  koyote active [owner/repo]      Show or switch the active repository working context
+  koyote status                   Show current workspace and repository connection status
   koyote consult [path]           Consult mode: assess with AI reasoning, file Issue, modify nothing (alias: howl)
   koyote work [path] [--provider] Work mode: repair, verify in sandbox, report evidence, open PR (alias: hunt, fix)
+  koyote disconnect [owner/repo]  Disconnect repository registration and clear active working context
+
+Diagnostic & Advanced Commands:
+  koyote doctor                   Product readiness: GitHub, AI, index, knowledge, tests
+  koyote index [path]             Index repository contracts & callsites (AST evidence scan)
+  koyote check [path]             Detect contract changes & impact (read-only; needs no AI key)
   koyote reviews [path]           List past maintenance runs from the ledger
-  koyote onboard [path]           Guided setup: auth → index → doctor
-  koyote logout                   Remove stored credentials (alias for auth --clear)
+  koyote onboard [path]           Guided setup: auth → connect → doctor
   koyote providers                List monitored contract sources & migrations
-  koyote app serve                Run GitHub App webhook listener (secret required)
+  koyote app serve                Run GitHub App webhook listener
   koyote pr                       Review a pull request with the contract guard
 
 Legacy / advanced (workflows, sessions, lanes)
@@ -53,7 +58,7 @@ Changes
 ```bash
 koyote auth              # Connect AI provider (OpenAI / Anthropic / local). Needed only for AI repair.
 koyote doctor            # Readiness: GitHub, AI, Indexed, Knowledge Base, Test command, Monitoring
-koyote index .           # Zero-token static index → .koyote/graph.json + knowledge test recipes
+koyote index .           # AST evidence scan → .koyote/graph.json + knowledge test recipes
 koyote check .           # Read-only drift & impact audit (works with no AI key configured)
 koyote fix .             # Auto-detect provider, repair, sandbox-verify, report evidence
 ```
@@ -260,7 +265,7 @@ Knowledge Base READY / STALE / MISSING, detected test command, and monitoring AC
 with remediation hints.
 
 ### `koyote index [path]`
-Zero-token static index: AST callsites, manifests, dependency graph → `.koyote/graph.json`, plus
+AST evidence scan: callsites, manifests, dependency graph → `.koyote/graph.json`, plus
 `index_state.json` (commit SHA + mtimes) for incremental re-indexing and knowledge test recipes.
 
 ### `koyote check [path]` (alias: `scan`, `audit`)
@@ -287,10 +292,10 @@ koyote graph . --json
 
 ### `koyote work [root_dir]` (alias: `hunt`, `fix`, `maintain`, `update`)
 Executes an autonomous continuous maintenance cycle: Koyote's AI reasons over the repository,
-the change, and maintenance memory, then repairs with deterministic tools, formats with local tools
+the change, and maintenance memory, then authors verified repairs, formats with local tools
 (`prettier`/`ruff`), runs repository tests, verifies zero blast radius, and reports evidence.
-Verified patterns execute without model calls; novel work uses your provider; unsafe repairs are
-refused loudly with zero files touched. There is no engine flag — strategy is internal:
+AI is the sole repair author; unsafe repairs are refused loudly with zero files touched.
+There is no engine flag — strategy is internal:
 
 ```bash
 koyote work .                       # Auto-detect provider from manifests

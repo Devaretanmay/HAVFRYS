@@ -3,8 +3,10 @@
 """Alias-aware repair: proven client aliases get precise rewrites, never loosened regex."""
 
 import json
-import os
+from unittest.mock import MagicMock
 
+from koyote.ai_planner import AIPatchPlanner
+from koyote.llm import LLMClient, LLMResponse
 from koyote.maintenance import run_maintenance_cycle
 from koyote.patch_writer import discover_aliases, instantiate_alias_rules
 from koyote.providers.registry import RewriteRule
@@ -52,7 +54,7 @@ def test_discover_aliases_from_scan(tmp_path):
     assert discover_aliases(str(tmp_path), "stripe") == {"s": "stripe"}
 
 
-def test_aliased_client_repaired_end_to_end(tmp_path):
+def test_aliased_client_repaired_end_to_end(tmp_path, monkeypatch):
     """The exact shape that previously refused: const s = new Stripe() + s.subscriptions.del."""
     repo = tmp_path / "r"
     (repo / "src").mkdir(parents=True)
@@ -69,17 +71,19 @@ def test_aliased_client_repaired_end_to_end(tmp_path):
         "const s=fs.readFileSync(p.join(__dirname,'../src/billing.ts'),'utf8');"
         "const ok=!s.includes('.del(')&&s.includes('.cancel(');"
         "console.log(ok?'PASS':'FAIL');process.exit(ok?0:1);\n")
-    monkey_env = {"KOYOTE_CREDENTIALS_FILE": str(tmp_path / "none.json")}
-    old = {k: os.environ.pop(k, None) for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "KOYOTE_LLM_KEY")}
-    os.environ.update(monkey_env)
-    try:
-        report = run_maintenance_cycle(str(repo), "stripe", from_version="11.18.0", to_version="13.0.0")
-    finally:
-        for k, v in old.items():
-            if v is not None:
-                os.environ[k] = v
-        os.environ.pop("KOYOTE_CREDENTIALS_FILE", None)
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test123")
+    mock_client = MagicMock(spec=LLMClient)
+    mock_client.complete.return_value = LLMResponse(
+        content="<<<<<<< SEARCH\nexport const cancel = (id: string) => s.subscriptions.del(id);\n=======\nexport const cancel = (id: string) => s.subscriptions.cancel(id);\n>>>>>>> REPLACE",
+        model="groq/llama-3.3-70b-versatile",
+    )
+    monkeypatch.setattr(
+        "koyote.maintenance.AIPatchPlanner.from_env",
+        classmethod(lambda cls, **k: AIPatchPlanner(client=mock_client)),
+    )
+    report = run_maintenance_cycle(str(repo), "stripe", from_version="11.18.0", to_version="13.0.0")
     assert report.success, report.error
+    assert report.repair_path == "ai-reasoning"
     content = (repo / "src" / "billing.ts").read_text()
     assert "s.subscriptions.cancel(id)" in content
     assert ".del(" not in content

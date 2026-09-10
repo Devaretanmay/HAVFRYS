@@ -60,12 +60,14 @@ from koyote.github.watch import watch_once
 from koyote.mcp_server import serve_stdio
 from koyote.repo_identity import (
     STATE_AVAILABLE,
+    clear_active_repo,
     derive_repository_key,
     get_active_repo,
     get_repository,
     load_all_repositories,
     register_repository,
     set_active_repo,
+    unregister_repository,
 )
 
 _logger = logging.getLogger("koyote.cli")
@@ -591,24 +593,59 @@ def cmd_active(args):
             print("No active repository set. Run `koyote connect` or `koyote active <repo>`.")
 
 
+def cmd_disconnect(args):
+    """Disconnect active or specified repository, clearing working context and registrations."""
+    target_repo = getattr(args, "repo", None) or get_active_repo()
+    all_flag = getattr(args, "all", False)
+
+    if all_flag:
+        repos = load_all_repositories()
+        for rname in list(repos.keys()):
+            unregister_repository(rname)
+        clear_active_repo()
+        print("✓ All repositories disconnected and active context cleared.")
+        return
+
+    if not target_repo:
+        print("No repository specified or active to disconnect.")
+        return
+
+    removed = unregister_repository(target_repo)
+    clear_active_repo()
+    if removed:
+        print(f"✓ Repository disconnected: {target_repo}")
+    else:
+        print(f"Repository '{target_repo}' was not registered; active context cleared.")
+
+
+def cmd_connect_topology(args):
+    """Legacy: Connect two compartments in declared topology."""
+    source = getattr(args, "source", None)
+    target = getattr(args, "target", None)
+    if not source or not target:
+        print("Usage: koyote connect-topology <source> <target>")
+        return
+    topology = _load_topology()
+    comps = topology.get("compartments", {})
+    if source not in comps or target not in comps:
+        print(f"Error: Compartments '{source}' or '{target}' not found in topology.")
+        return
+    conns = topology.setdefault("connections", [])
+    edge = [source, target]
+    if edge not in conns:
+        conns.append(edge)
+    _save_topology(topology)
+    print(f"Connected '{source}' -> '{target}'.")
+
+
 def cmd_connect(args):
     """Connect GitHub, choose repositories, auto-index, and issue Repository Key."""
     # Check if this was called via legacy 2-arg compartment connection: koyote connect <src> <target>
     source = getattr(args, "source", None)
     target = getattr(args, "target", None)
     if source and target:
-        topology = _load_topology()
-        comps = topology.get("compartments", {})
-        if source not in comps or target not in comps:
-            pass
-        else:
-            conns = topology.setdefault("connections", [])
-            edge = [source, target]
-            if edge not in conns:
-                conns.append(edge)
-            _save_topology(topology)
-            print(f"Connected '{source}' -> '{target}'.")
-            return
+        cmd_connect_topology(args)
+        return
 
     client = GitHubAppClient()
     gh_user = _github_identity()
@@ -1832,7 +1869,7 @@ def cmd_inventory(args):
     critical = sum(1 for d in deps if d.get("health") in ("Deprecated", "Retired"))
     if critical > 0:
         print(f"[ALERT] {critical} critical dependencies require immediate attention.")
-        print("   Run `koyote autopatch` to generate verified migration PRs.")
+        print("   Run `koyote work` to start AI-authored repair and verified PR delivery.")
 
 
 
@@ -1861,25 +1898,26 @@ def cmd_analyze(args):
 
 
 def cmd_patch(args):
-    """Apply surgical AST patches for plan targets."""
+    """Evaluate patch plan targets (dry-run only — AI must author all source changes)."""
     with open(args.plan, "r", encoding="utf-8") as f:
         plan = json.load(f)
 
-    results = autopatch.apply_patch(args.root_dir, plan, dry_run=args.dry_run)
+    results = autopatch.apply_patch(args.root_dir, plan, dry_run=True)
 
     if getattr(args, "json", False):
         print(json.dumps(results, indent=2))
         return
 
-    mode_tag = "[DRY-RUN]" if args.dry_run else "[APPLIED]"
-    print(f"{mode_tag} Evaluated {len(results)} patch targets across {len(set(r.get('file_path') for r in results))} files.")
+    print("[DRY-RUN] Deterministic source modification is disabled. AI must author all source changes.")
+    print(f"Evaluated {len(results)} patch targets across {len(set(r.get('file_path') for r in results))} files.")
     for r in results:
         status = "[OK]" if r.get("success") else "[FAIL]"
-        print(f"  {status} {r.get('file_path')}: {r.get('transforms_applied', 0)} transformations applied.")
+        print(f"  {status} {r.get('file_path')}: {r.get('transforms_applied', 0)} transformations evaluated.")
         if r.get("unified_diff"):
-            print("  --- Unified Diff ---")
+            print("  --- Diff Preview (not applied) ---")
             for line in r["unified_diff"].splitlines()[:10]:
                 print(f"    {line}")
+
 
 
 def cmd_verify(args):
@@ -1909,8 +1947,8 @@ def cmd_explain(args):
             "Direct SDK method chain 'stripe.charges.create' matches OpenAPI operation",
             "HTTP method POST and path /v1/charges match breaking schema diff",
             "Parameter 'amount' changed from integer to string",
-            "Surgical AST patch rule available",
-        ], "Approved for automated patch and contract synthesis."),
+            "AI repair candidate with verified knowledge context",
+        ], "Routed to AI for repair and contract verification."),
         "checkout": ("PROVABLY_UNAFFECTED", "Stripe", "POST /v1/checkout/sessions", [
             "Method chain resolves to distinct API route",
             "Target endpoint did not undergo breaking contract drift",
@@ -2124,7 +2162,7 @@ def cmd_check(args):
         write_graph=write_graph,
     )
     print(output)
-    # Index warms KB test_recipe so future DIRECT has verification context without extra tokens.
+    # Index warms KB test_recipe so future repair has verification context without extra tokens.
     if write_graph:
         try:
             tcmd = _detect_test_command(root_path)
@@ -2290,7 +2328,7 @@ def cmd_mcp(args):
 
 
 def cmd_maintain(args):
-    """Run autonomous continuous maintenance loop — intelligence decides DIRECT vs AI (blueprint box 5)."""
+    """Run autonomous continuous maintenance loop with AI-authored repair."""
     raw_dir = getattr(args, "root_dir", ".") or "."
     root_dir = os.path.abspath(raw_dir)
     if raw_dir == ".":
@@ -2525,21 +2563,19 @@ def main():
     description = textwrap.dedent("""\
         Koyote: Autonomous External-Change Intelligence & Controlled Execution
 
-        Core Commands (maintenance product — keeps software working when systems around it change):
-          koyote auth                     Connect BYOK AI provider (needed only for AI repair)
-          koyote doctor                   Product readiness: GitHub, AI, index, knowledge, tests
-          koyote index [path]             Index repository contracts & callsites (free, zero-token)
-          koyote check [path]             Detect contract changes & impact (read-only, alias: scan, audit)
-          koyote fix [path] [--provider]  Repair, verify in sandbox, report evidence (alias: maintain)
-          koyote consult [path]         Assess with AI reasoning, file GitHub Issue, change nothing
-          koyote reviews [path]         List past maintenance runs from the ledger
-          koyote onboard [path]         Guided setup: auth → index → doctor
-          koyote providers                List monitored contract sources & migrations
-          koyote app serve                Run GitHub App webhook listener
-          koyote pr                       Review a pull request with contract guard
+        Core Commands:
+          koyote auth                     Connect & configure BYOK AI provider (OpenAI, Anthropic, Groq, etc.)
+          koyote connect [owner/repo]     Connect GitHub account, choose repository, and issue Repository Key
+          koyote active [owner/repo]      Show or switch the active repository working context
+          koyote status                   Show current workspace and repository connection status
+          koyote @howl [path]             Howl (Consult): AI reasoning, file GitHub Issue, touch zero code
+          koyote @hunt [path]             Hunt (Work): autonomous AI repair, sandbox-verify, deliver PR
+          koyote disconnect [owner/repo]  Disconnect repository registration and clear active working context
 
-        Legacy / advanced (workflows, sessions, lanes):
-          koyote init | status | diff | apply | commit | undo | graph | exec | mcp
+        Diagnostic & Utilities:
+          koyote doctor                   Verify GitHub App, AI provider, indexing, and test runner readiness
+          koyote init [path]              Initialize .koyote workspace metadata in current repository
+          koyote app serve                Run autonomous GitHub App webhook daemon
     """)
 
     parser = argparse.ArgumentParser(
@@ -2583,6 +2619,10 @@ def main():
 
     active_parser = subparsers.add_parser("active", help="Show or set the currently active Koyote repository working context")
     active_parser.add_argument("repo", nargs="?", default=None, help="Repository name to set as active (e.g. owner/repo)")
+
+    disconnect_parser = subparsers.add_parser("disconnect", help="Disconnect active or specified repository from Koyote")
+    disconnect_parser.add_argument("repo", nargs="?", default=None, help="Repository name to disconnect (e.g. owner/repo)")
+    disconnect_parser.add_argument("--all", action="store_true", help="Disconnect all registered repositories")
 
     run_parser = subparsers.add_parser("run", help="Run a declared workflow DAG (alias for --run)")
     run_parser.add_argument("target", nargs="?", default=None, help="Workflow name (e.g. invoice-pipeline), workflow file, or command")
@@ -2729,10 +2769,9 @@ def main():
     analyze_p.add_argument("--url", default=None, help="Comma-separated base URLs")
     analyze_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
 
-    patch_p = subparsers.add_parser("patch", help="Apply surgical AST patches for plan targets")
+    patch_p = subparsers.add_parser("patch", help="Evaluate patch plan targets (dry-run only, AI must author changes)")
     patch_p.add_argument("--plan", required=True, help="Maintenance plan JSON file")
     patch_p.add_argument("--root-dir", default=".", help="Codebase directory")
-    patch_p.add_argument("--dry-run", action="store_true", default=False, help="Perform dry run without modifying files")
     patch_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
 
     verify_p = subparsers.add_parser("verify", help="Run behavioral verification on patched files")
@@ -2758,7 +2797,7 @@ def main():
     audit_p.add_argument("--format", default="cli", choices=["cli", "github-issue", "issue", "markdown", "md", "json"], help="Output format (default: cli)")
     audit_p.add_argument("--write-graph", action="store_true", help="Persist .koyote/graph.json")
 
-    fix_p = subparsers.add_parser("fix", help="Autonomous API migration: patch AST, format style, run sandboxed tests")
+    fix_p = subparsers.add_parser("fix", help="Autonomous AI repair: detect drift, reason, sandbox-verify, deliver PR")
     fix_p.add_argument("root_dir", nargs="?", default=".", help="Codebase directory (default: .)")
     fix_p.add_argument("--provider", default="auto", help="Target API provider (e.g. stripe, openai, anthropic, or auto)")
     fix_p.add_argument("--from", dest="from_version", default=None, help="Current dependency version")
@@ -2794,6 +2833,10 @@ def main():
     howl_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
     howl_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for the Issue")
 
+    howl_at_p = subparsers.add_parser("@howl", help="Alias for @howl consult bot")
+    howl_at_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
+    howl_at_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for the Issue")
+
     work_p = subparsers.add_parser("work", help="Work mode: find, repair, sandbox-verify, and deliver a pull request")
     work_p.add_argument("root_dir", nargs="?", default=".", help="Codebase directory (default: .)")
     work_p.add_argument("--provider", default="auto", help="Target API provider (e.g. stripe, openai, anthropic, or auto)")
@@ -2821,6 +2864,20 @@ def main():
     hunt_p.add_argument("--model", default=None, help="BYOK LLM model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
     hunt_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
     hunt_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
+
+    hunt_at_p = subparsers.add_parser("@hunt", help="Alias for @hunt worker bot")
+    hunt_at_p.add_argument("root_dir", nargs="?", default=".", help="Codebase directory (default: .)")
+    hunt_at_p.add_argument("--provider", default="auto", help="Target API provider (e.g. stripe, openai, anthropic, or auto)")
+    hunt_at_p.add_argument("--from", dest="from_version", default=None, help="Current dependency version")
+    hunt_at_p.add_argument("--to", dest="to_version", default=None, help="Target dependency version")
+    hunt_at_p.add_argument("--detect", action="store_true", help="Detect installed API providers in repository")
+    hunt_at_p.add_argument("--create-pr", action="store_true", help="Open GitHub Pull Request via API")
+    hunt_at_p.add_argument("--show-pr", action="store_true", help="Display the Trust PR body")
+    hunt_at_p.add_argument("--repo", default=None, help="GitHub repository name (owner/repo) for PR creation")
+    hunt_at_p.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+    hunt_at_p.add_argument("--model", default=None, help="BYOK LLM model name (e.g. claude-3-5-sonnet-20241022, gpt-4o)")
+    hunt_at_p.add_argument("--api-key", default=None, help="BYOK LLM API key (or set ANTHROPIC_API_KEY/OPENAI_API_KEY)")
+    hunt_at_p.add_argument("--base-url", default=None, help="Custom LLM base URL (e.g. for local Ollama/vLLM)")
 
     reviews_p = subparsers.add_parser("reviews", help="List past Koyote maintenance runs")
     reviews_p.add_argument("path", nargs="?", default=".", help="Repository root path (default: .)")
@@ -2918,8 +2975,10 @@ def main():
         "update": cmd_fix,
         "work": cmd_fix,
         "hunt": cmd_fix,
+        "@hunt": cmd_fix,
         "consult": cmd_consult,
         "howl": cmd_consult,
+        "@howl": cmd_consult,
         "reviews": cmd_reviews,
         "onboard": cmd_onboard,
         "logout": cmd_logout,
@@ -2929,6 +2988,7 @@ def main():
         "mcp": cmd_mcp,
         "active": cmd_active,
         "connect": cmd_connect,
+        "disconnect": cmd_disconnect,
     }
 
     if args.command in dispatch:

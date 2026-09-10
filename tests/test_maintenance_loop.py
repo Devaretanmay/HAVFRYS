@@ -3,7 +3,7 @@ import os
 import shutil
 from unittest.mock import MagicMock, patch
 
-from koyote.maintenance import detect_drift, run_maintenance_cycle, get_migration_history
+from koyote.maintenance import detect_drift, run_maintenance_cycle
 from koyote.patch_writer import PatchResult
 
 
@@ -16,7 +16,7 @@ def test_detect_drift_in_fixture():
     assert stripe_dep["declared_version"] == "^11.18.0"
 
 
-def test_run_maintenance_cycle_taxonomy(tmp_path, monkeypatch):
+def test_run_maintenance_cycle_taxonomy_quarantine_without_creds(tmp_path, monkeypatch):
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
     for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
@@ -35,17 +35,10 @@ def test_run_maintenance_cycle_taxonomy(tmp_path, monkeypatch):
     assert report.provider_name == "stripe"
     assert report.from_version == "11.18.0"
     assert report.to_version == "22.0.0"
-    assert report.blast_radius_verified is True
-    assert report.unintended_files_modified == 0
-    assert "Autonomous Maintenance" in report.trust_pr_body
-    assert "Blast Radius Containment" in report.trust_pr_body
-    assert report.repair_path == "verified-pattern"
-
-    history = get_migration_history(target_dir)
-    assert len(history) > 0
-    latest = history[-1]
-    assert latest["provider_name"].lower() == "stripe"
-    assert latest["blast_radius_zero"] is True
+    assert report.success is False
+    assert report.repair_path == "none"
+    assert "no_credentials_for_ai" in (report.error or "")
+    assert "repair quarantined" in report.trust_pr_body
 
 
 def test_run_maintenance_cycle_ai_authored_with_credentials(tmp_path, monkeypatch):

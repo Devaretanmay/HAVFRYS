@@ -5,16 +5,29 @@
 import os
 import shutil
 
-from koyote.change_source import IMPACT_DIRECT
+from koyote.change_source import IMPACT_AI, IMPACT_QUARANTINE
 from koyote.drift import detect_changes
 
 
-def test_stripe_fixture_detects_direct_impact():
+def test_stripe_fixture_detects_ai_impact_with_credentials(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "gsk_test123")
     dets = detect_changes("trials/fixtures/taxonomy_stripe", "stripe")
     assert len(dets) == 1
     d = dets[0]
-    assert d.outcome == IMPACT_DIRECT
+    assert d.outcome == IMPACT_AI
     assert d.callsite_count > 0 and d.affected_files
+    assert d.ai_dependent is True
+    assert d.confidence >= 0.9
+
+
+def test_stripe_fixture_quarantines_without_credentials(tmp_path, monkeypatch):
+    monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
+    for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
+        monkeypatch.delenv(k, raising=False)
+    dets = detect_changes("trials/fixtures/taxonomy_stripe", "stripe")
+    assert len(dets) == 1
+    d = dets[0]
+    assert d.outcome == IMPACT_QUARANTINE
     assert d.ai_dependent is False
 
 

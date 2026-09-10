@@ -85,13 +85,11 @@ def instantiate_alias_rules(
 def apply_rewrites(
     repo_dir: str,
     rules: list[RewriteRule],
-    dry_run: bool = False,
+    dry_run: bool = True,
 ) -> list[PatchResult]:
-    """Walk repo_dir and apply regex rewrite rules to matching files.
-
-    Returns one PatchResult per file that was modified (or would be in dry_run).
-    Files outside repo_dir are never touched (blast-radius guard).
-    """
+    """Analyze rewrite rule applicability. Deterministic repair execution is disabled."""
+    if not dry_run:
+        raise RuntimeError("Deterministic source modification is disabled. AI must author all source changes.")
     repo_dir = os.path.abspath(repo_dir)
     results: list[PatchResult] = []
 
@@ -169,18 +167,7 @@ def _rewrite_file(
     )
 
     if not dry_run:
-        try:
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(current)
-        except OSError as exc:
-            return PatchResult(
-                file_path=file_path,
-                success=False,
-                lines_changed=0,
-                unified_diff="",
-                rules_applied=applied,
-                error=str(exc),
-            )
+        raise RuntimeError("Deterministic source modification is disabled. AI must author all source changes.")
 
     return PatchResult(
         file_path=file_path,

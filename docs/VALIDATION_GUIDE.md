@@ -60,7 +60,7 @@ koyote work . --provider stripe
 
 ### What You Observe:
 - Scans manifests and callsites against official provider contracts.
-- Generates surgical AST patch and runs local formatters (prettier/ruff).
+- AI reasons about impact, generates verified repairs, and runs local formatters (prettier/ruff).
 - Validates repository tests and blast-radius constraints before creating a Developer Trust PR.
 
 ---

@@ -10,14 +10,15 @@ from koyote.intelligence import KoyoteIntelligence, Decision
 from koyote.providers.registry import find_migration_for
 
 
-def test_direct_for_known_sdk_rewrite_without_creds(tmp_path, monkeypatch):
+def test_quarantine_for_known_sdk_rewrite_without_creds(tmp_path, monkeypatch):
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "none.json"))
     for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "KOYOTE_LLM_KEY"):
         monkeypatch.delenv(k, raising=False)
     d = KoyoteIntelligence().decide("/tmp", "stripe", "11.18.0", "13.0.0", has_rewrites=True)
-    assert d.strategy == "DIRECT"
-    assert d.estimated_tokens == 0
-    assert d.confidence >= 0.85
+    assert d.strategy == "QUARANTINE"
+    assert d.estimated_tokens is None
+    assert d.confidence == 0.0
+    assert d.reason == "no_credentials_for_ai"
     assert d.verification_required is True
 
 

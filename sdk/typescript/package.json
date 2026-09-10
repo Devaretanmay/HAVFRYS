@@ -1,7 +1,7 @@
 {
   "name": "@koyote/sdk",
   "version": "1.1.2",
-  "description": "TypeScript SDK for Koyote - deterministic AST patching & kernel-isolated execution",
+  "description": "TypeScript SDK for Koyote - AST analysis, contract verification & kernel-isolated execution",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [

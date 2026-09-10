@@ -59,3 +59,17 @@ def test_cli_fix_detect():
     assert result.returncode == 0
     assert "KOYOTE AUTONOMOUS MAINTENANCE LOOP" in result.stdout
 
+
+def test_cli_at_howl_alias():
+    result = _run_koyote_cli(["@howl", "--help"])
+    assert result.returncode == 0
+    assert "usage:" in result.stdout
+    assert "@howl" in result.stdout
+
+
+def test_cli_at_hunt_alias():
+    result = _run_koyote_cli(["@hunt", "trials/fixtures/taxonomy_stripe/", "--detect"])
+    assert result.returncode == 0
+    assert "KOYOTE AUTONOMOUS MAINTENANCE LOOP" in result.stdout
+
+

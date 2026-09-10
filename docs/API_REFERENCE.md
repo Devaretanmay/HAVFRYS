@@ -64,8 +64,8 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 ## 3. External-Change Intelligence & AutoPatch APIs
 
 ### `from koyote import autopatch`
-- `plan_maintenance(old_spec: str, new_spec: str, repo_root: str = ".", config: ScanConfig = None) -> MaintenancePlan`: Generates breaking-change diff, scans callsites, and computes patch targets.
-- `apply_patch(repo_root: str, plan: MaintenancePlan, dry_run: bool = False) -> List[PatchResult]`: Applies surgical AST transformations.
+- `plan_maintenance(old_spec: str, new_spec: str, repo_root: str = ".", config: ScanConfig = None) -> MaintenancePlan`: Generates breaking-change diff, scans callsites, and computes patch targets as evidence for AI reasoning.
+- `apply_patch(repo_root: str, plan: MaintenancePlan, dry_run: bool = True) -> List[PatchResult]`: Evaluates AST transformation targets (dry-run only; AI must author all source changes).
 - `synthesize_contracts(api_name: str, old_ver: str, new_ver: str, specs: List[VerificationSpec], lang: str = "ts") -> str`: Synthesizes Vitest/pytest contract test suites.
 
 ### `from koyote.graph import build_dependency_graph, audit_dependency_graph`
@@ -74,7 +74,7 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ### `from koyote.maintenance import run_maintenance_cycle, detect_drift`
 - `detect_drift(repo_dir: str, provider_name: str) -> List[Dict[str, Any]]`: Scans for outdated external dependencies.
-- `run_maintenance_cycle(repo_dir: str, provider_name: str, ...) -> MaintenanceReport`: Runs end-to-end drift detection, AST patching, formatting, test verification, and PR creation.
+- `run_maintenance_cycle(repo_dir: str, provider_name: str, ...) -> MaintenanceReport`: Runs end-to-end drift detection, AI-authored repair, sandbox verification, and PR creation.
 
 ### `from koyote.pipeline import MaintenancePipeline, PipelinePolicy, TriggerContext`
 - `MaintenancePipeline`: Coordinates the full maintenance lifecycle end-to-end (drift detection, impact analysis, planning, sandboxed verification, PR generation).
@@ -93,14 +93,14 @@ Low-level process execution runner that applies kernel sandbox (Seatbelt / Landl
 
 ### `from koyote.change_source import ChangeSource, Detection`
 - `ChangeSource(kind, identity, version_from, version_to, contract_hash, origin)`: kinds `external_api, sdk, openapi, graphql, protobuf, webhook, mcp_server, internal_service`. Helpers: `ChangeSource.sdk(provider, …)`, `.provider`, `.key()`.
-- `Detection(source, outcome, reason, affected_files, callsite_count, ai_dependent, confidence)`: outcomes `NO_IMPACT / IMPACT_DIRECT / IMPACT_AI / IMPACT_QUARANTINE` (fail-closed).
+- `Detection(source, outcome, reason, affected_files, callsite_count, ai_dependent, confidence)`: outcomes `NO_IMPACT / IMPACT_AI / IMPACT_QUARANTINE` (fail-closed). `IMPACT_DIRECT` is accepted for backward compatibility but never emitted.
 
 ### `from koyote.drift import detect_drift, detect_changes`
 - `detect_changes(repo_dir, provider_name=None) -> List[Detection]`: read-only classification — never patches.
 
 ### `from koyote.intelligence import KoyoteIntelligence, Decision, resolve_migration`
-- `Decision(strategy, reason, confidence, estimated_tokens, expected_blast_radius, verification_required)`: strategies `DIRECT / AI / HYBRID / REFUSE…QUARANTINE` are internal only (no CLI flag).
-- `decide_for_source(repo_dir, source)`: routes any `ChangeSource`; kinds without registry connectors go AI-if-credentials else quarantine.
+- `Decision(strategy, reason, confidence, estimated_tokens, expected_blast_radius, verification_required)`: strategies `AI / QUARANTINE`. AI credentials present → `AI`; absent → `QUARANTINE` (fail-closed, no source modification).
+- `decide_for_source(repo_dir, source)`: routes any `ChangeSource`; AI-if-credentials, else quarantine.
 
 ### `from koyote.providers.registry import find_migration_for`
 - `find_migration_for(source) -> Optional[ProviderMigration]`: resolves `sdk`/`external_api` sources; all other kinds return `None` by design (no connectors yet).

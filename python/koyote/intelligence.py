@@ -3,7 +3,8 @@
 """Koyote Intelligence — invisible smart routing (blueprint box 5).
 
 Single brain. User never picks --ai vs deterministic.
-Decision = knowledge match → DIRECT (0 tokens) else AI if creds else QUARANTINE.
+AI is the exclusive patch author. When valid credentials are present,
+routes to AI; otherwise fails closed into QUARANTINE.
 """
 
 from __future__ import annotations
@@ -86,20 +87,6 @@ class KoyoteIntelligence:
                 to_version=actual_to,
                 confidence=0.95 if (hit or has_rewrites) else 0.8,
                 estimated_tokens=None,
-            )
-
-        if hit or has_rewrites:
-            elapsed = int((time.time() - t0) * 1000)
-            reason = "kb_hit" if hit else "registry_rewrite"
-            return Decision(
-                strategy="DIRECT",
-                reason=reason,
-                elapsed_ms=elapsed,
-                provider=provider,
-                from_version=actual_from,
-                to_version=actual_to,
-                confidence=0.90,
-                estimated_tokens=0,
             )
 
         elapsed = int((time.time() - t0) * 1000)

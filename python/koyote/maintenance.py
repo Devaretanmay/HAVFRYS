@@ -8,14 +8,14 @@ import subprocess
 import time
 from typing import Any
 
-from koyote.ai_planner import AIPatchPlanner, ai_followup_for_missed, build_reasoning_context
+from koyote.ai_planner import AIPatchPlanner, build_reasoning_context
 from koyote.drift import detect_drift  # noqa: F401
 from koyote.formatters import run_style_formatter
 from koyote.github.trust_pr import generate_trust_pr_markdown, TrustPRMetadata
 from koyote.git_ops import git_commit_and_push, gh_create_pr
 from koyote.maintenance_agents import ImpactAnalyst
 from koyote.patch_writer import (
-    apply_rewrites, discover_aliases, instantiate_alias_rules, PatchResult,
+    discover_aliases, instantiate_alias_rules, PatchResult,
 )
 from koyote.providers.registry import get_default_registry
 from koyote.sandbox.snapshot import SnapshotManager, _file_hash
@@ -98,7 +98,7 @@ def run_maintenance_cycle(
     llm_base_url: str | None = None,
     **_ignored: Any,
 ) -> MaintenanceRunReport:
-    """Execute full autonomous maintenance loop on a repository. Intelligence picks DIRECT vs AI."""
+    """Execute full autonomous maintenance loop on a repository with AI-authored repairs."""
     repo_dir = os.path.abspath(repo_dir)
     registry = get_default_registry()
     p_spec = registry.get(provider_name)
@@ -128,19 +128,7 @@ def run_maintenance_cycle(
     quarantine_error: str | None = None
     applied_rewrites = list(rewrites)
 
-    if decision.strategy == "DIRECT":
-        kb_rules = direct_rewrites_for(repo_dir, provider_name, actual_from, actual_to)
-        seen_patterns = {r.pattern for r in applied_rewrites}
-        extra = [r for r in kb_rules if r.pattern not in seen_patterns]
-        base_rules = list(applied_rewrites) + extra
-        for ar in instantiate_alias_rules(base_rules, discover_aliases(repo_dir, provider_name)):
-            if ar.pattern not in seen_patterns:
-                seen_patterns.add(ar.pattern)
-                base_rules.append(ar)
-        applied_rewrites = base_rules
-        if base_rules:
-            patch_results = apply_rewrites(repo_dir, base_rules, dry_run=False)
-    elif decision.strategy == "AI":
+    if decision.strategy == "AI":
         ai_planner = AIPatchPlanner.from_env(api_key=llm_api_key, model=llm_model, base_url=llm_base_url)
         if ai_planner is None:
             quarantine_error = (
@@ -166,8 +154,16 @@ def run_maintenance_cycle(
             if target_files:
                 migration_desc = migration.description if migration else f"Upgrade {provider_name} to {actual_to}"
                 kb_rules = direct_rewrites_for(repo_dir, provider_name, actual_from, actual_to)
-                if kb_rules or applied_rewrites:
-                    rules_summary = "\n".join(f"- {r.description}: {r.pattern} -> {r.replacement}" for r in (applied_rewrites or kb_rules))
+                base_rules = list(applied_rewrites or kb_rules)
+                aliases = discover_aliases(repo_dir, provider_name)
+                if aliases:
+                    seen_p = {r.pattern for r in base_rules}
+                    for ar in instantiate_alias_rules(base_rules, aliases):
+                        if ar.pattern not in seen_p:
+                            seen_p.add(ar.pattern)
+                            base_rules.append(ar)
+                if base_rules:
+                    rules_summary = "\n".join(f"- {r.description}: {r.pattern} -> {r.replacement}" for r in base_rules)
                     migration_desc += f"\n\nContract pattern evidence (use as architectural guide):\n{rules_summary}"
                 reason_ctx = build_reasoning_context(
                     repo_dir, provider_name, actual_from, actual_to,
@@ -190,20 +186,6 @@ def run_maintenance_cycle(
             f"No safe repair path for {provider_name} {actual_from}->{actual_to} ({decision.reason}). "
             "Run `koyote auth` to enable AI repair, or add a verified migration to the registry."
         )
-
-    if decision.strategy == "DIRECT":
-        touched = [os.path.abspath(r.file_path) for r in patch_results if r.success]
-        impact = ImpactAnalyst().analyze_impact(repo_dir, provider_name)
-        migration_desc = migration.description if migration else f"Upgrade {provider_name} to {actual_to}"
-        missed_results, missed_planner = ai_followup_for_missed(
-            repo_dir, provider_name, actual_from, actual_to, touched,
-            impact.affected_files, migration_desc, changelog_url)
-        if missed_results:
-            decision.strategy = "HYBRID"
-            decision.reason = "direct_noop_unusual_code" if not patch_results else "direct_partial_unusual_code"
-            decision.confidence = 0.6
-            ai_planner = missed_planner
-            patch_results.extend(missed_results)
 
     modified_paths = [os.path.abspath(r.file_path) for r in patch_results if r.success]
     files_modified = len(modified_paths)
@@ -269,9 +251,9 @@ def run_maintenance_cycle(
                 changelog_url=changelog_url,
             )
             if retry_results:
-                decision.strategy = "HYBRID"
-                decision.reason = "direct_then_ai_repair"
-                decision.confidence = 0.7
+                decision.strategy = "AI"
+                decision.reason = "ai_self_repair"
+                decision.confidence = 0.85
                 run_style_formatter(repo_dir, modified_paths)
                 retry_proc = _run_tests(repo_dir, test_cmd, timeout=120)
                 if retry_proc.returncode == 0:
@@ -365,6 +347,11 @@ def run_maintenance_cycle(
         if pushed:
             pr_title = f"koyote: migrate {p_spec.display_name} {actual_from} -> {actual_to}"
             pr_url = gh_create_pr(github_repo, branch_name, pr_title, pr_body)
+            if pr_url:
+                try:
+                    pr_number = int(pr_url.rstrip("/").split("/")[-1])
+                except Exception:
+                    pass
 
         if not pr_url and github_client:
             pr_resp = github_client.create_pull_request(
@@ -396,9 +383,5 @@ def run_maintenance_cycle(
         pr_url=pr_url,
         pr_number=pr_number,
         error=quarantine_error,
-        repair_path={
-            "DIRECT": "verified-pattern",
-            "AI": "ai-reasoning",
-            "HYBRID": "hybrid",
-        }.get(decision.strategy, "none"),
+        repair_path="ai-reasoning" if decision.strategy == "AI" else "none",
     )

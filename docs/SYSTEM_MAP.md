@@ -7,7 +7,7 @@
 ```mermaid
 flowchart LR
     A["Any ChangeSource<br/>(Vendor release, scheduled check, PR)"] --> B["Connect AI Provider"]
-    B --> C["Zero-Token Index"]
+    B --> C["AST Evidence Scan"]
     C --> D["Shared AI Maintenance Engine"]
     D --> E["Consult Mode (Howl)<br/>(Explains, files GitHub Issue, 0 code touched)"]
     D --> F["Work Mode (Hunt)<br/>(AI repairs, sandbox tests, opens PR)"]
@@ -17,7 +17,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    EVENT["ANY CHANGESOURCE<br/>dependency bump · registry · schedule · PR webhook"] --> DETECT["DETECT IMPACT<br/>AST graph · callsites · zero-token"]
+    EVENT["ANY CHANGESOURCE<br/>dependency bump · registry · schedule · PR webhook"] --> DETECT["DETECT IMPACT<br/>AST graph · callsites · evidence"]
     DETECT --> MEM["SEMANTIC PATTERN MEMORY<br/>verified patterns in .koyote/knowledge/<br/>saves customer tokens"]
     MEM --> AI["SHARED AI REASONING ENGINE<br/>customer BYOK provider<br/>sole author of changes & reviews"]
     AI -->|Consult: Howl| ADVICE["CONSULT: IMPACT ANALYSIS<br/>what changed · affected · why · what not to change<br/>files GitHub Issue · 0 files touched"]
@@ -66,7 +66,7 @@ flowchart TD
 
 ```text
 <repo>/.koyote/
-  graph.json            dependency graph (Rust AST, zero-token)
+  graph.json            dependency graph (Rust AST engine)
   index_state.json      commit SHA + mtimes (incremental re-index)
   knowledge/            verified patterns (sdk/stripe/11.18.0__13.0.0.json…)
   history.json          auditable migration ledger

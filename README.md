@@ -31,7 +31,7 @@ Software changes in two ways:
 
 Dependabot bumps version strings in lockfiles and leaves CI broken. Human engineers spend 20%+ of engineering cycles reading migration guides, mapping AST callsites, updating wrappers, and fixing broken tests.
 
-**Koyote manages software changes originating outside the repository** — mapping external contracts to internal callsites, synthesizing surgical AST patches, running local formatters, and verifying zero blast radius with sandbox isolation.
+**Koyote manages software changes originating outside the repository** — mapping external contracts to internal callsites, reasoning about impact with AI, generating verified repairs, and confirming zero blast radius with sandbox isolation.
 
 ---
 
@@ -40,7 +40,7 @@ Dependabot bumps version strings in lockfiles and leaves CI broken. Human engine
 ```text
 Any ChangeSource (Dependency release, vendor changelog, scheduled check, PR webhook)
         ↓
-Zero-token AST Scan + Semantic Pattern Memory (.koyote/knowledge/)
+AST Evidence Scan + Semantic Pattern Memory (.koyote/knowledge/)
         ↓
 Shared AI Reasoning Engine (Customer BYOK Provider)
 AI reasons; native tools provide evidence and execute/verify
@@ -57,7 +57,7 @@ AI reasons; native tools provide evidence and execute/verify
 ```bash
 koyote auth              # Connect BYOK AI provider (Anthropic, OpenAI, Ollama)
 koyote doctor            # GitHub / AI / Indexed / Knowledge / Tests / Monitoring
-koyote index .           # Zero-token static index
+koyote check .           # Read-only AST evidence scan
 koyote check .           # Read-only drift & impact audit
 koyote consult .         # Consult mode: AI assessment as a GitHub Issue, modifies nothing
 koyote work .            # Work mode: AI repair, sandbox verification, and PR delivery
@@ -156,7 +156,7 @@ Active Graph Edges:      28
 
 ## 3. Autonomous Continuous Maintenance (`koyote fix`)
 
-When upstream providers release breaking changes, Koyote detects the drift, synthesizes surgical AST transformations, matches your team's code formatting (`prettier`/`ruff`), validates local tests, and opens a Developer Trust PR:
+When upstream providers release breaking changes, Koyote detects the drift, reasons about impact with AI, generates verified repairs, matches your team's code formatting (`prettier`/`ruff`), validates local tests, and opens a Developer Trust PR:
 
 ```bash
 # Autonomous migration for a target provider:
@@ -167,7 +167,7 @@ koyote fix . --provider openai --from v3.28.0 --to v4.0.0 --create-pr --repo own
 ```
 
 ### What `koyote fix` guarantees:
-1. **Surgical AST Patching**: Only transforms affected callsites and wrappers.
+1. **AI-Authored Repair**: AI reasons about affected callsites, generates targeted source changes, and validates impact.
 2. **Local Formatter Bridge**: Formats changed files with your project's `prettier`, `ruff`, or `biome`.
 3. **Local Test Verification**: Executes test suites and rejects patches if tests remain red.
 4. **Zero Blast Radius**: Verifies that 0 unintended files were modified.

@@ -13,7 +13,7 @@ Install Koyote GitHub App on repo
   ↓
 Choose repository
   ↓
-Koyote runs Day-0 zero-token index
+Koyote runs Day-0 AST evidence scan
   ↓
 Connect AI provider reasoning key (BYOK)
   ↓
@@ -65,8 +65,8 @@ New installations start in `consult`: accurate Issues build trust in the reasoni
 ## 5. Two Product Modes: Consult & Work (Personas: Howl & Hunt)
 
 Koyote cleanly defines its product abstractions:
-- **Consult (`@howl explain` / `koyote consult`)**: Explains maintenance problems with deep AI reasoning. For any detected maintenance problem (dependency drift, contract breaking bump, external change), Consult files a **GitHub Issue** detailing what changed, what is affected, why, what should change, and what must NOT change. When invoked on a PR (`@howl explain`), it provides an advisory impact breakdown on the PR thread. Consult is strictly read-only: it **never modifies files, never commits, and never opens PRs**.
-- **Work (`@hunt repair` / `koyote work`)**: Autonomous repair worker. Synthesizes surgical code repairs via the customer's AI provider, executes the real test suite inside the kernel sandbox (Linux Landlock / macOS Seatbelt), and delivers a verified merge-ready **GitHub PR** with BLAKE3 cryptographic receipts only when tests pass (`exit 0`). If tests fail, it fails closed without opening a PR.
+- **Consult (`@howl` / `koyote consult`)**: Explains maintenance problems with deep AI reasoning. For any detected maintenance problem (dependency drift, contract breaking bump, external change), Consult files a **GitHub Issue** detailing what changed, what is affected, why, what should change, and what must NOT change. When invoked on a PR (`@howl`), it provides an advisory impact breakdown on the PR thread. Consult is strictly read-only: its GitHub client possesses read-only permissions and **never modifies files, never commits, and never opens PRs**.
+- **Work (`@hunt` / `koyote work`)**: Autonomous repair worker with repository write authority. Synthesizes surgical code repairs via the customer's AI provider, executes the real test suite inside the kernel sandbox (Linux Landlock / macOS Seatbelt), and delivers a verified merge-ready **GitHub PR** with BLAKE3 cryptographic receipts only when tests pass (`exit 0`). If tests fail, it fails closed without opening a PR.
 
 ## 6. Anatomy of a review
 

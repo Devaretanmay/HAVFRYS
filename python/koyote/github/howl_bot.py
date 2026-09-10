@@ -34,7 +34,11 @@ class HowlBot:
     """The Consult / Advisor agent. Explains drift, assesses impact, and opens Issues."""
 
     def __init__(self, client: GitHubAppClient | None = None, policy: PipelinePolicy | None = None):
-        self.client = client or GitHubAppClient()
+        if client is not None:
+            self.client = client
+            self.client.readonly = True
+        else:
+            self.client = GitHubAppClient(readonly=True)
         self.policy = policy or PipelinePolicy(mode="consult")
         self.policy.mode = "consult"
 

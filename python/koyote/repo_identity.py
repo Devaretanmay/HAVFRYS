@@ -22,9 +22,21 @@ STATE_AVAILABLE = "AVAILABLE"
 STATE_ACTIVE = "ACTIVE"
 STATE_PAUSED = "PAUSED"
 
-REPO_STORE_DIR = os.path.expanduser("~/.koyote")
-REPO_STORE_FILE = os.path.join(REPO_STORE_DIR, "repositories.json")
-ACTIVE_REPO_FILE = os.path.join(REPO_STORE_DIR, "active_repo")
+def _repo_store_dir() -> str:
+    return os.environ.get("KOYOTE_DIR") or os.path.expanduser("~/.koyote")
+
+
+def _repo_store_file() -> str:
+    return os.path.join(_repo_store_dir(), "repositories.json")
+
+
+def _active_repo_file() -> str:
+    return os.path.join(_repo_store_dir(), "active_repo")
+
+
+REPO_STORE_DIR = _repo_store_dir()
+REPO_STORE_FILE = _repo_store_file()
+ACTIVE_REPO_FILE = _active_repo_file()
 SALT_FILE = os.path.join(REPO_STORE_DIR, ".koyote_salt")
 
 
@@ -36,21 +48,7 @@ def _ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 
 
-def _get_master_salt() -> bytes:
-    _ensure_dir(REPO_STORE_DIR)
-    if os.path.isfile(SALT_FILE):
-        try:
-            with open(SALT_FILE, "rb") as f:
-                content = f.read().strip()
-                if len(content) >= 32:
-                    return content
-        except Exception:
-            pass
-    salt = os.urandom(32).hex().encode("utf-8")
-    fd = os.open(SALT_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)
-    with os.fdopen(fd, "wb") as f:
-        f.write(salt)
-    return salt
+KEY_SALT = b"koyote_repo_identity_salt_v1"
 
 
 def derive_repository_key(repo_full_name: str, repo_id: Optional[str] = None) -> str:
@@ -61,17 +59,17 @@ def derive_repository_key(repo_full_name: str, repo_id: Optional[str] = None) ->
     duplicate logical projects.
     """
     clean_name = repo_full_name.strip().lower()
-    salt = _get_master_salt()
-    seed = f"{clean_name}::{repo_id or 'default'}"
-    digest = hmac.new(salt, seed.encode("utf-8"), hashlib.sha256).hexdigest()
+    seed = f"github.com/{clean_name}::{repo_id or 'default'}"
+    digest = hmac.new(KEY_SALT, seed.encode("utf-8"), hashlib.sha256).hexdigest()
     return f"kyp_{digest[:28]}"
 
 
 def load_all_repositories() -> Dict[str, Dict[str, Any]]:
-    if not os.path.isfile(REPO_STORE_FILE):
+    path = _repo_store_file()
+    if not os.path.isfile(path):
         return {}
     try:
-        with open(REPO_STORE_FILE, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
     except Exception:
@@ -79,8 +77,9 @@ def load_all_repositories() -> Dict[str, Dict[str, Any]]:
 
 
 def save_all_repositories(repos: Dict[str, Dict[str, Any]]) -> None:
-    _ensure_dir(REPO_STORE_DIR)
-    fd = os.open(REPO_STORE_FILE, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)
+    _ensure_dir(_repo_store_dir())
+    path = _repo_store_file()
+    fd = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, stat.S_IRUSR | stat.S_IWUSR)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(repos, f, indent=2)
         f.write("\n")
@@ -143,9 +142,10 @@ def set_bot_state(repo_full_name: str, bot_name: str, state: str) -> Optional[Di
 
 def get_active_repo() -> Optional[str]:
     """Return currently active repository name from local working context."""
-    if os.path.isfile(ACTIVE_REPO_FILE):
+    path = _active_repo_file()
+    if os.path.isfile(path):
         try:
-            with open(ACTIVE_REPO_FILE, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 val = f.read().strip()
                 if val:
                     return val
@@ -161,7 +161,32 @@ def get_active_repo() -> Optional[str]:
 def set_active_repo(repo_name: str) -> str:
     """Set active repository working context."""
     clean = repo_name.strip()
-    _ensure_dir(REPO_STORE_DIR)
-    with open(ACTIVE_REPO_FILE, "w", encoding="utf-8") as f:
+    _ensure_dir(_repo_store_dir())
+    with open(_active_repo_file(), "w", encoding="utf-8") as f:
         f.write(clean + "\n")
     return clean
+
+
+def clear_active_repo() -> None:
+    """Clear the active repository working context."""
+    path = _active_repo_file()
+    if os.path.isfile(path):
+        try:
+            os.remove(path)
+        except Exception:
+            pass
+
+
+def unregister_repository(repo_full_name: str) -> bool:
+    """Remove repository from registered repositories store."""
+    repos = load_all_repositories()
+    clean_name = repo_full_name.strip().lower()
+    if clean_name in repos:
+        del repos[clean_name]
+        save_all_repositories(repos)
+        current_active = get_active_repo()
+        if current_active and current_active.strip().lower() == clean_name:
+            clear_active_repo()
+        return True
+    return False
+
