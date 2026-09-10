@@ -115,6 +115,31 @@ def ensure_pr_checkout(repo_full_name: str, pr_number: int, head_sha: str,
         return (base, False)
 
 
+def ensure_branch_checkout(repo_full_name: str, branch: str, sha: str,
+                           token: str | None = None) -> tuple:
+    """Check out an arbitrary pushed branch head. Returns (path, exact).
+
+    Same honesty contract as ensure_pr_checkout: exact=True only when the
+    SHA was verified locally, else tracked-branch fallback with exact=False.
+    """
+    base = ensure_repo_checkout(repo_full_name, token=token, ref=branch)
+    if not base:
+        return (None, False)
+    auth = _auth_args(token)
+    _run_git(auth + ["fetch", "origin", branch], base)
+    try:
+        proc = subprocess.run(["git", "cat-file", "-e", sha], cwd=base,
+                              capture_output=True, timeout=30)
+        if proc.returncode != 0:
+            return (base, False)
+        if not _run_git(["checkout", "--detach", sha], base):
+            return (base, False)
+        return (base, True)
+    except Exception as e:
+        _logger.warning("branch checkout failed for %s %s: %s", repo_full_name, branch, e)
+        return (base, False)
+
+
 def resolve_pr_workdir(payload: dict[str, Any], token: str | None = None,
                        fallback_fn: Any = None) -> tuple:
     """(workdir, exact_head) for a pull_request webhook payload."""

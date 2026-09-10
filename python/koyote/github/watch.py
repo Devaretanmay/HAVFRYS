@@ -15,6 +15,7 @@ import logging
 import os
 from typing import Any
 
+from koyote import cross_repo
 from koyote.config import PipelinePolicy
 from koyote.drift import detect_changes
 from koyote.github.client import GitHubAppClient
@@ -95,4 +96,9 @@ def watch_once(client: Any = None, policy: Any = None) -> list[dict[str, Any]]:
                 save_installation(record)
             except Exception as e:
                 _logger.warning("watch state save failed: %s", e)
+    try:
+        for res in cross_repo.sweep_and_notify(client):
+            outcomes.append({"sweep": True, **res})
+    except Exception as e:
+        _logger.warning("cross-repo sweep failed: %s", e)
     return outcomes

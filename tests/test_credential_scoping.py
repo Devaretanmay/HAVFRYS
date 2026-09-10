@@ -8,6 +8,7 @@ import shutil
 from koyote.credentials import (
     has_valid_credentials, load_credentials, save_credentials, scoped_credentials_path,
 )
+from koyote.maintenance import run_maintenance_cycle
 
 
 def _clean_env(monkeypatch, tmp_path):
@@ -35,7 +36,6 @@ def test_no_secret_in_repo_state_after_fix(tmp_path, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", secret)
     dst = str(tmp_path / "r")
     shutil.copytree("trials/fixtures/taxonomy_stripe", dst)
-    from koyote.maintenance import run_maintenance_cycle
     run_maintenance_cycle(dst, "stripe", from_version="11.18.0", to_version="13.0.0")
     for dirpath, _, filenames in os.walk(os.path.join(dst, ".koyote")):
         for fn in filenames:

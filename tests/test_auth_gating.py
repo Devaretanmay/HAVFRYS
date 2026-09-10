@@ -1,6 +1,7 @@
 import os
-import sys
+import shutil
 import subprocess
+import sys
 from koyote.credentials import save_credentials, load_credentials, clear_credentials, has_valid_credentials, verify_credentials
 
 
@@ -49,7 +50,6 @@ def test_verify_credentials_formats():
 
 
 def _copy_fixture(tmp_path):
-    import shutil
     dst = str(tmp_path / "taxonomy_stripe")
     shutil.copytree("trials/fixtures/taxonomy_stripe", dst)
     return dst

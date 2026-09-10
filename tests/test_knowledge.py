@@ -9,6 +9,7 @@ from koyote.knowledge import (
     direct_rewrites_for, ensure_test_recipe, lookup,
     record_failure, upsert_learned,
 )
+from koyote.maintenance import run_maintenance_cycle
 
 
 def _rewrite(pattern="a(", replacement="b(", exts=(".ts",), desc="d"):
@@ -47,8 +48,6 @@ def test_record_failure_never_creates_trusted_patterns(tmp_path):
 
 
 def test_failed_verification_records_avoidance_note(tmp_path):
-    import json
-    from koyote.maintenance import run_maintenance_cycle
     repo = tmp_path / "r"
     (repo / "src").mkdir(parents=True)
     (repo / "package.json").write_text(json.dumps({

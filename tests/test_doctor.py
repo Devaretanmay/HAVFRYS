@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import sys
 
+from koyote.github.installations import REPO_READY, record_installation_event
+
 
 def _run(args, env, cwd=None):
     return subprocess.run(
@@ -52,7 +54,6 @@ def test_doctor_ready_after_index(tmp_path):
 
 
 def test_doctor_monitoring_names_howl(tmp_path, monkeypatch):
-    from koyote.github.installations import REPO_READY, record_installation_event
     env = _env(tmp_path)
     monkeypatch.setenv("KOYOTE_INSTALLATIONS_DIR", str(tmp_path / "inst"))
     record_installation_event(

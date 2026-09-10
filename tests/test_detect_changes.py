@@ -5,6 +5,7 @@
 import os
 import shutil
 
+from koyote.audit import run_audit
 from koyote.change_source import IMPACT_AI, IMPACT_QUARANTINE
 from koyote.drift import detect_changes
 
@@ -44,7 +45,6 @@ def test_check_writes_nothing_outside_koyote(tmp_path):
         for fn in filenames:
             fp = os.path.join(dirpath, fn)
             before[fp] = open(fp, "rb").read()
-    from koyote.audit import run_audit
     run_audit(dst, output_format="json", write_graph=True)
     for fp, content in before.items():
         assert open(fp, "rb").read() == content

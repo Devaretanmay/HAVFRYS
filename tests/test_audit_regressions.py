@@ -8,17 +8,20 @@ Covers bugs that were found but not caught by the existing suite:
 - main.py: workflow node with malformed command string handled gracefully
 """
 
+import argparse
 import os
 import shutil
 import sys
 import tempfile
 import textwrap
+from unittest.mock import patch
 import pytest
 
-from koyote.cli.main import _topo_sort
+from koyote.cli.main import _topo_sort, cmd_status
 from koyote.config import load_config
 from koyote.engine.execution import ExecutionKind, ExecutionManager
 from koyote.engine.pty_supervisor import PtySupervisor
+from koyote.engine.session import SessionStatus, AgentSession
 
 
 def test_config_null_compartments_section():
@@ -130,11 +133,6 @@ def test_snapshot_dir_persists():
 
 def test_status_started_at_none_safe(capsys):
     """Duration calculation in cmd_status must not crash when started_at is None."""
-    from koyote.cli.main import cmd_status
-    import argparse
-    from unittest.mock import patch
-    from koyote.engine.session import SessionStatus, AgentSession
-
     args = argparse.Namespace()
     
     mock_session = AgentSession(

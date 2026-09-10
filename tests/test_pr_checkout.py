@@ -7,6 +7,7 @@ import subprocess
 from unittest.mock import MagicMock
 
 from koyote.github.provisioning import ensure_pr_checkout, resolve_pr_workdir
+from koyote.pipeline import AnalysisResult, DriftFinding, TriggerContext, surface_result
 
 
 def _seed_repo_with_pr_ref(tmp_path):
@@ -62,7 +63,6 @@ def test_resolve_pr_workdir_threads_exactness(tmp_path, monkeypatch):
 
 
 def test_approximate_checkout_disclosed_in_status():
-    from koyote.pipeline import AnalysisResult, DriftFinding, TriggerContext, surface_result
     ctx = TriggerContext(event_id="e", event_type="pull_request.opened", repository="a/b",
                          ref="x", sha="y", workdir="/tmp", pr_number=1,
                          metadata={"exact_head": False})

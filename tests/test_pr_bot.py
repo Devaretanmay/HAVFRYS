@@ -1,6 +1,10 @@
+import os
+import shutil
 from unittest.mock import MagicMock, patch
 
-from koyote.config import PipelinePolicy
+from koyote.ai_planner import AIPatchPlanner
+from koyote.config import PipelinePolicy, load_config
+import koyote.github.pr_bot as pr_bot_mod
 from koyote.github.pr_bot import (
     handle_pull_request_event,
     handle_installation_event,
@@ -10,6 +14,7 @@ from koyote.github.pr_bot import (
     _extract_changed_files,
     _safe_preview,
 )
+from koyote.llm import LLMClient, LLMResponse
 
 
 def test_extract_changed_files_from_payload():
@@ -204,10 +209,6 @@ def test_issue_comment_explain_without_creds_refuses(tmp_path, monkeypatch):
 
 
 def test_issue_comment_explain_posts_assessment(tmp_path, monkeypatch):
-    import shutil
-    from koyote.ai_planner import AIPatchPlanner
-    from koyote.llm import LLMClient, LLMResponse
-    import koyote.github.pr_bot as pr_bot_mod
     shutil.copytree("trials/fixtures/taxonomy_stripe", str(tmp_path / "repo"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-testkey1234567890")
     mock_client = MagicMock(spec=LLMClient)
@@ -233,7 +234,6 @@ def test_issue_comment_explain_posts_assessment(tmp_path, monkeypatch):
 
 
 def test_pr_skipped_on_excluded_label():
-    from koyote.config import PipelinePolicy
     client = MagicMock()
     policy = PipelinePolicy(exclude_labels=["dependencies"])
     payload = {
@@ -252,7 +252,6 @@ def test_pr_skipped_on_excluded_label():
 
 
 def test_pr_skipped_when_all_files_ignored():
-    from koyote.config import PipelinePolicy
     client = MagicMock()
     policy = PipelinePolicy(ignore_paths=["docs/**"])
     payload = {
@@ -272,8 +271,6 @@ def test_pr_skipped_when_all_files_ignored():
 
 
 def test_bot_config_parses_filters_and_mode(tmp_path):
-    import os
-    from koyote.config import load_config
     cfg_path = os.path.join(str(tmp_path), "config.yaml")
     with open(cfg_path, "w") as f:
         f.write("bot:\n  mode: consult\n  ignore_paths: ['docs/**']\n  exclude_labels: [dependencies]\n")

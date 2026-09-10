@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """PR surface parity: summary, badges, diagrams, footer, assembly order."""
 
+from unittest.mock import MagicMock
+
+from koyote.config import PipelinePolicy
 from koyote.github.pr_render import (
     render_flow_diagram,
     render_pr_footer,
     render_pr_summary,
     severity_of,
 )
-from koyote.pipeline import AnalysisResult, DriftFinding, TriggerContext
+from koyote.pipeline import AnalysisResult, DriftFinding, TriggerContext, surface_result
 
 
 def _ctx(**kwargs):
@@ -74,9 +77,6 @@ def test_footer_names_commit_and_rerun():
 
 
 def test_surface_assembly_order():
-    from unittest.mock import MagicMock
-    from koyote.pipeline import surface_result
-    from koyote.config import PipelinePolicy
     result = surface_result(_ctx(), _analysis(), PipelinePolicy(), MagicMock())
     body = result.comment_body
     assert body.index("## Koyote review") < body.index("KOYOTE FOUND A MAINTENANCE ISSUE")

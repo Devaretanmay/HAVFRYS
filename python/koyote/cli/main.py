@@ -245,12 +245,12 @@ def cmd_init(args):
 
     gh_user = _github_identity()
     if gh_user:
-        print(f"✓ GitHub connected (account: {gh_user})")
+        print(f"[OK] GitHub connected (account: {gh_user})")
     else:
-        print("✓ GitHub connected")
+        print("[OK] GitHub connected")
 
     repo_name = _github_repo_from_remote(workdir) or os.path.basename(workdir)
-    print(f"✓ Repository detected: {repo_name}")
+    print(f"[OK] Repository detected: {repo_name}")
 
     try:
         findings = detect_drift(workdir)
@@ -258,22 +258,22 @@ def cmd_init(args):
         res = autopatch.scan_callsites(workdir)
         callsite_count = len(res.get("callsites", []))
         if provider_count or callsite_count:
-            print(f"✓ Repository indexed ({provider_count} external provider(s), {callsite_count} callsite(s) mapped)")
+            print(f"[OK] Repository indexed ({provider_count} external provider(s), {callsite_count} callsite(s) mapped)")
         else:
-            print("✓ Repository indexed")
+            print("[OK] Repository indexed")
     except Exception:
-        print("✓ Repository indexed")
+        print("[OK] Repository indexed")
 
     summary = get_active_provider_summary()
     if summary.get("configured"):
         p_name = summary.get("provider", "AI")
         m_name = summary.get("model", "")
         model_str = f" ({m_name})" if m_name else ""
-        print(f"✓ AI provider: {p_name}{model_str}")
+        print(f"[OK] AI provider: {p_name}{model_str}")
     else:
         print("- AI provider: none configured (run 'koyote auth' to connect BYOK reasoning key)")
 
-    print("✓ Maintenance memory initialized (.koyote/knowledge/)")
+    print("[OK] Maintenance memory initialized (.koyote/knowledge/)")
     print()
     print("READY")
     print()
@@ -584,7 +584,7 @@ def cmd_active(args):
     repo = getattr(args, "repo", None)
     if repo:
         set_active_repo(repo)
-        print(f"✓ Active repository set to: {repo}")
+        print(f"[OK] Active repository set to: {repo}")
     else:
         current = get_active_repo()
         if current:
@@ -603,7 +603,7 @@ def cmd_disconnect(args):
         for rname in list(repos.keys()):
             unregister_repository(rname)
         clear_active_repo()
-        print("✓ All repositories disconnected and active context cleared.")
+        print("[OK] All repositories disconnected and active context cleared.")
         return
 
     if not target_repo:
@@ -613,7 +613,7 @@ def cmd_disconnect(args):
     removed = unregister_repository(target_repo)
     clear_active_repo()
     if removed:
-        print(f"✓ Repository disconnected: {target_repo}")
+        print(f"[OK] Repository disconnected: {target_repo}")
     else:
         print(f"Repository '{target_repo}' was not registered; active context cleared.")
 
@@ -664,7 +664,7 @@ def cmd_connect(args):
     print("                      KOYOTE: GITHUB REPOSITORY SELECTION                       ")
     print("================================================================================\n")
     print("Connect GitHub")
-    print(f"✓ GitHub connected (account: {gh_user or 'authorized'})\n")
+    print(f"[OK] GitHub connected (account: {gh_user or 'authorized'})\n")
 
     explicit_repo = getattr(args, "repo", None) or getattr(args, "source", None)
     selected_repos = []
@@ -706,20 +706,20 @@ def cmd_connect(args):
     workdir = os.path.abspath(getattr(args, "path", ".") or ".")
     for repo_name in selected_repos:
         record = register_repository(repo_name, workdir=workdir)
-        print(f"\n✓ Repository connected: {repo_name}")
+        print(f"\n[OK] Repository connected: {repo_name}")
         print(f"  Repository Key: {record['repo_key']} (team-shared)")
         print(f"  Howl: {record['howl_state']} | Hunt: {record['hunt_state']}")
         print(f"  Indexing repository contracts & callsites for {repo_name}...")
         try:
             run_audit(repo_root=workdir, output_format="cli", write_graph=True)
-            print("  ✓ Repository indexed & READY")
+            print("  [OK] Repository indexed & READY")
         except Exception as e:
-            print(f"  ✓ Repository ready (indexing note: {e})")
+            print(f"  [OK] Repository ready (indexing note: {e})")
 
     active = selected_repos[0]
     set_active_repo(active)
-    print(f"\n✓ {len(selected_repos)} repository(ies) connected")
-    print(f"✓ {active} set as active")
+    print(f"\n[OK] {len(selected_repos)} repository(ies) connected")
+    print(f"[OK] {active} set as active")
     print("================================================================================")
 
 

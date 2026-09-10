@@ -7,10 +7,13 @@ import subprocess
 import sys
 from unittest.mock import MagicMock
 
-from koyote.ai_planner import AIPatchPlanner
+from koyote.ai_planner import AIPatchPlanner, build_reasoning_context
+from koyote.cli import main as cli_main
 from koyote.config import BotConfig, PipelinePolicy, load_config
 from koyote.github.pr_render import render_consult_issue
 from koyote.llm import LLMClient, LLMResponse
+from koyote.pipeline import MaintenancePipeline, TriggerContext
+import koyote.pipeline as pipe_mod
 
 
 ASSESS_BODY = (
@@ -44,7 +47,6 @@ def _cli_env(tmp_path):
 
 
 def test_assess_shares_context_with_repair(tmp_path):
-    from koyote.ai_planner import build_reasoning_context
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     ctx = build_reasoning_context(dst, "stripe", "11.18.0", "13.0.0", "d")
@@ -100,7 +102,6 @@ def test_consult_refuses_without_credentials(tmp_path):
 
 
 def test_consult_opens_issue_without_modifying(tmp_path, monkeypatch):
-    from koyote.cli import main as cli_main
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
@@ -123,7 +124,6 @@ def test_consult_opens_issue_without_modifying(tmp_path, monkeypatch):
 
 
 def test_consult_requires_repo(tmp_path, monkeypatch):
-    from koyote.cli import main as cli_main
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
@@ -153,7 +153,6 @@ def test_mode_defaults_to_work_and_parses_consult(tmp_path):
 
 
 def test_pipeline_consult_branch_reports_without_patching(tmp_path, monkeypatch):
-    from koyote.pipeline import MaintenancePipeline, TriggerContext
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
@@ -170,12 +169,10 @@ def test_pipeline_consult_branch_reports_without_patching(tmp_path, monkeypatch)
 
 
 def test_pipeline_consult_assesses_with_mock_planner(tmp_path, monkeypatch):
-    from koyote.pipeline import MaintenancePipeline, TriggerContext
     dst = str(tmp_path / "r")
     _seed_repo(dst)
     monkeypatch.setenv("KOYOTE_CREDENTIALS_FILE", str(tmp_path / "creds.json"))
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-testkey1234567890")
-    import koyote.pipeline as pipe_mod
     monkeypatch.setattr(pipe_mod.AIPatchPlanner, "from_env",
                         classmethod(lambda cls, **k: AIPatchPlanner(client=_mock_assess_client())))
     policy = PipelinePolicy(mode="consult")

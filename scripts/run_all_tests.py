@@ -1,6 +1,7 @@
+import ast
+import os
 import subprocess
 import sys
-import os
 
 def main():
     print("=== 0. LINT (ruff, entire tree) ===")
@@ -14,7 +15,6 @@ def main():
 
     print("=== 1. VERIFYING CODEBASE HYGIENE RULES ===")
 
-    # 1. Check comment density
     violations = []
     total_files = 0
     for root_dir in ["src", "python", "tests"]:
@@ -63,38 +63,34 @@ def main():
     else:
         print("PASS: 100% of files satisfy <= 3 comments per 100 lines of code.")
 
-    # 2. Check inline imports
-    import ast
     inline_py = []
-    for root, dirs, files in os.walk("python"):
-        for file in files:
-            if file.endswith(".py"):
-                path = os.path.join(root, file)
-                with open(path, "r", encoding="utf-8") as f:
-                    code = f.read()
-                try:
-                    tree = ast.parse(code, filename=path)
-                except SyntaxError:
-                    continue
-                for node in ast.walk(tree):
-                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                        # Look for imports inside the function/class body
-                        for stmt in node.body:
-                            for subnode in ast.walk(stmt):
-                                if isinstance(subnode, (ast.Import, ast.ImportFrom)):
-                                    # Basic heuristic to get a string representation
-                                    s = ast.unparse(subnode) if hasattr(ast, "unparse") else "import ..."
-                                    inline_py.append((path, getattr(subnode, 'lineno', 0), s))
+    for root_dir in ["python", "tests", "scripts"]:
+        for root, dirs, files in os.walk(root_dir):
+            for file in files:
+                if file.endswith(".py"):
+                    path = os.path.join(root, file)
+                    with open(path, "r", encoding="utf-8") as f:
+                        code = f.read()
+                    try:
+                        tree = ast.parse(code, filename=path)
+                    except SyntaxError:
+                        continue
+                    for node in ast.walk(tree):
+                        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                            for stmt in node.body:
+                                for subnode in ast.walk(stmt):
+                                    if isinstance(subnode, (ast.Import, ast.ImportFrom)):
+                                        s = ast.unparse(subnode) if hasattr(ast, "unparse") else "import ..."
+                                        inline_py.append((path, getattr(subnode, 'lineno', 0), s))
 
     if inline_py:
         print(f"ERROR: Found {len(inline_py)} inline Python imports inside functions:")
-        for p, l, s in inline_py:
-            print(f"  {p}:{l} -> {s}")
+        for p, lineno, s in inline_py:
+            print(f"  {p}:{lineno} -> {s}")
         sys.exit(1)
     else:
         print("PASS: 100% of import statements are at top of files.")
 
-    # 3. Check for deleted unnecessary folders
     unnecessary = ["examples", "demo_30s_onboarding.mp4", "demo_30s_onboarding.tape", "demo_30s_onboarding.gif"]
     found_unnecessary = [u for u in unnecessary if os.path.exists(u)]
     if found_unnecessary:
@@ -111,7 +107,7 @@ def main():
         sys.exit(1)
     else:
         lines = res_rust.stdout.strip().split("\n")
-        summary = [l for l in lines if "test result:" in l]
+        summary = [line for line in lines if "test result:" in line]
         print("Rust test suite passed:", summary[-1] if summary else "OK")
 
     print("\n=== 3. RUNNING PYTHON TEST SUITE ===")

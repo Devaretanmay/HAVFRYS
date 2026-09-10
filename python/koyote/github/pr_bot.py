@@ -37,6 +37,8 @@ from koyote.github.installations import (
 from koyote.github.provisioning import resolve_pr_workdir
 from koyote.graph import build_dependency_graph
 from koyote.drift import detect_drift
+from koyote import cross_repo, work_graph
+from koyote.github.push_events import parse_push_payload
 
 _logger = logging.getLogger("koyote.pr_bot")
 
@@ -79,6 +81,11 @@ def handle_pull_request_event(
 
     if not number or not ref or not sha:
         return {"success": False, "error": "Missing PR head info"}
+
+    try:
+        cross_repo.pr_fastpath(payload, client)
+    except Exception as e:
+        _logger.warning("cross-repo PR fast-path failed for %s: %s", repo, e)
 
     changed_files = _extract_changed_files(payload)
     pr_labels = [str(lb.get("name", "")) for lb in (ppr.get("labels") or []) if isinstance(lb, dict)]
@@ -420,6 +427,35 @@ def handle_issue_comment_event(
                                      client, policy, workdir=workdir)
 
 
+def handle_push_event(
+    payload: dict[str, Any],
+    client: GitHubAppClient,
+) -> dict[str, Any]:
+    """Ingest a push as an observation. Never alerts, never repairs (Phase 1).
+
+    Groups the push into its repo+branch candidate and records branch work
+    state. Matching, AI reasoning, and notification arrive in later phases.
+    """
+    obs = parse_push_payload(payload)
+    if obs is None:
+        return {"success": True, "event_type": "push", "handled": False,
+                "note": "no branch work to observe"}
+    cand = work_graph.record_push(obs)
+    evaluation = cross_repo.evaluate_candidate(obs["repository"], obs["branch"])
+    notified: Any = False
+    status = evaluation.get("status", cand["status"])
+    if evaluation.get("fast_confirm") and client is not None:
+        done = cross_repo.confirm_candidate(
+            obs["repository"], obs["branch"], "high_confidence", client)
+        notified = bool(done.get("notified"))
+        if done.get("confirmed"):
+            status = work_graph.NOTIFIED
+    return {"success": True, "event_type": "push",
+            "repository": obs["repository"], "branch": obs["branch"],
+            "candidate_id": cand["candidate_id"], "status": status,
+            "handled": True, "notified": notified}
+
+
 def make_pr_bot_handler(
     client: GitHubAppClient | None = None,
     policy: PipelinePolicy | None = None,
@@ -476,6 +512,9 @@ def make_pr_bot_handler(
                 client,
                 workdir_fn=repo_workdir_resolver,
             )
+
+        if event_type == "push":
+            return handle_push_event(payload, client)
 
         return {
             "success": True,
